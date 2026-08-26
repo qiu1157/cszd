@@ -22,3 +22,10 @@
 
 > 注意：本机目前未检测到 MySQL CLI，可先安装 MySQL 或用你习惯的客户端执行脚本。
 
+## 当前环境连接信息（由你提供）
+
+- ip：`192.168.3.52`
+- port：`3306`
+- db：`cszd_db`
+- user：`cdzd`
+- password：请通过环境变量 `CSZD_DB_PASSWORD` 注入，不写入仓库

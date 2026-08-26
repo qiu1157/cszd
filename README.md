@@ -51,8 +51,22 @@ mvn spring-boot:run
 
 参考 `code/db/README.md`，脚本位于 `code/db/schema.sql`。
 
-后端默认连接（可按需修改 `code/backend/src/main/resources/application.yml`）：
+后端连接（可按需修改 `code/backend/src/main/resources/application.yml`；默认读取环境变量，不把密码写入仓库）：
 
-- DB：`charging_station`
-- URL：`jdbc:mysql://localhost:3306/charging_station?serverTimezone=Asia/Shanghai`
+- DB：`cszd_db`
+- Host：`192.168.3.52:3306`
+- 账号：`cdzd`
+- 密码：通过环境变量注入（PowerShell 示例）：
 
+```powershell
+$env:CSZD_DB_PASSWORD="123456"
+```
+
+可选：如需覆盖 host/port/db/user，也可设置：
+
+```powershell
+$env:CSZD_DB_HOST="192.168.3.52"
+$env:CSZD_DB_PORT="3306"
+$env:CSZD_DB_NAME="cszd_db"
+$env:CSZD_DB_USER="cdzd"
+```

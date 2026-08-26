@@ -5,10 +5,10 @@ spring:
   application:
     name: charging-station-system
   datasource:
-    # 注意：本地开发请先按 code/db/README.md 初始化数据库与账号
-    url: jdbc:mysql://localhost:3306/charging_station?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
-    username: root
-    password: root
+    # 注意：不要把真实密码写入仓库。通过环境变量注入（见根目录 README.md）。
+    url: jdbc:mysql://${CSZD_DB_HOST:192.168.3.52}:${CSZD_DB_PORT:3306}/${CSZD_DB_NAME:cszd_db}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: ${CSZD_DB_USER:cdzd}
+    password: ${CSZD_DB_PASSWORD:}
   jpa:
     hibernate:
       ddl-auto: none
@@ -20,4 +20,3 @@ spring:
 logging:
   level:
     root: INFO
-
