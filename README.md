@@ -93,7 +93,8 @@ $env:CSZD_DB_USER="cszd"
 ## 本地安全配置
 
 - 请复制根目录 `.env.example`，在本地环境中设置真实值，不要把真实 IP、密码、Token、连接串提交到仓库。
-- 开发期登录账号支持通过本地环境变量覆盖：
-  - `CSZD_DEV_ADMIN_PASSWORD`
+- 默认系统管理员初始化密码通过本地环境变量注入：
+  - `CSZD_DEFAULT_ADMIN_PASSWORD`
+- 当前保留的开发期业务管理员账号支持通过本地环境变量覆盖：
   - `CSZD_DEV_BIZ_ACCOUNT`
   - `CSZD_DEV_BIZ_PASSWORD`

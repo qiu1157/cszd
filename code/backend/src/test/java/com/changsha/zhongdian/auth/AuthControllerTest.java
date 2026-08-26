@@ -30,15 +30,15 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "account": "admin",
-                                  "password": "dev-admin-password"
+                                  "account": "13800000001",
+                                  "password": "dev-biz-password"
                                 }
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.token").isString())
-                .andExpect(jsonPath("$.data.user.account").value("admin"))
-                .andExpect(jsonPath("$.data.user.role").value("SYSTEM_ADMIN"))
+                .andExpect(jsonPath("$.data.user.account").value("13800000001"))
+                .andExpect(jsonPath("$.data.user.role").value("BUSINESS_ADMIN"))
                 .andReturn();
 
         String responseBody = loginResult.getResponse().getContentAsString();
@@ -48,8 +48,8 @@ class AuthControllerTest {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.account").value("admin"))
-                .andExpect(jsonPath("$.data.role").value("SYSTEM_ADMIN"));
+                .andExpect(jsonPath("$.data.account").value("13800000001"))
+                .andExpect(jsonPath("$.data.role").value("BUSINESS_ADMIN"));
     }
 
     @Test
