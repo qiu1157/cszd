@@ -6,6 +6,9 @@ import vueParser from 'vue-eslint-parser'
 
 // 为什么：统一代码风格，避免格式/基础质量规则分散到各页面；第一期先落地基础 lint/format
 export default [
+  {
+    ignores: ['dist/**', 'node_modules/**'],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   ...vue.configs['flat/recommended'],

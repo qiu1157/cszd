@@ -1,16 +1,23 @@
+import { USER_ROLES, type UserRole } from '@/constants/enums/user-role'
+
 export type AppMenuItem = {
   path: string
   title: string
+  roles: UserRole[]
 }
 
-// 为什么：第一期先落地与原型一致的菜单结构，后续再叠加角色权限过滤（系统管理员/业务管理员）
+const BOTH_ROLES = [USER_ROLES.SYSTEM_ADMIN, USER_ROLES.BUSINESS_ADMIN] as UserRole[]
+
 export const appMenuItems: AppMenuItem[] = [
-  { path: '/dashboard', title: '首页' },
-  { path: '/stations', title: '充电站管理' },
-  { path: '/shareholders', title: '股东管理' },
-  { path: '/platforms', title: '平台管理' },
-  { path: '/logs', title: '操作日志' },
-  { path: '/users', title: '用户管理' },
-  { path: '/account', title: '我的账号' },
+  { path: '/dashboard', title: '首页', roles: BOTH_ROLES },
+  { path: '/stations', title: '充电站管理', roles: [USER_ROLES.BUSINESS_ADMIN] },
+  { path: '/shareholders', title: '股东管理', roles: [USER_ROLES.BUSINESS_ADMIN] },
+  { path: '/platforms', title: '平台管理', roles: [USER_ROLES.SYSTEM_ADMIN] },
+  { path: '/logs', title: '操作日志', roles: BOTH_ROLES },
+  { path: '/users', title: '用户管理', roles: [USER_ROLES.SYSTEM_ADMIN] },
+  { path: '/account', title: '我的账号', roles: BOTH_ROLES },
 ]
 
+export function getMenuItemsByRole(role: UserRole) {
+  return appMenuItems.filter((item) => item.roles.includes(role))
+}

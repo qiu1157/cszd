@@ -10,6 +10,10 @@
   --text-muted: #6f889d;
   --brand-primary: #39c8ff;
   --brand-accent: #1ff2b2;
+  --success: #2dd4a7;
+  --warning: #f8b84e;
+  --danger: #f97563;
+  --info: #5a9dff;
 }
 
 html,
@@ -17,9 +21,47 @@ body {
   margin: 0;
   min-height: 100%;
   background: var(--bg-page);
+  color: var(--text-primary);
+  font-family:
+    'Segoe UI',
+    'PingFang SC',
+    'Microsoft YaHei',
+    sans-serif;
 }
 
 * {
   box-sizing: border-box;
 }
 
+#app {
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+}
+
+body {
+  .el-menu {
+    --el-menu-bg-color: transparent;
+    --el-menu-text-color: var(--text-secondary);
+    --el-menu-hover-bg-color: rgba(57, 200, 255, 0.08);
+    --el-menu-active-color: var(--text-primary);
+    --el-menu-border-color: transparent;
+  }
+
+  .el-menu-item {
+    margin-bottom: 8px;
+    border-radius: 14px;
+  }
+
+  .el-menu-item.is-active {
+    background: linear-gradient(90deg, rgba(57, 200, 255, 0.18), rgba(31, 242, 178, 0.08));
+    border: 1px solid rgba(57, 200, 255, 0.16);
+  }
+
+  .el-card {
+    border-radius: 20px;
+    color: var(--text-primary);
+  }
+}

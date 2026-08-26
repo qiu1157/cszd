@@ -26,9 +26,8 @@ java {
 
 tasks.named('test') {
     useJUnitPlatform()
-    // 第一阶段：先保证后端可 `bootRun` 并提供健康检查；测试体系在后续里程碑引入 Testcontainers 后再严格化。
-    // 说明：当前仓库路径包含中文，Windows 上 Gradle/Java 的 classpath argfile 编码兼容性可能导致测试偶发失败。
-    enabled = false
+    // 为什么：里程碑 A 进入真实开发后，需要用自动化测试锁定登录与鉴权行为，避免后续权限链路回归。
+    jvmArgs '-Dfile.encoding=UTF-8', '-Dsun.jnu.encoding=UTF-8'
 }
 
 repositories {
