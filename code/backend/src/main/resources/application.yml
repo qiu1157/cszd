@@ -6,22 +6,29 @@ spring:
     name: charging-station-system
   datasource:
     # 注意：不要把真实密码写入仓库。通过环境变量注入（见根目录 README.md）。
-    url: jdbc:mysql://${CSZD_DB_HOST:192.168.3.52}:${CSZD_DB_PORT:3306}/${CSZD_DB_NAME:cszd_db}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://${CSZD_DB_HOST:192.168.3.52}:${CSZD_DB_PORT:3306}/${CSZD_DB_NAME:cszd_db}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     username: ${CSZD_DB_USER:cdzd}
     password: ${CSZD_DB_PASSWORD:}
     hikari:
-      # 为什么：骨架阶段允许应用在数据库暂不可用时仍能启动（便于先验收 /api/health 与基础联调），连接失败将在首次使用数据库时暴露。
+      # 为什么：默认连接超时 30s，会导致启动卡顿且不易定位错误；这里缩短以便快速反馈 DB 授权/网络问题。
+      connection-timeout: 5000
+      validation-timeout: 3000
+      # 为什么：第一期骨架阶段，允许后端在 DB 不可用时也能启动（至少 `/api/health` 可用），
+      # 方便前后端并行开发；当后续进入需要真实读写 DB 的 task 时，再收紧为 fail-fast。
       initialization-fail-timeout: -1
   jpa:
-    # 为什么：当数据库暂不可用时，Hibernate 无法通过 JDBC metadata 推断 Dialect，导致应用启动失败；
-    # 在骨架阶段明确指定 MySQL Dialect，保证 /api/health 等接口可启动验收。
-    database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
       ddl-auto: none
     open-in-view: false
+    # 为什么：当 DB 账号未授权或网络不可达时，Hibernate 读取 JDBC 元数据会产生较长等待，
+    # 甚至触发 Hibernate 6.5.2 在异常路径上的 NPE（你日志中的栈）。
+    # 这里显式指定方言 + 禁止启动期读取 JDBC 元数据，使启动更稳定、错误更可控。
+    database-platform: org.hibernate.dialect.MySQLDialect
     properties:
       hibernate:
         format_sql: true
+        boot:
+          allow_jdbc_metadata_access: false
 
 logging:
   level:

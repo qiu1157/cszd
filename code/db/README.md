@@ -29,3 +29,25 @@
 - db：`cszd_db`
 - user：`cdzd`
 - password：请通过环境变量 `CSZD_DB_PASSWORD` 注入，不写入仓库
+
+## 常见问题：账号授权
+
+如果后端或脚本报错类似：
+
+- `Access denied for user 'cdzd'@'xxx'`
+
+说明 MySQL 服务器端尚未授权该来源主机（`xxx`）使用账号 `cdzd` 访问。
+
+你可以在 MySQL 服务器上执行类似以下授权（示例，仅供参考，按你们安全策略收紧到指定来源 IP）：
+
+```sql
+-- 允许任意来源连接（最宽松）
+CREATE USER IF NOT EXISTS 'cdzd'@'%' IDENTIFIED BY '123456';
+GRANT ALL PRIVILEGES ON cszd_db.* TO 'cdzd'@'%';
+FLUSH PRIVILEGES;
+
+-- 或者：仅允许某个来源 IP（更推荐）
+-- CREATE USER IF NOT EXISTS 'cdzd'@'172.17.0.1' IDENTIFIED BY '123456';
+-- GRANT ALL PRIVILEGES ON cszd_db.* TO 'cdzd'@'172.17.0.1';
+-- FLUSH PRIVILEGES;
+```

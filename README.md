@@ -54,7 +54,16 @@ Windows（PowerShell）也可以：
 
 ```powershell
 cd code/backend
+$env:CSZD_DB_PASSWORD="123456"
 .\gradlew.bat bootRun
+```
+
+如果你在 cmd 里运行，请用：
+
+```bat
+cd code\backend
+set CSZD_DB_PASSWORD=123456
+gradlew.bat bootRun
 ```
 
 ## 数据库初始化
