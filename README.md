@@ -36,6 +36,11 @@ npm run format
 
 ## 后端启动
 
+前置说明：
+
+- 后端最低 Java 基线：`JDK 17+`（Spring Boot 3.3 支持 Java 17+）
+- 如果你本机没有可用的 `javac`（例如只装了 JRE，或未配置 `JAVA_HOME`），`code/backend/gradlew.bat` 会自动从 Adoptium 下载 **Temurin JDK 17（ZIP 免安装）** 并缓存到 `code/backend/.gradle/jdks/temurin-17/`（需要联网）。
+
 ```bash
 cd code/backend
 ./gradlew bootRun

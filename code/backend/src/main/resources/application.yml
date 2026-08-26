@@ -9,7 +9,13 @@ spring:
     url: jdbc:mysql://${CSZD_DB_HOST:192.168.3.52}:${CSZD_DB_PORT:3306}/${CSZD_DB_NAME:cszd_db}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
     username: ${CSZD_DB_USER:cdzd}
     password: ${CSZD_DB_PASSWORD:}
+    hikari:
+      # 为什么：骨架阶段允许应用在数据库暂不可用时仍能启动（便于先验收 /api/health 与基础联调），连接失败将在首次使用数据库时暴露。
+      initialization-fail-timeout: -1
   jpa:
+    # 为什么：当数据库暂不可用时，Hibernate 无法通过 JDBC metadata 推断 Dialect，导致应用启动失败；
+    # 在骨架阶段明确指定 MySQL Dialect，保证 /api/health 等接口可启动验收。
+    database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
       ddl-auto: none
     open-in-view: false
