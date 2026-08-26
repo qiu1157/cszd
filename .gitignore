@@ -29,6 +29,8 @@ code/frontend/.vite/
 ## ===== 后端（Spring Boot）=====
 code/backend/target/
 code/backend/.mvn/wrapper/maven-wrapper.jar
+code/backend/.gradle/
+code/backend/build/
 
 ## ===== 构建产物/其他 =====
 *.jar

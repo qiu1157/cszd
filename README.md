@@ -36,16 +36,21 @@ npm run format
 
 ## 后端启动
 
-> 当前环境未检测到 Maven 命令（`mvn`），如本机未安装 Maven，请先安装后再启动。
-
 ```bash
 cd code/backend
-mvn spring-boot:run
+./gradlew bootRun
 ```
 
 健康检查：
 
 - `GET http://localhost:8080/api/health`
+
+Windows（PowerShell）也可以：
+
+```powershell
+cd code/backend
+.\gradlew.bat bootRun
+```
 
 ## 数据库初始化
 
