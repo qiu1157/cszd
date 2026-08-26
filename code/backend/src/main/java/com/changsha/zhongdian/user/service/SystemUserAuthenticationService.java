@@ -1,5 +1,6 @@
 package com.changsha.zhongdian.user.service;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import com.changsha.zhongdian.auth.model.LoginUser;
@@ -39,6 +40,7 @@ public class SystemUserAuthenticationService {
                     // 为什么：停用账号后必须立即阻断登录，避免仅做前端菜单隐藏导致越权。
                     .filter(user -> user.getUserStatus() == UserStatus.ENABLED)
                     .filter(user -> passwordHasher.matches(password, user.getPasswordHash()))
+                    .map(user -> touchLastLoginAt(systemUserRepository, user))
                     .map(this::toLoginUser);
         } catch (DataAccessException exception) {
             // 为什么：当前阶段仍保留“数据库不可用时后端可启动”的容错策略；
@@ -54,5 +56,10 @@ public class SystemUserAuthenticationService {
                 systemUser.getName(),
                 systemUser.getRoleCode().name()
         );
+    }
+
+    private SystemUser touchLastLoginAt(SystemUserRepository systemUserRepository, SystemUser systemUser) {
+        systemUser.setLastLoginAt(LocalDateTime.now());
+        return systemUserRepository.save(systemUser);
     }
 }

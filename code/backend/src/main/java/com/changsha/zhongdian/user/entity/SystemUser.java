@@ -44,6 +44,9 @@ public class SystemUser {
     @Column(name = "is_default_admin", nullable = false)
     private boolean defaultAdmin;
 
+    @Column(name = "last_login_at")
+    private LocalDateTime lastLoginAt;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -110,6 +113,14 @@ public class SystemUser {
 
     public void setDefaultAdmin(boolean defaultAdmin) {
         this.defaultAdmin = defaultAdmin;
+    }
+
+    public LocalDateTime getLastLoginAt() {
+        return lastLoginAt;
+    }
+
+    public void setLastLoginAt(LocalDateTime lastLoginAt) {
+        this.lastLoginAt = lastLoginAt;
     }
 
     public LocalDateTime getCreatedAt() {
