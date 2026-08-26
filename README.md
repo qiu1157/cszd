@@ -54,7 +54,7 @@ Windows（PowerShell）也可以：
 
 ```powershell
 cd code/backend
-$env:CSZD_DB_PASSWORD="123456"
+$env:CSZD_DB_PASSWORD="<your-db-password>"
 .\gradlew.bat bootRun
 ```
 
@@ -62,7 +62,7 @@ $env:CSZD_DB_PASSWORD="123456"
 
 ```bat
 cd code\backend
-set CSZD_DB_PASSWORD=123456
+set CSZD_DB_PASSWORD=<your-db-password>
 gradlew.bat bootRun
 ```
 
@@ -70,22 +70,30 @@ gradlew.bat bootRun
 
 参考 `code/db/README.md`，脚本位于 `code/db/schema.sql`。
 
-后端连接（可按需修改 `code/backend/src/main/resources/application.yml`；默认读取环境变量，不把密码写入仓库）：
+后端连接（可按需修改 `code/backend/src/main/resources/application.yml`；默认读取环境变量，不把真实连接信息写入仓库）：
 
 - DB：`cszd_db`
-- Host：`192.168.3.52:3306`
+- Host：建议通过环境变量 `CSZD_DB_HOST` 配置
 - 账号：`cszd`
 - 密码：通过环境变量注入（PowerShell 示例）：
 
 ```powershell
-$env:CSZD_DB_PASSWORD="123456"
+$env:CSZD_DB_PASSWORD="<your-db-password>"
 ```
 
 可选：如需覆盖 host/port/db/user，也可设置：
 
 ```powershell
-$env:CSZD_DB_HOST="192.168.3.52"
+$env:CSZD_DB_HOST="<your-db-host>"
 $env:CSZD_DB_PORT="3306"
 $env:CSZD_DB_NAME="cszd_db"
 $env:CSZD_DB_USER="cszd"
 ```
+
+## 本地安全配置
+
+- 请复制根目录 `.env.example`，在本地环境中设置真实值，不要把真实 IP、密码、Token、连接串提交到仓库。
+- 开发期登录账号支持通过本地环境变量覆盖：
+  - `CSZD_DEV_ADMIN_PASSWORD`
+  - `CSZD_DEV_BIZ_ACCOUNT`
+  - `CSZD_DEV_BIZ_PASSWORD`

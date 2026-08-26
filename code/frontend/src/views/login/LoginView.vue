@@ -42,7 +42,7 @@
       <div class="login-panel">
         <div class="panel-kicker">账号密码登录</div>
         <h2 class="panel-title">登录进入系统</h2>
-        <p class="panel-desc">输入账号与密码登录。系统管理员默认账号为 admin。</p>
+        <p class="panel-desc">输入账号与密码登录。开发账号只展示账号名，密码请从本地环境变量或部署配置中获取。</p>
 
         <el-form
           ref="formRef"
@@ -69,9 +69,10 @@
         </el-form>
 
         <div class="mock-account">
-          <strong>演示账号</strong><br />
-          系统管理员：`admin / 123456`<br />
-          业务管理员：`13800138000 / 123456`
+          <strong>开发账号</strong><br />
+          系统管理员账号：`admin`<br />
+          业务管理员账号：`13800000001`（可通过环境变量覆盖）<br />
+          密码不在仓库中明文展示，请通过本地环境变量配置。
         </div>
       </div>
     </div>
@@ -94,7 +95,7 @@ const formRef = ref<FormInstance>()
 const submitting = ref(false)
 const formModel = reactive({
   account: 'admin',
-  password: '123456',
+  password: '',
 })
 
 const rules: FormRules<typeof formModel> = {
@@ -126,12 +127,12 @@ async function handleSubmit() {
 
 function fillAdminAccount() {
   formModel.account = 'admin'
-  formModel.password = '123456'
+  formModel.password = ''
 }
 
 function fillBusinessAccount() {
-  formModel.account = '13800138000'
-  formModel.password = '123456'
+  formModel.account = '13800000001'
+  formModel.password = ''
 }
 </script>
 

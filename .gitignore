@@ -20,6 +20,11 @@ logs/
 .env
 .env.*
 !.env.example
+*.secrets
+.envrc
+code/backend/src/main/resources/application-local*.yml
+code/backend/src/main/resources/application-dev*.yml
+code/backend/src/main/resources/application-prod*.yml
 
 ## ===== 前端（Vite）=====
 code/frontend/node_modules/

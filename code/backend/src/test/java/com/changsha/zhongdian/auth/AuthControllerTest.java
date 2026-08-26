@@ -31,7 +31,7 @@ class AuthControllerTest {
                         .content("""
                                 {
                                   "account": "admin",
-                                  "password": "123456"
+                                  "password": "dev-admin-password"
                                 }
                                 """))
                 .andExpect(status().isOk())
