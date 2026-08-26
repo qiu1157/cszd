@@ -1,0 +1,3116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>充电站管理系统</title>
+  <style>
+    :root {
+      --bg-page: #07111a;
+      --bg-panel: rgba(10, 22, 34, 0.78);
+      --bg-panel-strong: rgba(7, 18, 29, 0.94);
+      --bg-soft: rgba(117, 191, 255, 0.08);
+      --line-soft: rgba(150, 206, 255, 0.14);
+      --line-strong: rgba(67, 188, 255, 0.35);
+      --text-primary: #edf7ff;
+      --text-secondary: #9fb6c9;
+      --text-muted: #6f889d;
+      --brand-primary: #39c8ff;
+      --brand-accent: #1ff2b2;
+      --warning: #ffbf66;
+      --danger: #ff7d7d;
+      --success: #2dde9d;
+      --info: #64a9ff;
+      --shadow-panel: 0 24px 80px rgba(0, 0, 0, 0.45);
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+      --sidebar-width: 280px;
+      --header-height: 84px;
+      --font-display: "Trebuchet MS", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      --font-body: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      font-family: var(--font-body);
+      color: var(--text-primary);
+      background:
+        radial-gradient(circle at top left, rgba(57, 200, 255, 0.15), transparent 28%),
+        radial-gradient(circle at 85% 10%, rgba(31, 242, 178, 0.1), transparent 20%),
+        linear-gradient(180deg, #07111a 0%, #04101a 52%, #040b14 100%);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 1), transparent 88%);
+      opacity: 0.55;
+    }
+
+    .app-shell {
+      display: none;
+      min-height: 100vh;
+      position: relative;
+      z-index: 1;
+    }
+
+    .app-shell.is-ready {
+      display: grid;
+      grid-template-columns: var(--sidebar-width) 1fr;
+    }
+
+    .login-screen {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 32px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .login-card {
+      width: min(1180px, 100%);
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 24px;
+      padding: 24px;
+      border: 1px solid var(--line-soft);
+      border-radius: 30px;
+      background:
+        linear-gradient(145deg, rgba(7, 18, 28, 0.86), rgba(8, 20, 30, 0.66)),
+        rgba(8, 20, 30, 0.78);
+      box-shadow: var(--shadow-panel);
+      backdrop-filter: blur(24px);
+      overflow: hidden;
+    }
+
+    .hero-panel, .login-panel, .sidebar, .topbar, .section-card, .metric-card, .list-card, .table-wrap, .timeline-card, .mobile-quick {
+      border: 1px solid var(--line-soft);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0)),
+        var(--bg-panel);
+      backdrop-filter: blur(22px);
+      box-shadow: var(--shadow-panel);
+    }
+
+    .hero-panel {
+      position: relative;
+      border-radius: 24px;
+      padding: 34px;
+      overflow: hidden;
+      min-height: 620px;
+    }
+
+    .hero-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 12% 20%, rgba(57, 200, 255, 0.16), transparent 24%),
+        radial-gradient(circle at 80% 18%, rgba(31, 242, 178, 0.11), transparent 26%),
+        linear-gradient(135deg, rgba(57, 200, 255, 0.08), transparent 38%);
+      pointer-events: none;
+    }
+
+    .energy-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(57, 200, 255, 0.1);
+      border: 1px solid rgba(57, 200, 255, 0.22);
+      color: #d5f5ff;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .pulse-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--brand-accent);
+      box-shadow: 0 0 0 8px rgba(31, 242, 178, 0.08), 0 0 18px rgba(31, 242, 178, 0.75);
+    }
+
+    .hero-title {
+      margin: 24px 0 12px;
+      font-size: clamp(38px, 5vw, 64px);
+      line-height: 1.04;
+      letter-spacing: -0.04em;
+      font-family: var(--font-display);
+      max-width: 10ch;
+    }
+
+    .hero-desc {
+      max-width: 580px;
+      color: var(--text-secondary);
+      font-size: 16px;
+      line-height: 1.8;
+      margin-bottom: 30px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 26px;
+    }
+
+    .hero-metric {
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(7, 20, 31, 0.58);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .hero-metric small {
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .hero-metric strong {
+      display: block;
+      font-size: 28px;
+      letter-spacing: -0.04em;
+    }
+
+    .hero-stage {
+      margin-top: 34px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .stage-line {
+      padding: 14px 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255,255,255,0.025);
+      color: var(--text-secondary);
+    }
+
+    .login-panel {
+      border-radius: 24px;
+      padding: 34px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .panel-kicker {
+      color: var(--brand-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      font-size: 12px;
+      margin-bottom: 10px;
+    }
+
+    .panel-title {
+      margin: 0 0 10px;
+      font-size: 32px;
+      letter-spacing: -0.04em;
+    }
+
+    .panel-desc {
+      margin: 0 0 28px;
+      color: var(--text-secondary);
+      line-height: 1.8;
+    }
+
+    .login-form {
+      display: grid;
+      gap: 14px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .field label {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .field input, .field select, .toolbar input, .toolbar select, .toolbar textarea {
+      width: 100%;
+      border: 1px solid rgba(255,255,255,0.08);
+      outline: none;
+      background: rgba(2, 9, 16, 0.8);
+      color: var(--text-primary);
+      padding: 14px 16px;
+      border-radius: 14px;
+      font-size: 14px;
+      transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+    }
+
+    .field input:focus, .field select:focus, .toolbar input:focus, .toolbar select:focus, .toolbar textarea:focus {
+      border-color: rgba(57, 200, 255, 0.55);
+      box-shadow: 0 0 0 4px rgba(57, 200, 255, 0.12);
+    }
+
+    .login-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+
+    .button {
+      border: none;
+      cursor: pointer;
+      border-radius: 14px;
+      padding: 14px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      transition: transform .2s ease, box-shadow .2s ease, opacity .2s ease;
+    }
+
+    .button:hover {
+      transform: translateY(-1px);
+    }
+
+    .button-primary {
+      color: #04121e;
+      background: linear-gradient(135deg, var(--brand-accent), #83ffd5);
+      box-shadow: 0 14px 30px rgba(31, 242, 178, 0.22);
+    }
+
+    .button-secondary {
+      color: var(--text-primary);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .button-ghost {
+      color: var(--brand-primary);
+      background: rgba(57, 200, 255, 0.1);
+    }
+
+    .mock-account {
+      margin-top: 20px;
+      padding: 16px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.03);
+      color: var(--text-secondary);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      border-right: 1px solid var(--line-soft);
+      border-left: none;
+      border-top: none;
+      border-bottom: none;
+      padding: 22px 18px;
+      border-radius: 0;
+      background:
+        linear-gradient(180deg, rgba(7, 18, 29, 0.95), rgba(5, 15, 23, 0.9));
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .brand-box {
+      border-radius: 22px;
+      padding: 18px;
+      background: linear-gradient(135deg, rgba(57, 200, 255, 0.18), rgba(31, 242, 178, 0.06));
+      border: 1px solid rgba(57, 200, 255, 0.12);
+    }
+
+    .brand-box h1 {
+      margin: 12px 0 8px;
+      font-size: 22px;
+      letter-spacing: -0.04em;
+    }
+
+    .brand-box p {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .menu-group {
+      display: grid;
+      gap: 8px;
+    }
+
+    .menu-title {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      padding: 0 8px;
+      margin-top: 10px;
+    }
+
+    .menu-item {
+      width: 100%;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-secondary);
+      padding: 14px 16px;
+      border-radius: 16px;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      transition: .2s ease;
+    }
+
+    .menu-item:hover,
+    .menu-item.active {
+      color: var(--text-primary);
+      border-color: rgba(57, 200, 255, 0.18);
+      background: rgba(57, 200, 255, 0.08);
+      box-shadow: inset 0 0 0 1px rgba(57, 200, 255, 0.08);
+    }
+
+    .menu-badge {
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.07);
+      color: var(--text-muted);
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.03);
+      color: var(--text-secondary);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .main {
+      min-width: 0;
+      padding: 20px;
+    }
+
+    .topbar {
+      min-height: var(--header-height);
+      border-radius: 26px;
+      padding: 16px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .topbar-left h2 {
+      margin: 0;
+      font-size: 26px;
+      letter-spacing: -0.04em;
+    }
+
+    .topbar-left p {
+      margin: 6px 0 0;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .chip {
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.06);
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
+    .avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #07131d;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--brand-primary), var(--brand-accent));
+    }
+
+    .view {
+      display: none;
+      gap: 20px;
+    }
+
+    .view.active {
+      display: grid;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .metric-card {
+      border-radius: 24px;
+      padding: 22px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .metric-card::after {
+      content: "";
+      position: absolute;
+      width: 140px;
+      height: 140px;
+      right: -30px;
+      top: -30px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(57, 200, 255, 0.18), transparent 68%);
+    }
+
+    .metric-card small {
+      display: block;
+      margin-bottom: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .metric-value {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    .metric-value strong {
+      font-size: 40px;
+      letter-spacing: -0.06em;
+      line-height: 1;
+    }
+
+    .metric-value span {
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
+    .metric-footer {
+      margin-top: 18px;
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
+    .dual-grid {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 18px;
+    }
+
+    .triple-grid {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr 1fr;
+      gap: 18px;
+    }
+
+    .section-card, .list-card, .table-wrap, .timeline-card, .mobile-quick {
+      border-radius: 24px;
+      padding: 22px;
+      min-width: 0;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .section-head h3 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -0.03em;
+    }
+
+    .section-head p {
+      margin: 6px 0 0;
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
+    .status-rings {
+      display: grid;
+      gap: 16px;
+    }
+
+    .status-line {
+      display: grid;
+      grid-template-columns: 140px 1fr 52px;
+      align-items: center;
+      gap: 14px;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .bar {
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.05);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .bar > span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--brand-primary), var(--brand-accent));
+    }
+
+    .table-wrap {
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 14px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      text-align: left;
+      font-size: 14px;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--text-muted);
+      font-weight: 500;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .title-cell {
+      display: grid;
+      gap: 6px;
+    }
+
+    .title-cell strong {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+      border: 1px solid transparent;
+    }
+
+    .tag::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: 0.9;
+    }
+
+    .tag-success {
+      color: var(--success);
+      background: rgba(45, 222, 157, 0.12);
+      border-color: rgba(45, 222, 157, 0.2);
+    }
+
+    .tag-warning {
+      color: var(--warning);
+      background: rgba(255, 191, 102, 0.12);
+      border-color: rgba(255, 191, 102, 0.2);
+    }
+
+    .tag-danger {
+      color: var(--danger);
+      background: rgba(255, 125, 125, 0.12);
+      border-color: rgba(255, 125, 125, 0.2);
+    }
+
+    .tag-info {
+      color: var(--info);
+      background: rgba(100, 169, 255, 0.12);
+      border-color: rgba(100, 169, 255, 0.2);
+    }
+
+    .tag-neutral {
+      color: #b6c7d6;
+      background: rgba(182, 199, 214, 0.08);
+      border-color: rgba(182, 199, 214, 0.16);
+    }
+
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .kpi-item {
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .kpi-item span {
+      color: var(--text-muted);
+      font-size: 12px;
+      display: block;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .kpi-item strong {
+      font-size: 30px;
+      letter-spacing: -0.05em;
+    }
+
+    .timeline-list {
+      display: grid;
+      gap: 16px;
+    }
+
+    .timeline-item {
+      position: relative;
+      padding: 0 0 0 26px;
+    }
+
+    .timeline-item::before {
+      content: "";
+      position: absolute;
+      left: 5px;
+      top: 5px;
+      bottom: -18px;
+      width: 1px;
+      background: rgba(255,255,255,0.08);
+    }
+
+    .timeline-item:last-child::before {
+      display: none;
+    }
+
+    .timeline-item::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 4px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--brand-accent);
+      box-shadow: 0 0 0 6px rgba(31, 242, 178, 0.08);
+    }
+
+    .timeline-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+
+    .timeline-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .timeline-desc {
+      color: var(--text-secondary);
+      line-height: 1.7;
+      font-size: 13px;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .toolbar .span-2 {
+      grid-column: span 2;
+    }
+
+    .actions-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .detail-hero {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 16px;
+    }
+
+    .hero-info {
+      padding: 24px;
+      border-radius: 24px;
+      border: 1px solid rgba(57, 200, 255, 0.12);
+      background: linear-gradient(135deg, rgba(57,200,255,0.12), rgba(255,255,255,0.02));
+    }
+
+    .hero-info h3 {
+      margin: 0 0 10px;
+      font-size: 30px;
+      letter-spacing: -0.04em;
+    }
+
+    .hero-info p {
+      margin: 0;
+      color: var(--text-secondary);
+      line-height: 1.8;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 22px;
+    }
+
+    .info-card {
+      border-radius: 18px;
+      padding: 16px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .info-card small {
+      display: block;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+
+    .section-stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    .section-anchor {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .section-anchor button {
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    .mini-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .mini-item {
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.05);
+      background: rgba(255,255,255,0.025);
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .mini-item strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .mini-item p {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .mobile-hint {
+      display: none;
+      padding: 12px 16px;
+      border-radius: 16px;
+      color: var(--text-secondary);
+      background: rgba(255,255,255,0.04);
+      margin-bottom: 14px;
+    }
+
+    .footer-tip {
+      color: var(--text-muted);
+      font-size: 12px;
+      margin-top: 12px;
+    }
+
+    .crumb {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      color: var(--text-muted);
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .crumb button {
+      border: none;
+      background: transparent;
+      color: var(--brand-primary);
+      cursor: pointer;
+      padding: 0;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .form-grid .span-2 {
+      grid-column: span 2;
+    }
+
+    .helper {
+      color: var(--text-muted);
+      font-size: 12px;
+      line-height: 1.6;
+      margin-top: 6px;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 20px;
+      background: rgba(6, 10, 16, 0.72);
+      backdrop-filter: blur(6px);
+      z-index: 999;
+    }
+
+    .modal.is-open {
+      display: grid;
+    }
+
+    .modal-card {
+      width: min(860px, 100%);
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+      overflow: hidden;
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .modal-head h3 {
+      margin: 0;
+      font-size: 16px;
+      letter-spacing: 0.02em;
+    }
+
+    .modal-body {
+      padding: 18px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 14px 18px 18px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      background: rgba(255, 255, 255, 0.01);
+    }
+
+    .modal-close {
+      border: none;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 8px 10px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .inline-select {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .inline-select label {
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .inline-select select {
+      min-width: 280px;
+      max-width: 100%;
+    }
+
+    .empty-card {
+      border: 1px dashed rgba(255,255,255,0.12);
+      border-radius: 18px;
+      padding: 24px;
+      text-align: center;
+      color: var(--text-secondary);
+      background: rgba(255,255,255,0.02);
+    }
+
+    @media (max-width: 1360px) {
+      .metrics-grid,
+      .kpi-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .dual-grid,
+      .triple-grid,
+      .detail-hero {
+        grid-template-columns: 1fr;
+      }
+
+      .toolbar {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .info-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 1080px) {
+      .login-card {
+        grid-template-columns: 1fr;
+      }
+
+      .app-shell.is-ready {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        height: auto;
+        position: relative;
+        border-radius: 0 0 24px 24px;
+      }
+
+      .main {
+        padding-top: 14px;
+      }
+
+      .mobile-hint {
+        display: block;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .main,
+      .sidebar,
+      .hero-panel,
+      .login-panel {
+        padding: 16px;
+      }
+
+      .toolbar,
+      .metrics-grid,
+      .kpi-strip,
+      .info-grid,
+      .hero-grid,
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .status-line {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        padding: 16px;
+      }
+
+      .topbar-right {
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      .hero-title {
+        font-size: 40px;
+      }
+
+      .panel-title {
+        font-size: 26px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="login-screen" id="loginScreen">
+    <div class="login-card">
+      <div class="hero-panel">
+        <div class="energy-badge">
+          <span class="pulse-dot"></span>
+          Energy Ops Console
+        </div>
+        <h1 class="hero-title">充电站管理系统</h1>
+        <p class="hero-desc">
+          统一运营后台（PC 优先，手机自适应）。支持站点管理、桩管理、股东与持股关系、股权调整、平台字典与日志审计。
+        </p>
+
+        <div class="hero-grid">
+          <div class="hero-metric">
+            <small>站点总数</small>
+            <strong>28</strong>
+          </div>
+          <div class="hero-metric">
+            <small>充电桩总数</small>
+            <strong>412</strong>
+          </div>
+          <div class="hero-metric">
+            <small>股东主档</small>
+            <strong>36</strong>
+          </div>
+        </div>
+
+        <div class="hero-stage">
+          <div class="stage-line">
+            <span>01. 账号密码登录</span>
+            <strong>已覆盖</strong>
+          </div>
+          <div class="stage-line">
+            <span>02. 站点与股权双主线管理</span>
+            <strong>已覆盖</strong>
+          </div>
+          <div class="stage-line">
+            <span>03. 日志时间线与审计中心</span>
+            <strong>已覆盖</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="login-panel">
+        <div class="panel-kicker">账号密码登录</div>
+        <h2 class="panel-title">登录进入系统</h2>
+        <p class="panel-desc">
+          输入账号与密码登录。系统管理员默认账号为 admin。
+        </p>
+
+        <div class="login-form">
+          <div class="field">
+            <label for="account">账号 / 手机号</label>
+            <input id="account" value="admin" />
+          </div>
+          <div class="field">
+            <label for="password">密码</label>
+            <input id="password" type="password" value="123456" />
+          </div>
+        </div>
+
+        <div class="login-actions">
+          <button class="button button-primary" id="enterAppBtn">进入系统</button>
+          <button class="button button-secondary" id="fillAdminBtn">填充 admin 账号</button>
+          <button class="button button-ghost" id="fillBizBtn">填充业务管理员</button>
+        </div>
+
+        <div class="mock-account">
+          <strong>演示账号</strong><br />
+          系统管理员：`admin / 123456`<br />
+          业务管理员：`13800138000 / 123456`
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="app-shell" id="appShell">
+    <aside class="sidebar">
+      <div class="brand-box">
+        <div class="energy-badge">
+          <span class="pulse-dot"></span>
+          Changsha ZD
+        </div>
+        <h1>长沙众电 · 能源运营中控台</h1>
+        <p>基于 `Vue 3 + Element Plus` 的后台界面方向，强调状态、审计和多实体关系可视化。</p>
+      </div>
+
+      <div class="menu-group">
+        <div class="menu-title">核心页面</div>
+        <button class="menu-item active" data-view="dashboard">
+          <span>首页概览</span>
+          <span class="menu-badge">01</span>
+        </button>
+        <button class="menu-item" data-view="station-list">
+          <span>充电站管理</span>
+          <span class="menu-badge">02</span>
+        </button>
+        <button class="menu-item" data-view="shareholder">
+          <span>股东管理</span>
+          <span class="menu-badge">03</span>
+        </button>
+        <button class="menu-item" data-view="platform">
+          <span>平台管理</span>
+          <span class="menu-badge">04</span>
+        </button>
+        <button class="menu-item" data-view="logs">
+          <span>操作日志</span>
+          <span class="menu-badge">05</span>
+        </button>
+        <button class="menu-item" data-view="users">
+          <span>用户管理</span>
+          <span class="menu-badge">06</span>
+        </button>
+      </div>
+
+    </aside>
+
+    <main class="main">
+      <div class="mobile-hint">缩窄窗口可查看手机端自适应效果。</div>
+
+      <header class="topbar">
+        <div class="topbar-left">
+          <h2 id="pageTitle">首页概览</h2>
+          <p id="pageDesc">站点、桩、股东与审计概览。</p>
+        </div>
+        <div class="topbar-right">
+          <div class="chip">环境：公网部署</div>
+          <div class="chip">前端：Vue 3 + Element Plus</div>
+          <div class="chip">当前角色：系统管理员</div>
+          <div class="avatar">ZD</div>
+        </div>
+      </header>
+
+      <section class="view active" id="view-dashboard">
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <small>充电站总数</small>
+            <div class="metric-value">
+              <strong>28</strong>
+              <span>含停用站点 2 个</span>
+            </div>
+            <div class="metric-footer">本月新增 3 个，最近新增站点为“雨花城际快充港”</div>
+          </div>
+          <div class="metric-card">
+            <small>充电桩总数</small>
+            <div class="metric-value">
+              <strong>412</strong>
+              <span>快充 286 / 慢充 126</span>
+            </div>
+            <div class="metric-footer">运营异常 19 根，停用 8 根</div>
+          </div>
+          <div class="metric-card">
+            <small>股东主档</small>
+            <div class="metric-value">
+              <strong>36</strong>
+              <span>启用 33 / 停用 3</span>
+            </div>
+            <div class="metric-footer">跨站复用股东 11 个，平均每站 2.8 位股东</div>
+          </div>
+          <div class="metric-card">
+            <small>审计事件</small>
+            <div class="metric-value">
+              <strong>184</strong>
+              <span>近 7 日</span>
+            </div>
+            <div class="metric-footer">其中状态变更 47 条，股权调整 12 条</div>
+          </div>
+        </div>
+
+        <div class="dual-grid">
+          <div class="section-card">
+            <div class="section-head">
+              <div>
+                <h3>站点状态分布</h3>
+              </div>
+              <button class="button button-secondary">查看全部站点</button>
+            </div>
+            <div class="status-rings">
+              <div class="status-line">
+                <span>运营中</span>
+                <div class="bar"><span style="width: 68%;"></span></div>
+                <strong>19</strong>
+              </div>
+              <div class="status-line">
+                <span>建设中</span>
+                <div class="bar"><span style="width: 18%; background: linear-gradient(90deg, #64a9ff, #39c8ff);"></span></div>
+                <strong>5</strong>
+              </div>
+              <div class="status-line">
+                <span>签合同</span>
+                <div class="bar"><span style="width: 11%; background: linear-gradient(90deg, #ffbf66, #ffd98a);"></span></div>
+                <strong>2</strong>
+              </div>
+              <div class="status-line">
+                <span>运营异常</span>
+                <div class="bar"><span style="width: 7%; background: linear-gradient(90deg, #ff7d7d, #ffb26b);"></span></div>
+                <strong>2</strong>
+              </div>
+              <div class="status-line">
+                <span>停用</span>
+                <div class="bar"><span style="width: 7%; background: linear-gradient(90deg, #9aa9b8, #c3d0da);"></span></div>
+                <strong>2</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <div class="section-head">
+              <div>
+                <h3>快捷入口</h3>
+              </div>
+            </div>
+            <div class="mini-list">
+              <div class="mini-item">
+                <div>
+                  <strong>新增充电站</strong>
+                  <p>新建站点基础信息并进入详情继续维护。</p>
+                </div>
+                <span class="tag tag-info">主流程</span>
+              </div>
+              <div class="mini-item">
+                <div>
+                  <strong>查看日志中心</strong>
+                  <p>按时间、操作人、对象类型快速过滤审计事件。</p>
+                </div>
+                <span class="tag tag-success">审计</span>
+              </div>
+              <div class="mini-item">
+                <div>
+                  <strong>平台管理</strong>
+                  <p>仅系统管理员可维护平台字典，为站点归属提供统一来源。</p>
+                </div>
+                <span class="tag tag-neutral">系统</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="triple-grid">
+          <div class="table-wrap">
+            <div class="section-head">
+              <div>
+                <h3>最近新增站点</h3>
+              </div>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>站点</th>
+                  <th>平台</th>
+                  <th>状态</th>
+                  <th>联系人</th>
+                </tr>
+              </thead>
+              <tbody id="recentStationsBody"></tbody>
+            </table>
+          </div>
+
+          <div class="timeline-card">
+            <div class="section-head">
+              <div>
+                <h3>最近关键操作</h3>
+              </div>
+            </div>
+            <div class="timeline-list" id="recentTimeline"></div>
+          </div>
+
+          <div class="mobile-quick">
+            <div class="section-head">
+              <div>
+                <h3>手机端策略</h3>
+              </div>
+            </div>
+            <div class="mini-list">
+              <div class="mini-item">
+                <div>
+                  <strong>纵向滚动详情</strong>
+                  <p>站点详情采用单页分区，避免移动端复杂 Tab。</p>
+                </div>
+              </div>
+              <div class="mini-item">
+                <div>
+                  <strong>表格降级卡片</strong>
+                  <p>在小屏幕下，站点和股东列表转为卡片式信息展示。</p>
+                </div>
+              </div>
+              <div class="mini-item">
+                <div>
+                  <strong>保留关键操作</strong>
+                  <p>站点维护、股东维护、股权调整在手机端都能完成。</p>
+                </div>
+              </div>
+            </div>
+            <div class="footer-tip">提示：缩窄浏览器窗口可直接观察移动端布局效果。</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-station-list">
+        <div class="section-card">
+          <div class="section-head">
+            <div>
+              <h3>充电站管理列表</h3>
+            </div>
+            <div class="actions-row">
+              <button class="button button-secondary">导出当前筛选</button>
+              <button class="button button-primary" id="openCreateStationBtn">新增充电站</button>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <input class="span-2" value="可按充电站名称模糊搜索" />
+            <select>
+              <option>全部平台</option>
+              <option>星络平台</option>
+              <option>云快充</option>
+              <option>城市充电云</option>
+            </select>
+            <select>
+              <option>全部状态</option>
+              <option>签合同</option>
+              <option>建设中</option>
+              <option selected>运营中</option>
+              <option>运营异常</option>
+              <option>停用</option>
+            </select>
+            <select>
+              <option>最近更新时间</option>
+              <option>创建时间</option>
+              <option>充电桩数量</option>
+            </select>
+            <button class="button button-secondary">重置筛选</button>
+          </div>
+
+          <div class="table-wrap" style="padding: 0; border: none; background: transparent; box-shadow: none;">
+            <table>
+              <thead>
+                <tr>
+                  <th>站点信息</th>
+                  <th>平台信息</th>
+                  <th>规模</th>
+                  <th>联系人</th>
+                  <th>状态</th>
+                  <th>最后更新</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="stationTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-station-create">
+        <div class="section-card">
+          <div class="section-head">
+            <div>
+              <h3>新增充电站</h3>
+            </div>
+            <div class="actions-row">
+              <button class="button button-secondary" id="cancelCreateStationBtn">取消</button>
+              <button class="button button-primary" id="saveCreateStationBtn">保存并进入详情</button>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="field span-2">
+              <label>充电站名称</label>
+              <input id="createStationName" placeholder="例如：雨花城际快充港" />
+            </div>
+
+            <div class="field">
+              <label>所在平台</label>
+              <select id="createStationPlatform">
+                <option value="星络平台">星络平台</option>
+                <option value="云快充">云快充</option>
+                <option value="城市充电云">城市充电云</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>平台ID（可为空）</label>
+              <input id="createStationPlatformId" placeholder="例如：XL-4301-889" />
+              <div class="helper">同一平台内建议唯一（演示版本不做强校验）。</div>
+            </div>
+
+            <div class="field span-2">
+              <label>地址</label>
+              <input id="createStationAddress" placeholder="例如：长沙市雨花区城际大道南段" />
+            </div>
+
+            <div class="field">
+              <label>联系人</label>
+              <input id="createStationContact" placeholder="例如：张海峰" />
+            </div>
+
+            <div class="field">
+              <label>联系电话</label>
+              <input id="createStationPhone" placeholder="例如：13800138000" />
+            </div>
+
+            <div class="field span-2">
+              <label>初始状态</label>
+              <input value="签合同（默认）" disabled />
+              <div class="helper">保存成功后进入站点详情页，可继续新增充电桩并关联股东。</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-station-detail">
+        <div class="section-stack">
+          <div class="detail-hero">
+            <div class="hero-info">
+              <div class="crumb">
+                <button type="button" id="backToStationListBtn">充电站管理</button>
+                <span>/</span>
+                <span>站点详情</span>
+              </div>
+              <div class="section-head" style="margin-bottom: 10px;">
+                <div>
+                  <h3 id="detailStationName">星城南服务区超级站</h3>
+                  <div class="inline-select" style="margin-top: 10px;">
+                    <label for="stationSwitcher">服务站切换</label>
+                    <select id="stationSwitcher"></select>
+                  </div>
+                </div>
+                <span class="tag tag-success" id="detailStationStatusTag">运营中</span>
+              </div>
+              <p id="detailStationSummary">—</p>
+              <div class="info-grid">
+                <div class="info-card">
+                  <small>系统ID</small>
+                  <strong id="detailStationSystemId">ST-202608-0018</strong>
+                </div>
+                <div class="info-card">
+                  <small>平台</small>
+                  <strong id="detailStationPlatform">星络平台 / XL-4301-889</strong>
+                </div>
+                <div class="info-card">
+                  <small>联系人</small>
+                  <strong id="detailStationContact">张海峰 / 13800138000</strong>
+                </div>
+                <div class="info-card">
+                  <small>地址</small>
+                  <strong id="detailStationAddress">长沙市雨花区城际大道南段</strong>
+                </div>
+                <div class="info-card">
+                  <small>充电桩</small>
+                  <strong id="detailStationScale">22 根 / 46 把枪</strong>
+                </div>
+                <div class="info-card">
+                  <small>持股股东</small>
+                  <strong id="detailStationShareholders">3 位 / 总占比 100%</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="section-card">
+              <div class="section-head">
+                <div>
+                  <h3>分区导航</h3>
+                </div>
+              </div>
+              <div class="section-anchor">
+                <button>基础信息</button>
+                <button>充电桩管理</button>
+                <button>股东信息</button>
+                <button>历史变化</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <div class="section-head">
+              <div>
+                <h3>基础信息分区</h3>
+              </div>
+              <div class="actions-row">
+                <button class="button button-secondary" id="openStationStatusBtn">修改状态</button>
+                <button class="button button-primary" id="openStationEditBtn">编辑基础信息</button>
+              </div>
+            </div>
+            <div class="kpi-strip">
+              <div class="kpi-item"><span>生命周期</span><strong id="detailStationLifecycle">运营中</strong></div>
+              <div class="kpi-item"><span>创建日期</span><strong>2026-06-18</strong></div>
+              <div class="kpi-item"><span>最近修改</span><strong>今天 10:26</strong></div>
+              <div class="kpi-item"><span>平台归属</span><strong id="detailStationPlatformNameOnly">星络平台</strong></div>
+            </div>
+          </div>
+
+          <div class="dual-grid">
+            <div class="section-card">
+              <div class="section-head">
+                <div>
+                  <h3>充电桩管理分区</h3>
+                </div>
+                <button class="button button-primary" id="openPileCreateBtn">新增充电桩</button>
+              </div>
+              <div class="mini-list" id="pileMiniList"></div>
+            </div>
+
+            <div class="section-card">
+              <div class="section-head">
+                <div>
+                  <h3>股东信息分区</h3>
+                </div>
+                <div class="actions-row">
+                  <button class="button button-secondary" id="openLinkShareholderBtn">关联股东</button>
+                  <button class="button button-primary" id="openEquityFromDetailBtn">股权调整</button>
+                </div>
+              </div>
+              <div class="mini-list" id="shareholderMiniList"></div>
+            </div>
+          </div>
+
+          <div class="timeline-card">
+            <div class="section-head">
+              <div>
+                <h3>历史变化时间线</h3>
+              </div>
+            </div>
+            <div class="timeline-list" id="stationTimeline"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-shareholder">
+        <div class="dual-grid">
+          <div class="section-card">
+            <div class="section-head">
+              <div>
+                <h3>股东列表页</h3>
+              </div>
+              <button class="button button-primary">新增股东</button>
+            </div>
+            <div class="toolbar">
+              <input class="span-2" value="按股东名称搜索" />
+              <select>
+                <option>全部状态</option>
+                <option selected>启用</option>
+                <option>停用</option>
+              </select>
+              <select>
+                <option>关联站点数</option>
+                <option>更新时间</option>
+              </select>
+              <button class="button button-secondary">重置筛选</button>
+              <button class="button button-ghost">导出列表</button>
+            </div>
+            <div class="table-wrap" style="padding: 0; border: none; background: transparent; box-shadow: none;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>股东主档</th>
+                    <th>联系人</th>
+                    <th>关联站点</th>
+                    <th>状态</th>
+                    <th>最近变化</th>
+                  </tr>
+                </thead>
+                <tbody id="shareholderTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="timeline-card">
+            <div class="section-head">
+              <div>
+                <h3>股东详情页时间线</h3>
+              </div>
+              <select id="shareholderStationFilter" style="max-width: 220px;"></select>
+            </div>
+            <div class="mini-item" style="margin-bottom: 14px;">
+              <div>
+                <strong id="shareholderDetailName">长沙城新投资有限公司</strong>
+                <p>联系人：刘可 / 13977882211 · 主档状态：启用 · 关联站点：3 个</p>
+              </div>
+              <span class="tag tag-success">启用</span>
+            </div>
+            <div class="timeline-list" id="shareholderTimeline"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-equity">
+        <div class="section-card">
+          <div class="section-head">
+            <div>
+              <h3>股权调整</h3>
+              <p>一次性调整同一站点多个股东占比（总和必须为 100%）。</p>
+            </div>
+            <div class="actions-row">
+              <button class="button button-secondary" id="backFromEquityBtn">返回站点详情</button>
+              <button class="button button-primary" id="saveEquityBtn">保存本次股权调整</button>
+            </div>
+          </div>
+
+          <div class="detail-hero">
+            <div class="hero-info">
+              <div class="panel-kicker">调整对象</div>
+              <h3 id="equityStationName">星城南服务区超级站</h3>
+              <p>当前共有 <strong id="equityShareholderCount">3</strong> 位持股股东。</p>
+              <div class="info-grid">
+                <div class="info-card"><small>当前股东数</small><strong id="equityShareholderCount2">3</strong></div>
+                <div class="info-card"><small>持股中总占比</small><strong>100%</strong></div>
+                <div class="info-card"><small>调整生效方式</small><strong>立即生效</strong></div>
+              </div>
+            </div>
+            <div class="section-card" style="padding: 20px;">
+              <div class="section-head">
+                <div>
+                  <h3>规则提示</h3>
+                  <p>本页保存前会校验“持股中”总占比必须为 100%。</p>
+                </div>
+              </div>
+              <div class="mini-list">
+                <div class="mini-item"><div><strong>规则 1</strong><p>所有“持股中”股东占比总和必须等于 100%。</p></div></div>
+                <div class="mini-item"><div><strong>规则 2</strong><p>当某个股东退出时，必须同步调整其他股东占比。</p></div></div>
+                <div class="mini-item"><div><strong>规则 3</strong><p>保存成功后，将写入站点时间线、股东时间线和全局日志。</p></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-wrap" style="margin-top: 18px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>股东</th>
+                  <th>当前状态</th>
+                  <th>调整前占比</th>
+                  <th>调整后占比</th>
+                  <th>关系状态</th>
+                  <th>说明</th>
+                </tr>
+              </thead>
+              <tbody id="equityTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-platform">
+        <div class="dual-grid">
+          <div class="section-card">
+            <div class="section-head">
+              <div>
+                <h3>平台字典管理</h3>
+                <p>第一期只做基础字典，不出现 API 地址、AppId、密钥等字段。</p>
+              </div>
+              <button class="button button-primary">新增平台</button>
+            </div>
+            <div class="table-wrap" style="padding: 0; border: none; background: transparent; box-shadow: none;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>平台名称</th>
+                    <th>编码</th>
+                    <th>状态</th>
+                    <th>更新时间</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><div class="title-cell"><strong>星络平台</strong><span class="subtitle">用于湖南主运营站点</span></div></td>
+                    <td>XL</td>
+                    <td><span class="tag tag-success">启用</span></td>
+                    <td>2026-08-24 17:20</td>
+                  </tr>
+                  <tr>
+                    <td><div class="title-cell"><strong>云快充</strong><span class="subtitle">用于合作站点映射</span></div></td>
+                    <td>YKC</td>
+                    <td><span class="tag tag-success">启用</span></td>
+                    <td>2026-08-21 10:42</td>
+                  </tr>
+                  <tr>
+                    <td><div class="title-cell"><strong>城市充电云</strong><span class="subtitle">历史平台保留</span></div></td>
+                    <td>CSCD</td>
+                    <td><span class="tag tag-neutral">停用</span></td>
+                    <td>2026-08-10 09:11</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <div class="section-head">
+              <div>
+                <h3>新增 / 编辑平台表单</h3>
+                <p>最小字段集，后续可扩展对接参数。</p>
+              </div>
+            </div>
+            <div class="toolbar" style="grid-template-columns: 1fr;">
+              <div class="field">
+                <label>平台名称</label>
+                <input value="星络平台" />
+              </div>
+              <div class="field">
+                <label>平台编码 / 简称</label>
+                <input value="XL" />
+              </div>
+              <div class="field">
+                <label>状态</label>
+                <select>
+                  <option selected>启用</option>
+                  <option>停用</option>
+                </select>
+              </div>
+            </div>
+            <div class="actions-row">
+              <button class="button button-secondary">取消</button>
+              <button class="button button-primary">保存平台字典</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-logs">
+        <div class="section-card">
+          <div class="section-head">
+            <div>
+              <h3>操作日志中心</h3>
+              <p>用于系统管理员和业务管理员统一查看关键操作审计记录。</p>
+            </div>
+            <button class="button button-secondary">导出日志</button>
+          </div>
+          <div class="toolbar">
+            <select><option>近 7 天</option><option>近 30 天</option><option>今天</option></select>
+            <select><option>全部操作人</option><option>admin</option><option>13800138000</option></select>
+            <select><option>全部对象类型</option><option>充电站</option><option>充电桩</option><option>股东</option><option>持股关系</option><option>平台</option></select>
+            <select><option>全部充电站</option><option>星城南服务区超级站</option><option>雨花城际快充港</option></select>
+            <input value="按对象名称或摘要搜索" />
+            <button class="button button-primary">查询日志</button>
+          </div>
+          <div class="timeline-list" id="logsTimeline"></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-users">
+        <div class="dual-grid">
+          <div class="section-card">
+            <div class="section-head">
+              <div>
+                <h3>业务管理员列表</h3>
+                <p>系统管理员可创建、停用、重置密码，但不处理业务数据。</p>
+              </div>
+              <button class="button button-primary">新增业务管理员</button>
+            </div>
+            <div class="table-wrap" style="padding: 0; border: none; background: transparent; box-shadow: none;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>账号信息</th>
+                    <th>角色</th>
+                    <th>状态</th>
+                    <th>最后登录</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><div class="title-cell"><strong>admin</strong><span class="subtitle">系统管理员</span></div></td>
+                    <td>系统管理员</td>
+                    <td><span class="tag tag-success">启用</span></td>
+                    <td>2026-08-25 09:10</td>
+                  </tr>
+                  <tr>
+                    <td><div class="title-cell"><strong>13800138000</strong><span class="subtitle">业务管理员 · 李丹</span></div></td>
+                    <td>业务管理员</td>
+                    <td><span class="tag tag-success">启用</span></td>
+                    <td>2026-08-25 08:55</td>
+                  </tr>
+                  <tr>
+                    <td><div class="title-cell"><strong>13900139000</strong><span class="subtitle">业务管理员 · 唐凯</span></div></td>
+                    <td>业务管理员</td>
+                    <td><span class="tag tag-neutral">停用</span></td>
+                    <td>2026-08-22 17:30</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <div class="section-head">
+              <div>
+                <h3>新增业务管理员表单</h3>
+                <p>手机号作为登录账号，支持设置初始密码与启用状态。</p>
+              </div>
+            </div>
+            <div class="toolbar" style="grid-template-columns: 1fr;">
+              <div class="field">
+                <label>手机号</label>
+                <input value="13800138000" />
+              </div>
+              <div class="field">
+                <label>姓名</label>
+                <input value="李丹" />
+              </div>
+              <div class="field">
+                <label>初始密码</label>
+                <input value="123456" />
+              </div>
+              <div class="field">
+                <label>账号状态</label>
+                <select>
+                  <option selected>启用</option>
+                  <option>停用</option>
+                </select>
+              </div>
+            </div>
+            <div class="actions-row">
+              <button class="button button-secondary">重置表单</button>
+              <button class="button button-primary">保存业务管理员</button>
+            </div>
+            <div class="footer-tip">提示：正式开发需配合后端完成手机号唯一校验、密码加密和重置密码日志记录。</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- 站点：编辑基础信息 -->
+  <div class="modal" id="stationEditModal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3>编辑站点基础信息</h3>
+        <button class="modal-close" type="button" data-close-modal="stationEditModal">关闭</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="field span-2">
+            <label>充电站名称</label>
+            <input id="editStationName" placeholder="例如：雨花城际快充港" />
+          </div>
+          <div class="field">
+            <label>所在平台</label>
+            <select id="editStationPlatform">
+              <option value="星络平台">星络平台</option>
+              <option value="云快充">云快充</option>
+              <option value="城市充电云">城市充电云</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>平台ID（可为空）</label>
+            <input id="editStationPlatformId" placeholder="例如：XL-4301-889" />
+          </div>
+          <div class="field span-2">
+            <label>地址</label>
+            <input id="editStationAddress" placeholder="例如：长沙市雨花区城际大道南段" />
+          </div>
+          <div class="field">
+            <label>联系人</label>
+            <input id="editStationContact" placeholder="例如：张海峰" />
+          </div>
+          <div class="field">
+            <label>联系电话</label>
+            <input id="editStationPhone" placeholder="例如：13800138000" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="button button-secondary" type="button" data-close-modal="stationEditModal">取消</button>
+        <button class="button button-primary" type="button" id="saveStationEditBtn">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 站点：修改状态 -->
+  <div class="modal" id="stationStatusModal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3>修改站点状态</h3>
+        <button class="modal-close" type="button" data-close-modal="stationStatusModal">关闭</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="field">
+            <label>新状态</label>
+            <select id="editStationStatus">
+              <option value="签合同">签合同</option>
+              <option value="建设中">建设中</option>
+              <option value="运营中">运营中</option>
+              <option value="运营异常">运营异常</option>
+              <option value="停用">停用</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>备注（可选）</label>
+            <input id="editStationStatusNote" placeholder="例如：设备检修中，暂停部分快充服务" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="button button-secondary" type="button" data-close-modal="stationStatusModal">取消</button>
+        <button class="button button-primary" type="button" id="saveStationStatusBtn">保存状态</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 充电桩：新增/编辑 -->
+  <div class="modal" id="pileEditModal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="pileModalTitle">新增充电桩</h3>
+        <button class="modal-close" type="button" data-close-modal="pileEditModal">关闭</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="field">
+            <label>桩编号</label>
+            <input id="editPileNo" disabled />
+          </div>
+          <div class="field">
+            <label>类型</label>
+            <select id="editPileType">
+              <option value="快充">快充</option>
+              <option value="慢充">慢充</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>充电枪数量</label>
+            <input id="editPileGuns" type="number" min="1" placeholder="例如：2" />
+          </div>
+          <div class="field">
+            <label>状态</label>
+            <select id="editPileStatus">
+              <option value="运营中">运营中</option>
+              <option value="运营异常">运营异常</option>
+              <option value="停用">停用</option>
+            </select>
+          </div>
+          <div class="field span-2">
+            <label>备注（可选）</label>
+            <input id="editPileNote" placeholder="例如：B 区 2 号桩，等待维修" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="button button-secondary" type="button" data-close-modal="pileEditModal">取消</button>
+        <button class="button button-primary" type="button" id="savePileBtn">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 股东：关联 -->
+  <div class="modal" id="linkShareholderModal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3>关联股东</h3>
+        <button class="modal-close" type="button" data-close-modal="linkShareholderModal">关闭</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="field span-2">
+            <label>选择股东（主档）</label>
+            <select id="linkShareholderSelect"></select>
+          </div>
+          <div class="field">
+            <label>占股比例（%）</label>
+            <input id="linkShareholderShare" type="number" min="0" max="100" placeholder="例如：20" />
+            <div class="helper">“持股中”股东占比总和最终需为 100%，可通过“股权调整”统一调整。</div>
+          </div>
+          <div class="field">
+            <label>关系状态</label>
+            <select id="linkShareholderRelationStatus">
+              <option value="持股中" selected>持股中</option>
+              <option value="已退出">已退出</option>
+            </select>
+          </div>
+          <div class="field span-2">
+            <label>备注（可选）</label>
+            <input id="linkShareholderNote" placeholder="例如：新增合作方持股关系" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="button button-secondary" type="button" data-close-modal="linkShareholderModal">取消</button>
+        <button class="button button-primary" type="button" id="saveLinkShareholderBtn">确认关联</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Mock 数据集中在一个对象里，方便后续替换为真实接口结构。
+    const mock = {
+      stationList: [
+        { name: "星城南服务区超级站", id: "ST-202608-0018", platform: "星络平台", platformId: "XL-4301-889", piles: 22, guns: 46, contact: "张海峰", phone: "13800138000", status: "运营中", updatedAt: "今天 10:26" },
+        { name: "雨花城际快充港", id: "ST-202608-0019", platform: "云快充", platformId: "YKC-80991", piles: 18, guns: 36, contact: "刘昊", phone: "13711223344", status: "建设中", updatedAt: "今天 09:12" },
+        { name: "芙蓉东智慧能源港", id: "ST-202607-0009", platform: "星络平台", platformId: "XL-4301-772", piles: 26, guns: 54, contact: "周晨", phone: "13699887766", status: "运营异常", updatedAt: "昨天 16:41" },
+        { name: "湘江新城综合补能站", id: "ST-202606-0003", platform: "城市充电云", platformId: "CSCD-3003", piles: 14, guns: 30, contact: "王瑶", phone: "13966110022", status: "停用", updatedAt: "08-21 11:09" }
+      ],
+      piles: [
+        { no: "PL-202608-2041", type: "快充", guns: 2, status: "运营中", note: "双枪一体式，位于 A 区" },
+        { no: "PL-202608-2042", type: "快充", guns: 2, status: "运营异常", note: "B 区 2 号桩，等待维修" },
+        { no: "PL-202608-2043", type: "慢充", guns: 1, status: "运营中", note: "C 区单枪桩" }
+      ],
+      shareholders: [
+        { name: "长沙城新投资有限公司", contact: "刘可", phone: "13977882211", stations: 3, status: "启用", share: "45%" },
+        { name: "湖南高速能源运营有限公司", contact: "陈森", phone: "13677665588", stations: 2, status: "启用", share: "35%" },
+        { name: "长沙交通产业基金", contact: "顾源", phone: "13788990011", stations: 1, status: "启用", share: "20%" }
+      ],
+      recentEvents: [
+        { time: "10:26", actor: "13800138000", type: "状态变更", title: "将“芙蓉东智慧能源港”调整为运营异常", desc: "业务管理员更新了站点状态，备注为“主变压器检修中，暂停部分快充服务”。" },
+        { time: "09:58", actor: "admin", type: "平台维护", title: "新增平台字典“云快充”", desc: "系统管理员新增了平台字典，供站点归属选择使用。" },
+        { time: "09:12", actor: "13800138000", type: "新增站点", title: "新建“雨花城际快充港”", desc: "完成基础信息录入后进入详情页，继续补充充电桩与股东关系。" }
+      ],
+      stationTimeline: [
+        { time: "2026-08-25 10:26", actor: "13800138000", type: "状态变更", title: "站点状态：运营中 → 运营异常", desc: "异常原因备注为“主变压器检修中，部分桩暂停服务”。" },
+        { time: "2026-08-25 09:40", actor: "13800138000", type: "股权调整", title: "完成本轮股权调整", desc: "湖南高速能源运营有限公司占比由 35% 调整为 40%，长沙城新投资有限公司由 45% 调整为 40%。" },
+        { time: "2026-08-24 16:11", actor: "13800138000", type: "新增充电桩", title: "新增充电桩 PL-202608-2043", desc: "新增 1 根慢充桩，1 把枪，状态为运营中。" },
+        { time: "2026-08-23 14:20", actor: "13800138000", type: "新增股东关系", title: "新增股东“长沙交通产业基金”", desc: "建立站点持股关系，占比 20%，状态为持股中。" }
+      ],
+      shareholderTimeline: [
+        { time: "2026-08-25 09:40", actor: "13800138000", type: "股权调整", title: "在“星城南服务区超级站”占比调整为 40%", desc: "本次调整后总持股仍为 100%，立即生效。" },
+        { time: "2026-08-20 11:08", actor: "13800138000", type: "新增持股关系", title: "关联到“雨花城际快充港”", desc: "新增持股关系，占比 30%，状态为持股中。" },
+        { time: "2026-08-18 15:35", actor: "13800138000", type: "主档变更", title: "更新联系人电话", desc: "联系电话由 13977882200 更新为 13977882211。" }
+      ],
+      logs: [
+        { time: "2026-08-25 10:26", actor: "13800138000", role: "业务管理员", type: "充电站", title: "修改站点状态", desc: "对象：芙蓉东智慧能源港 · 修改前：运营中 · 修改后：运营异常" },
+        { time: "2026-08-25 09:58", actor: "admin", role: "系统管理员", type: "平台", title: "新增平台字典", desc: "对象：云快充 · 状态：启用" },
+        { time: "2026-08-25 09:40", actor: "13800138000", role: "业务管理员", type: "持股关系", title: "执行股权调整", desc: "对象：星城南服务区超级站 · 涉及 3 位股东 · 调整后总占比 100%" },
+        { time: "2026-08-24 18:20", actor: "admin", role: "系统管理员", type: "用户", title: "重置业务管理员密码", desc: "对象：13900139000 · 原因：账号恢复使用" }
+      ]
+    };
+
+    const viewMeta = {
+      dashboard: { title: "首页概览", desc: "站点、桩、股东与审计概览。" },
+      "station-list": { title: "充电站管理", desc: "查询、筛选、维护站点基础信息并进入详情。" },
+      "station-create": { title: "新增充电站", desc: "保存后进入详情继续新增充电桩和股东关系。" },
+      "station-detail": { title: "站点详情", desc: "基础信息、充电桩、股东与时间线。" },
+      shareholder: { title: "股东管理", desc: "股东主档与跨站事件时间线。" },
+      equity: { title: "股权调整", desc: "一次性调整多个股东占比（总和=100%）。" },
+      platform: { title: "平台管理", desc: "平台字典维护。" },
+      logs: { title: "操作日志", desc: "全局审计事件查询与详情。" },
+      users: { title: "用户管理", desc: "业务管理员账号维护与重置密码。" }
+    };
+
+    const state = {
+      selectedStationId: "ST-202608-0018",
+      dialogOpen: null,
+      dialogDirty: false,
+      // 充电桩编辑上下文
+      editingPileNo: null,
+      // 股权调整上下文
+      pendingExitShareholderName: null,
+      // 股东时间线（按股东主档维度）
+      shareholderTimelineByName: {},
+      selectedShareholderName: null,
+      selectedShareholderStationId: "ALL",
+      // 数据按站点隔离（更贴近真实系统）
+      pilesByStationId: {},
+      relationsByStationId: {},
+      timelineByStationId: {}
+    };
+
+    function pad(number, width) {
+      const text = String(number);
+      return text.length >= width ? text : "0".repeat(width - text.length) + text;
+    }
+
+    function genStationSystemId() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = pad(now.getMonth() + 1, 2);
+      const seq = pad(Math.floor(Math.random() * 9000) + 1000, 4);
+      return `ST-${y}${m}-${seq}`;
+    }
+
+    function genPileNo() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = pad(now.getMonth() + 1, 2);
+      const seq = pad(Math.floor(Math.random() * 9000) + 1000, 4);
+      return `PL-${y}${m}-${seq}`;
+    }
+
+    function nowText() {
+      const now = new Date();
+      return `${now.getFullYear()}-${pad(now.getMonth() + 1, 2)}-${pad(now.getDate(), 2)} ${pad(now.getHours(), 2)}:${pad(now.getMinutes(), 2)}`;
+    }
+
+    function ensureStationData(stationId) {
+      if (!state.pilesByStationId[stationId]) {
+        // 默认只给第一个站点填充示例桩，其它站点为空，更贴近真实维护过程
+        state.pilesByStationId[stationId] = stationId === "ST-202608-0018" ? mock.piles.map(item => ({ ...item })) : [];
+      }
+      if (!state.relationsByStationId[stationId]) {
+        state.relationsByStationId[stationId] = stationId === "ST-202608-0018"
+          ? mock.shareholders.map(item => ({
+            name: item.name,
+            contact: item.contact,
+            phone: item.phone,
+            share: item.share,
+            relationStatus: "持股中"
+          }))
+          : [];
+      }
+      if (!state.timelineByStationId[stationId]) {
+        state.timelineByStationId[stationId] = stationId === "ST-202608-0018" ? mock.stationTimeline.map(item => ({ ...item })) : [];
+      }
+    }
+
+    function ensureShareholderData() {
+      if (Object.keys(state.shareholderTimelineByName).length) return;
+      mock.shareholders.forEach(item => {
+        state.shareholderTimelineByName[item.name] = [];
+      });
+      // 默认选中第一位股东
+      state.selectedShareholderName = mock.shareholders[0]?.name || null;
+      if (state.selectedShareholderName) {
+        state.shareholderTimelineByName[state.selectedShareholderName] = mock.shareholderTimeline.map(item => ({
+          ...item,
+          stationId: "ST-202608-0018",
+          stationName: "星城南服务区超级站"
+        }));
+      }
+    }
+
+    function getSelectedStation() {
+      return mock.stationList.find(item => item.id === state.selectedStationId) || mock.stationList[0];
+    }
+
+    function countShareholders(stationId) {
+      ensureStationData(stationId);
+      return state.relationsByStationId[stationId].filter(item => item.relationStatus === "持股中").length;
+    }
+
+    function sumSharePercent(stationId) {
+      ensureStationData(stationId);
+      return state.relationsByStationId[stationId]
+        .filter(item => item.relationStatus === "持股中")
+        .reduce((acc, item) => acc + Number(String(item.share || "0").replace("%", "")), 0);
+    }
+
+    function syncStationScale(stationId) {
+      ensureStationData(stationId);
+      const station = mock.stationList.find(item => item.id === stationId);
+      if (!station) return;
+      const piles = state.pilesByStationId[stationId];
+      station.piles = piles.length;
+      station.guns = piles.reduce((acc, item) => acc + Number(item.guns || 0), 0);
+    }
+
+    function markDialogDirty() {
+      state.dialogDirty = true;
+    }
+
+    function canNavigateOrSwitch() {
+      if (!state.dialogOpen) return true;
+      alert("当前有未完成的编辑，请先保存或取消后再切换。");
+      return false;
+    }
+
+    function openModal(modalId) {
+      state.dialogOpen = modalId;
+      state.dialogDirty = false;
+      const modal = document.getElementById(modalId);
+      modal.classList.add("is-open");
+      modal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeModal(modalId) {
+      const modal = document.getElementById(modalId);
+      modal.classList.remove("is-open");
+      modal.setAttribute("aria-hidden", "true");
+      if (state.dialogOpen === modalId) {
+        state.dialogOpen = null;
+        state.dialogDirty = false;
+      }
+    }
+
+    function bindModalClose() {
+      document.querySelectorAll("[data-close-modal]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          closeModal(btn.dataset.closeModal);
+        });
+      });
+      // 生产级交互：点击遮罩层空白区域不关闭弹窗，避免误操作。
+      // 仅允许通过“关闭/取消/保存”等明确动作关闭（本原型由 data-close-modal 或业务保存逻辑负责关闭）。
+    }
+
+    function statusTag(status) {
+      if (["运营中", "启用", "持股中"].includes(status)) return "tag-success";
+      if (["建设中", "签合同"].includes(status)) return "tag-info";
+      if (["运营异常"].includes(status)) return "tag-danger";
+      if (["停用", "已退出"].includes(status)) return "tag-neutral";
+      return "tag-warning";
+    }
+
+    function createTimeline(items) {
+      return items.map(item => `
+        <div class="timeline-item">
+          <div class="timeline-meta">
+            <span>${item.time}</span>
+            <span>${item.actor}</span>
+            <span>${item.type}</span>
+          </div>
+          <div class="timeline-title">${item.title}</div>
+          <div class="timeline-desc">${item.desc}</div>
+        </div>
+      `).join("");
+    }
+
+    function render() {
+      document.getElementById("recentStationsBody").innerHTML = mock.stationList.slice(0, 3).map(item => `
+        <tr>
+          <td>
+            <div class="title-cell">
+              <strong>${item.name}</strong>
+              <span class="subtitle">${item.id}</span>
+            </div>
+          </td>
+          <td>${item.platform}</td>
+          <td><span class="tag ${statusTag(item.status)}">${item.status}</span></td>
+          <td>${item.contact}</td>
+        </tr>
+      `).join("");
+
+      document.getElementById("stationTableBody").innerHTML = mock.stationList.map(item => `
+        <tr>
+          <td>
+            <div class="title-cell">
+              <strong>${item.name}</strong>
+              <span class="subtitle">${item.id}</span>
+            </div>
+          </td>
+          <td>
+            <div class="title-cell">
+              <strong>${item.platform}</strong>
+              <span class="subtitle">${item.platformId}</span>
+            </div>
+          </td>
+          <td>${item.piles} 根桩 / ${item.guns} 把枪</td>
+          <td>
+            <div class="title-cell">
+              <strong>${item.contact}</strong>
+              <span class="subtitle">${item.phone}</span>
+            </div>
+          </td>
+          <td><span class="tag ${statusTag(item.status)}">${item.status}</span></td>
+          <td>${item.updatedAt}</td>
+          <td>
+            <button class="button button-ghost open-station-detail-btn" data-station-id="${item.id}" style="padding: 10px 14px;">查看详情</button>
+          </td>
+        </tr>
+      `).join("");
+
+      document.getElementById("shareholderTableBody").innerHTML = mock.shareholders.map(item => `
+        <tr>
+          <td>
+            <div class="title-cell">
+              <strong>${item.name}</strong>
+              <span class="subtitle">独立主档实体</span>
+            </div>
+          </td>
+          <td>${item.contact} / ${item.phone}</td>
+          <td>${item.stations} 个站点</td>
+          <td><span class="tag ${statusTag(item.status)}">${item.status}</span></td>
+          <td>今天 09:40</td>
+        </tr>
+      `).join("");
+
+      document.getElementById("recentTimeline").innerHTML = createTimeline(mock.recentEvents);
+      document.getElementById("logsTimeline").innerHTML = createTimeline(mock.logs);
+
+      document.querySelectorAll(".open-station-detail-btn").forEach(button => {
+        button.addEventListener("click", () => {
+          state.selectedStationId = button.dataset.stationId;
+          renderStationDetail();
+          switchView("station-detail");
+        });
+      });
+    }
+
+    function renderStationDetail() {
+      const station = getSelectedStation();
+      if (!station) return;
+      ensureStationData(station.id);
+      syncStationScale(station.id);
+
+      const platformText = station.platformId ? `${station.platform} / ${station.platformId}` : `${station.platform} / -`;
+      const contactText = `${station.contact || "-"} / ${station.phone || "-"}`;
+      const scaleText = `${station.piles || 0} 根 / ${station.guns || 0} 把枪`;
+
+      const statusEl = document.getElementById("detailStationStatusTag");
+      statusEl.className = `tag ${statusTag(station.status)}`;
+      statusEl.textContent = station.status;
+
+      document.getElementById("detailStationName").textContent = station.name;
+      document.getElementById("detailStationSystemId").textContent = station.id;
+      document.getElementById("detailStationPlatform").textContent = platformText;
+      document.getElementById("detailStationPlatformNameOnly").textContent = station.platform;
+      document.getElementById("detailStationContact").textContent = contactText;
+      document.getElementById("detailStationAddress").textContent = station.address || "-";
+      document.getElementById("detailStationScale").textContent = scaleText;
+      document.getElementById("detailStationLifecycle").textContent = station.status;
+
+      const shareholderCount = countShareholders(station.id);
+      const shareSum = sumSharePercent(station.id);
+      document.getElementById("detailStationShareholders").textContent = `${shareholderCount} 位 / 持股中合计 ${shareSum}%`;
+
+      document.getElementById("detailStationSummary").textContent =
+        `站点状态：${station.status} · 平台：${station.platform} · 最近更新：${station.updatedAt}`;
+
+      renderStationSwitcher();
+
+      // 新站点：默认展示空列表与“已创建”事件，更接近真实业务流程
+      if (station.isNew) {
+        document.getElementById("pileMiniList").innerHTML = `<div class="empty-card">暂无充电桩，点击右上角“新增充电桩”开始维护。</div>`;
+        document.getElementById("shareholderMiniList").innerHTML = `<div class="empty-card">暂无股东关系，点击“关联股东”或进入“股权调整”进行配置。</div>`;
+        document.getElementById("stationTimeline").innerHTML = createTimeline([
+          { time: station.createdAt || "刚刚", actor: "13800138000", type: "新增站点", title: `新建站点“${station.name}”`, desc: "已保存基础信息，可继续新增充电桩并关联股东。" }
+        ]);
+        return;
+      }
+
+      renderPiles();
+      renderRelations();
+      document.getElementById("stationTimeline").innerHTML = createTimeline(state.timelineByStationId[station.id]);
+    }
+
+    function percentToNumber(value) {
+      if (typeof value === "number") return value;
+      const text = String(value || "").trim().replace("%", "");
+      const num = Number(text);
+      return Number.isFinite(num) ? num : 0;
+    }
+
+    function numberToPercent(value) {
+      const num = Number(value);
+      if (!Number.isFinite(num)) return "0%";
+      return `${num}%`;
+    }
+
+    function renderStationSwitcher() {
+      const select = document.getElementById("stationSwitcher");
+      if (!select) return;
+      const currentValue = select.value;
+      select.innerHTML = mock.stationList.map(item => {
+        const label = `${item.name}（${item.id}）`;
+        return `<option value="${item.id}">${label}</option>`;
+      }).join("");
+      select.value = state.selectedStationId;
+      // 防止重复绑定：先移除再绑
+      select.onchange = null;
+      select.addEventListener("change", () => {
+        if (!canNavigateOrSwitch()) {
+          select.value = state.selectedStationId;
+          return;
+        }
+        state.selectedStationId = select.value;
+        renderStationDetail();
+      });
+      // 若之前因为 DOM 重建导致值丢失，则恢复
+      if (currentValue && currentValue !== select.value) {
+        select.value = state.selectedStationId;
+      }
+    }
+
+    function renderPiles() {
+      const station = getSelectedStation();
+      ensureStationData(station.id);
+      const piles = state.pilesByStationId[station.id];
+
+      if (!piles.length) {
+        document.getElementById("pileMiniList").innerHTML = `<div class="empty-card">暂无充电桩，点击右上角“新增充电桩”开始维护。</div>`;
+        return;
+      }
+
+      document.getElementById("pileMiniList").innerHTML = piles.map(item => `
+        <div class="mini-item">
+          <div>
+            <strong>${item.no}</strong>
+            <p>${item.type} · ${item.guns} 把枪 · ${item.note || "-"}</p>
+          </div>
+          <div class="actions-row" style="gap: 8px;">
+            <span class="tag ${statusTag(item.status)}">${item.status}</span>
+            <button class="button button-ghost pile-edit-btn" data-pile-no="${item.no}" style="padding: 8px 12px;">编辑</button>
+            <button class="button button-ghost pile-status-btn" data-pile-no="${item.no}" style="padding: 8px 12px;">改状态</button>
+          </div>
+        </div>
+      `).join("");
+
+      document.querySelectorAll(".pile-edit-btn").forEach(btn => {
+        btn.addEventListener("click", () => openPileModal(btn.dataset.pileNo, "edit"));
+      });
+      document.querySelectorAll(".pile-status-btn").forEach(btn => {
+        btn.addEventListener("click", () => openPileModal(btn.dataset.pileNo, "status"));
+      });
+    }
+
+    function renderRelations() {
+      const station = getSelectedStation();
+      ensureStationData(station.id);
+      const relations = state.relationsByStationId[station.id];
+
+      if (!relations.length) {
+        document.getElementById("shareholderMiniList").innerHTML = `<div class="empty-card">暂无股东关系，点击“关联股东”或进入“股权调整”进行配置。</div>`;
+        return;
+      }
+
+      document.getElementById("shareholderMiniList").innerHTML = relations.map(item => `
+        <div class="mini-item">
+          <div>
+            <strong>${item.name}</strong>
+            <p>联系人：${item.contact} · 电话：${item.phone} · 当前占比：${item.share}</p>
+          </div>
+          <div class="actions-row" style="gap: 8px;">
+            <span class="tag ${statusTag(item.relationStatus)}">${item.relationStatus}</span>
+            ${item.relationStatus === "持股中" ? `<button class="button button-ghost relation-exit-btn" data-name="${item.name}" style="padding: 8px 12px;">退股</button>` : ``}
+          </div>
+        </div>
+      `).join("");
+
+      document.querySelectorAll(".relation-exit-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const name = btn.dataset.name;
+          if (!confirm(`股东“${name}”退股后，需要通过“股权调整”将其占比重新分配，才能保持总和=100%。是否现在进入股权调整？`)) return;
+          state.pendingExitShareholderName = name;
+          switchView("equity");
+        });
+      });
+    }
+
+    function renderEquity() {
+      const station = getSelectedStation();
+      if (!station) return;
+      const count = station.isNew ? 0 : countShareholders(station.id);
+      document.getElementById("equityStationName").textContent = station.name;
+      document.getElementById("equityShareholderCount").textContent = String(count);
+      document.getElementById("equityShareholderCount2").textContent = String(count);
+
+      renderEquityTable();
+    }
+
+    function renderEquityTable() {
+      const station = getSelectedStation();
+      ensureStationData(station.id);
+
+      const relations = state.relationsByStationId[station.id];
+      const tbody = document.getElementById("equityTableBody");
+      if (!tbody) return;
+
+      if (!relations.length) {
+        tbody.innerHTML = `<tr><td colspan="6"><div class="empty-card">暂无股东关系，请先在站点详情页“关联股东”。</div></td></tr>`;
+        state.pendingExitShareholderName = null;
+        return;
+      }
+
+      tbody.innerHTML = relations.map(item => {
+        const master = mock.shareholders.find(s => s.name === item.name);
+        const masterStatus = master?.status || "启用";
+        const before = percentToNumber(item.share);
+        const isPendingExit = state.pendingExitShareholderName && state.pendingExitShareholderName === item.name;
+        const relationStatus = isPendingExit ? "已退出" : item.relationStatus;
+        const afterDefault = relationStatus === "已退出" ? 0 : before;
+
+        return `
+          <tr data-name="${item.name}">
+            <td>
+              <div class="title-cell">
+                <strong>${item.name}</strong>
+                <span class="subtitle">联系人：${item.contact}</span>
+              </div>
+            </td>
+            <td><span class="tag ${statusTag(masterStatus)}">${masterStatus}</span></td>
+            <td class="equity-before">${numberToPercent(before)}</td>
+            <td>
+              <input class="equity-after" value="${afterDefault}" style="max-width: 120px;" />
+            </td>
+            <td>
+              <select class="equity-relation-status" style="max-width: 150px;">
+                <option value="持股中" ${relationStatus === "持股中" ? "selected" : ""}>持股中</option>
+                <option value="已退出" ${relationStatus === "已退出" ? "selected" : ""}>已退出</option>
+              </select>
+            </td>
+            <td class="equity-note">—</td>
+          </tr>
+        `;
+      }).join("");
+
+      // 清除一次性预置
+      state.pendingExitShareholderName = null;
+
+      // 绑定行内逻辑：退出时锁定占比、自动提示
+      tbody.querySelectorAll("tr").forEach(row => {
+        const before = percentToNumber(row.querySelector(".equity-before")?.textContent || 0);
+        const afterInput = row.querySelector(".equity-after");
+        const statusSelect = row.querySelector(".equity-relation-status");
+        const noteTd = row.querySelector(".equity-note");
+
+        function syncRow() {
+          const relationStatus = statusSelect.value;
+          if (relationStatus === "已退出") {
+            afterInput.value = "0";
+            afterInput.disabled = true;
+            noteTd.textContent = "退出持股（请同步分配占比）";
+            return;
+          }
+          afterInput.disabled = false;
+          const after = percentToNumber(afterInput.value);
+          const diff = after - before;
+          if (!diff) noteTd.textContent = "本次不变";
+          else noteTd.textContent = diff > 0 ? `本次增加 ${diff}%` : `本次减少 ${Math.abs(diff)}%`;
+        }
+
+        statusSelect.addEventListener("change", syncRow);
+        afterInput.addEventListener("input", syncRow);
+        syncRow();
+      });
+    }
+
+    function renderShareholderDetail() {
+      ensureShareholderData();
+      const name = state.selectedShareholderName;
+      if (!name) return;
+
+      document.getElementById("shareholderDetailName").textContent = name;
+
+      const filterSelect = document.getElementById("shareholderStationFilter");
+      if (filterSelect) {
+        filterSelect.innerHTML = [
+          `<option value="ALL">全部充电站</option>`,
+          ...mock.stationList.map(s => `<option value="${s.id}">${s.name}</option>`)
+        ].join("");
+        filterSelect.value = state.selectedShareholderStationId;
+        filterSelect.onchange = null;
+        filterSelect.addEventListener("change", () => {
+          state.selectedShareholderStationId = filterSelect.value;
+          renderShareholderDetail();
+        });
+      }
+
+      const allEvents = state.shareholderTimelineByName[name] || [];
+      const filtered = state.selectedShareholderStationId === "ALL"
+        ? allEvents
+        : allEvents.filter(item => item.stationId === state.selectedShareholderStationId);
+
+      // 标题里标识站点，更直观
+      const normalized = filtered.map(item => ({
+        ...item,
+        title: item.stationName ? `【${item.stationName}】${item.title}` : item.title
+      }));
+
+      document.getElementById("shareholderTimeline").innerHTML = createTimeline(normalized);
+    }
+
+    // 这里用简单的视图切换模拟多页面原型，正式开发时将映射为真实路由页面。
+    function switchView(viewKey) {
+      // 子页面不单独占用菜单高亮，保持父级模块高亮更贴近生产后台体验
+      const menuKey = (viewKey === "station-detail" || viewKey === "station-create" || viewKey === "equity")
+        ? "station-list"
+        : viewKey;
+
+      document.querySelectorAll(".menu-item").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.view === menuKey);
+      });
+
+      document.querySelectorAll(".view").forEach(view => {
+        view.classList.toggle("active", view.id === `view-${viewKey}`);
+      });
+
+      const meta = viewMeta[viewKey];
+      if (meta) {
+        document.getElementById("pageTitle").textContent = meta.title;
+        document.getElementById("pageDesc").textContent = meta.desc;
+      }
+
+      if (viewKey === "equity") {
+        renderEquity();
+      }
+      if (viewKey === "shareholder") {
+        renderShareholderDetail();
+      }
+    }
+
+    document.querySelectorAll(".menu-item").forEach(btn => {
+      btn.addEventListener("click", () => switchView(btn.dataset.view));
+    });
+
+    document.getElementById("backToStationListBtn").addEventListener("click", () => {
+      if (!canNavigateOrSwitch()) return;
+      switchView("station-list");
+    });
+
+    document.getElementById("openCreateStationBtn").addEventListener("click", () => {
+      // 默认填充部分内容，便于演示（可直接清空后填写）
+      document.getElementById("createStationName").value = "";
+      document.getElementById("createStationPlatform").value = "云快充";
+      document.getElementById("createStationPlatformId").value = "";
+      document.getElementById("createStationAddress").value = "";
+      document.getElementById("createStationContact").value = "";
+      document.getElementById("createStationPhone").value = "";
+      switchView("station-create");
+    });
+
+    document.getElementById("cancelCreateStationBtn").addEventListener("click", () => {
+      switchView("station-list");
+    });
+
+    document.getElementById("saveCreateStationBtn").addEventListener("click", () => {
+      const name = document.getElementById("createStationName").value.trim();
+      const platform = document.getElementById("createStationPlatform").value;
+      const platformId = document.getElementById("createStationPlatformId").value.trim();
+      const address = document.getElementById("createStationAddress").value.trim();
+      const contact = document.getElementById("createStationContact").value.trim();
+      const phone = document.getElementById("createStationPhone").value.trim();
+
+      if (!name) {
+        alert("请填写充电站名称");
+        return;
+      }
+
+      const id = genStationSystemId();
+      const now = new Date();
+      const createdAt = `${now.getFullYear()}-${pad(now.getMonth() + 1, 2)}-${pad(now.getDate(), 2)} ${pad(now.getHours(), 2)}:${pad(now.getMinutes(), 2)}`;
+
+      const newStation = {
+        name,
+        id,
+        platform,
+        platformId,
+        piles: 0,
+        guns: 0,
+        contact,
+        phone,
+        address,
+        status: "签合同",
+        updatedAt: "刚刚",
+        isNew: true,
+        createdAt
+      };
+
+      mock.stationList.unshift(newStation);
+      state.selectedStationId = id;
+      render();
+      renderStationDetail();
+      switchView("station-detail");
+    });
+
+    document.getElementById("openEquityFromDetailBtn").addEventListener("click", () => {
+      if (!canNavigateOrSwitch()) return;
+      switchView("equity");
+    });
+
+    document.getElementById("backFromEquityBtn").addEventListener("click", () => {
+      if (!canNavigateOrSwitch()) return;
+      renderStationDetail();
+      switchView("station-detail");
+    });
+
+    document.getElementById("saveEquityBtn").addEventListener("click", () => {
+      const station = getSelectedStation();
+      ensureStationData(station.id);
+      ensureShareholderData();
+
+      const tbody = document.getElementById("equityTableBody");
+      if (!tbody) return;
+
+      const rows = Array.from(tbody.querySelectorAll("tr[data-name]"));
+      if (!rows.length) return;
+
+      const nextRelations = [];
+      let sum = 0;
+      let hasExit = false;
+
+      rows.forEach(row => {
+        const name = row.dataset.name;
+        const relationStatus = row.querySelector(".equity-relation-status")?.value || "持股中";
+        const after = relationStatus === "已退出" ? 0 : percentToNumber(row.querySelector(".equity-after")?.value);
+        const before = percentToNumber(row.querySelector(".equity-before")?.textContent);
+        if (relationStatus === "持股中") sum += after;
+        if (relationStatus === "已退出") hasExit = true;
+
+        nextRelations.push({ name, relationStatus, after, before });
+      });
+
+      // 校验：持股中必须合计 100
+      if (sum !== 100) {
+        alert(`持股中占比合计必须为 100%，当前为 ${sum}%。请调整后再保存。`);
+        return;
+      }
+
+      const relations = state.relationsByStationId[station.id];
+      const changedPairs = [];
+
+      nextRelations.forEach(item => {
+        const relation = relations.find(r => r.name === item.name);
+        if (!relation) return;
+        const beforeShare = percentToNumber(relation.share);
+        const beforeStatus = relation.relationStatus;
+
+        relation.relationStatus = item.relationStatus;
+        relation.share = numberToPercent(item.after);
+
+        if (beforeShare !== item.after || beforeStatus !== item.relationStatus) {
+          changedPairs.push({ name: item.name, from: beforeShare, to: item.after, fromStatus: beforeStatus, toStatus: item.relationStatus });
+        }
+      });
+
+      // 写入站点时间线（摘要）
+      const summary = changedPairs.length
+        ? changedPairs.map(p => `${p.name} ${p.from}%→${p.to}%${p.fromStatus !== p.toStatus ? `（${p.fromStatus}→${p.toStatus}）` : ""}`).join("；")
+        : "占比未变化";
+
+      state.timelineByStationId[station.id].unshift({
+        time: nowText(),
+        actor: "13800138000",
+        type: "股权调整",
+        title: "完成本轮股权调整",
+        desc: summary
+      });
+
+      // 写入股东时间线（每个股东一条）
+      changedPairs.forEach(p => {
+        if (!state.shareholderTimelineByName[p.name]) state.shareholderTimelineByName[p.name] = [];
+        state.shareholderTimelineByName[p.name].unshift({
+          time: nowText(),
+          actor: "13800138000",
+          type: "股权调整",
+          title: p.toStatus === "已退出" ? `退出持股（原占比 ${p.from}%）` : `占比调整为 ${p.to}%`,
+          desc: p.toStatus === "已退出" ? "已退出该站点持股关系" : `调整前：${p.from}% · 调整后：${p.to}%`,
+          stationId: station.id,
+          stationName: station.name
+        });
+      });
+
+      // 写入全局日志（示例）
+      mock.logs.unshift({
+        time: nowText(),
+        actor: "13800138000",
+        role: "业务管理员",
+        type: "持股关系",
+        title: "执行股权调整",
+        desc: `对象：${station.name} · 涉及 ${nextRelations.length} 位股东 · 持股中总占比 100%${hasExit ? " · 含股东退出" : ""}`
+      });
+
+      station.updatedAt = "刚刚";
+      render();
+      renderStationDetail();
+      switchView("station-detail");
+      alert("股权调整已保存");
+    });
+
+    document.getElementById("openStationEditBtn").addEventListener("click", () => {
+      const station = getSelectedStation();
+      document.getElementById("editStationName").value = station.name || "";
+      document.getElementById("editStationPlatform").value = station.platform || "星络平台";
+      document.getElementById("editStationPlatformId").value = station.platformId || "";
+      document.getElementById("editStationAddress").value = station.address || "";
+      document.getElementById("editStationContact").value = station.contact || "";
+      document.getElementById("editStationPhone").value = station.phone || "";
+      openModal("stationEditModal");
+    });
+
+    document.getElementById("saveStationEditBtn").addEventListener("click", () => {
+      const station = getSelectedStation();
+      const name = document.getElementById("editStationName").value.trim();
+      if (!name) {
+        alert("请填写充电站名称");
+        return;
+      }
+      station.name = name;
+      station.platform = document.getElementById("editStationPlatform").value;
+      station.platformId = document.getElementById("editStationPlatformId").value.trim();
+      station.address = document.getElementById("editStationAddress").value.trim();
+      station.contact = document.getElementById("editStationContact").value.trim();
+      station.phone = document.getElementById("editStationPhone").value.trim();
+      station.updatedAt = "刚刚";
+      // 写入时间线（示例）
+      ensureStationData(station.id);
+      state.timelineByStationId[station.id].unshift({
+        time: nowText(),
+        actor: "13800138000",
+        type: "修改站点",
+        title: `更新站点基础信息`,
+        desc: `站点：${station.name}`
+      });
+      render();
+      renderStationDetail();
+      closeModal("stationEditModal");
+    });
+
+    document.getElementById("openStationStatusBtn").addEventListener("click", () => {
+      const station = getSelectedStation();
+      document.getElementById("editStationStatus").value = station.status || "签合同";
+      document.getElementById("editStationStatusNote").value = "";
+      openModal("stationStatusModal");
+    });
+
+    document.getElementById("saveStationStatusBtn").addEventListener("click", () => {
+      const station = getSelectedStation();
+      const from = station.status;
+      const to = document.getElementById("editStationStatus").value;
+      const note = document.getElementById("editStationStatusNote").value.trim();
+      station.status = to;
+      station.updatedAt = "刚刚";
+      ensureStationData(station.id);
+      state.timelineByStationId[station.id].unshift({
+        time: nowText(),
+        actor: "13800138000",
+        type: "状态变更",
+        title: `站点状态：${from} → ${to}`,
+        desc: note ? `备注：${note}` : "—"
+      });
+      render();
+      renderStationDetail();
+      closeModal("stationStatusModal");
+    });
+
+    function openPileModal(pileNo, mode) {
+      const station = getSelectedStation();
+      ensureStationData(station.id);
+      const piles = state.pilesByStationId[station.id];
+
+      const isCreate = !pileNo;
+      const pile = isCreate ? null : piles.find(item => item.no === pileNo);
+      if (!isCreate && !pile) return;
+
+      state.editingPileNo = isCreate ? null : pileNo;
+      document.getElementById("pileModalTitle").textContent = isCreate
+        ? "新增充电桩"
+        : (mode === "status" ? "修改充电桩状态" : "编辑充电桩");
+
+      const generatedNo = isCreate ? genPileNo() : pile.no;
+      document.getElementById("editPileNo").value = generatedNo;
+      document.getElementById("editPileType").value = isCreate ? "快充" : pile.type;
+      document.getElementById("editPileGuns").value = isCreate ? 2 : pile.guns;
+      document.getElementById("editPileStatus").value = isCreate ? "运营中" : pile.status;
+      document.getElementById("editPileNote").value = isCreate ? "" : (pile.note || "");
+
+      // 改状态模式：锁定除状态/备注外的字段，更贴近真实系统
+      const lock = mode === "status";
+      document.getElementById("editPileType").disabled = lock;
+      document.getElementById("editPileGuns").disabled = lock;
+
+      openModal("pileEditModal");
+    }
+
+    document.getElementById("openPileCreateBtn").addEventListener("click", () => {
+      openPileModal(null, "create");
+    });
+
+    document.getElementById("savePileBtn").addEventListener("click", () => {
+      const station = getSelectedStation();
+      ensureStationData(station.id);
+      const piles = state.pilesByStationId[station.id];
+
+      const no = document.getElementById("editPileNo").value;
+      const type = document.getElementById("editPileType").value;
+      const guns = Number(document.getElementById("editPileGuns").value);
+      const status = document.getElementById("editPileStatus").value;
+      const note = document.getElementById("editPileNote").value.trim();
+
+      if (!guns || guns < 1) {
+        alert("请填写充电枪数量（>=1）");
+        return;
+      }
+
+      const existed = piles.find(item => item.no === no);
+      const isCreate = !existed;
+      const beforeStatus = existed ? existed.status : null;
+
+      if (isCreate) {
+        piles.unshift({ no, type, guns, status, note });
+        state.timelineByStationId[station.id].unshift({
+          time: nowText(),
+          actor: "13800138000",
+          type: "新增充电桩",
+          title: `新增充电桩 ${no}`,
+          desc: `${type} · ${guns} 把枪 · 状态：${status}`
+        });
+      } else {
+        existed.type = type;
+        existed.guns = guns;
+        existed.status = status;
+        existed.note = note;
+        state.timelineByStationId[station.id].unshift({
+          time: nowText(),
+          actor: "13800138000",
+          type: beforeStatus && beforeStatus !== status ? "状态变更" : "修改充电桩",
+          title: beforeStatus && beforeStatus !== status ? `充电桩状态：${beforeStatus} → ${status}` : `更新充电桩 ${no}`,
+          desc: `${type} · ${guns} 把枪`
+        });
+      }
+
+      syncStationScale(station.id);
+      station.updatedAt = "刚刚";
+      render();
+      renderStationDetail();
+      closeModal("pileEditModal");
+    });
+
+    document.getElementById("openLinkShareholderBtn").addEventListener("click", () => {
+      const select = document.getElementById("linkShareholderSelect");
+      select.innerHTML = mock.shareholders.map(item => `<option value="${item.name}">${item.name}（${item.contact} / ${item.phone}）</option>`).join("");
+      document.getElementById("linkShareholderShare").value = "";
+      document.getElementById("linkShareholderRelationStatus").value = "持股中";
+      document.getElementById("linkShareholderNote").value = "";
+      openModal("linkShareholderModal");
+    });
+
+    document.getElementById("saveLinkShareholderBtn").addEventListener("click", () => {
+      const station = getSelectedStation();
+      ensureStationData(station.id);
+      const relations = state.relationsByStationId[station.id];
+
+      const name = document.getElementById("linkShareholderSelect").value;
+      const shareholder = mock.shareholders.find(item => item.name === name);
+      if (!shareholder) return;
+
+      const shareNumber = Number(document.getElementById("linkShareholderShare").value);
+      if (Number.isNaN(shareNumber) || shareNumber < 0) {
+        alert("请填写正确的占股比例");
+        return;
+      }
+
+      const relationStatus = document.getElementById("linkShareholderRelationStatus").value;
+      const note = document.getElementById("linkShareholderNote").value.trim();
+
+      // 简化校验：不允许重复关联“持股中”关系
+      const existsHolding = relations.some(item => item.name === name && item.relationStatus === "持股中");
+      if (existsHolding && relationStatus === "持股中") {
+        alert("该股东已是持股中状态，无需重复关联。");
+        return;
+      }
+
+      // 占比不允许超过 100（生产系统口径），小于 100 允许，方便后续股权调整补齐
+      const nextSum = sumSharePercent(station.id) + (relationStatus === "持股中" ? shareNumber : 0);
+      if (nextSum > 100) {
+        alert("占股比例合计将超过 100%，请先通过“股权调整”重新分配后再关联。");
+        return;
+      }
+
+      relations.unshift({
+        name: shareholder.name,
+        contact: shareholder.contact,
+        phone: shareholder.phone,
+        share: `${shareNumber}%`,
+        relationStatus
+      });
+
+      state.timelineByStationId[station.id].unshift({
+        time: nowText(),
+        actor: "13800138000",
+        type: "新增股东关系",
+        title: `关联股东“${shareholder.name}”`,
+        desc: `占比：${shareNumber}% · 状态：${relationStatus}${note ? ` · 备注：${note}` : ""}`
+      });
+
+      station.updatedAt = "刚刚";
+      render();
+      renderStationDetail();
+      closeModal("linkShareholderModal");
+    });
+
+    // Dialog Dirty 标记（用于阻止站点切换）
+    [
+      "editStationName", "editStationPlatform", "editStationPlatformId", "editStationAddress", "editStationContact", "editStationPhone",
+      "editStationStatus", "editStationStatusNote",
+      "editPileType", "editPileGuns", "editPileStatus", "editPileNote",
+      "linkShareholderSelect", "linkShareholderShare", "linkShareholderRelationStatus", "linkShareholderNote"
+    ].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("input", markDialogDirty);
+      el.addEventListener("change", markDialogDirty);
+    });
+
+    document.getElementById("fillAdminBtn").addEventListener("click", () => {
+      document.getElementById("account").value = "admin";
+      document.getElementById("password").value = "123456";
+    });
+
+    document.getElementById("fillBizBtn").addEventListener("click", () => {
+      document.getElementById("account").value = "13800138000";
+      document.getElementById("password").value = "123456";
+    });
+
+    document.getElementById("enterAppBtn").addEventListener("click", () => {
+      document.getElementById("loginScreen").style.display = "none";
+      document.getElementById("appShell").classList.add("is-ready");
+      switchView("dashboard");
+    });
+
+    render();
+    renderStationDetail();
+    ensureShareholderData();
+    renderShareholderDetail();
+    bindModalClose();
+  </script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+## ===== 通用 =====
+.DS_Store
+Thumbs.db
+*.log
+logs/
+*.tmp
+*.swp
+*.swo
+*.pid
+
+## ===== IDE =====
+.idea/
+.vscode/
+*.iml
+
+## ===== TraeWork 本地痕迹（不纳入版本控制）=====
+.superpowers/
+
+## ===== 环境变量/密钥 =====
+.env
+.env.*
+!.env.example
+
+## ===== 前端（Vite）=====
+code/frontend/node_modules/
+code/frontend/dist/
+code/frontend/.vite/
+
+## ===== 后端（Spring Boot）=====
+code/backend/target/
+code/backend/.mvn/wrapper/maven-wrapper.jar
+
+## ===== 构建产物/其他 =====
+*.jar
+*.war

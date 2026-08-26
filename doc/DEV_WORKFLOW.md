@@ -1,0 +1,183 @@
+# 开发指令（Trae Work 使用说明）
+
+本文件用于固化本仓库的开发流程与 Trae Work 提示词模板，确保开发始终与以下基准一致：
+
+- 需求/范围基准：`doc/spec.md`
+- 任务执行顺序：`doc/tasks.md`
+- 验收标准：`doc/checklist.md`
+- 前端开发规范：`doc/前端开发规范和要求.md`
+- UI/业务流程基准原型：`prototype/charging-station-system-prototype.html`
+
+> 约定：如文档与原型存在冲突，必须先更新文档并重新确认，再开始实现，避免“边做边猜”。
+
+---
+
+## 总体开发规则（强约束）
+
+1. 文档驱动顺序固定：先以 `spec.md` 为准 → 按 `tasks.md` 开发 → 用 `checklist.md` 统一验收。
+2. 每完成一个 task 必须提交一次 Git（建议 conventional commits）。
+3. 任何影响需求/页面/字段/流程的改动，必须先同步更新 `doc/spec.md`，并同步调整 `doc/tasks.md` / `doc/checklist.md`。
+4. UI 与交互以 `prototype/charging-station-system-prototype.html` 为第一期视觉与流程基准：
+   - 站点详情页支持“服务站下拉切换”
+   - 弹窗不可点击遮罩关闭，只能点“关闭/取消/保存”
+   - 有编辑中的弹窗时，禁止切换站点并提示
+5. 前端编码规范必须满足 `doc/前端开发规范和要求.md`（命名、目录、组件拆分、性能注意事项等）。
+
+---
+
+## 仓库推荐结构
+
+```text
+.
+├─ doc/
+│  ├─ spec.md
+│  ├─ tasks.md
+│  ├─ checklist.md
+│  ├─ 前端开发规范和要求.md
+│  └─ DEV_WORKFLOW.md
+├─ prototype/
+│  └─ charging-station-system-prototype.html
+├─ frontend/
+├─ backend/
+└─ db/
+```
+
+---
+
+## Trae Work 使用方式（建议）
+
+### 1）启动前准备
+
+在 Trae Work 中打开本仓库根目录，确保能看到 `doc/`、`prototype/` 等目录。
+
+### 2）每次开始一个新阶段
+
+优先让 Trae Work 先读文档，再做事：
+
+- 先读：`doc/spec.md`
+- 再读：`doc/tasks.md`
+- 再读：`doc/checklist.md`
+- 前端相关任务额外读：`doc/前端开发规范和要求.md`
+- 页面相关任务额外参考：`prototype/charging-station-system-prototype.html`
+
+---
+
+## 提示词模板（可复制）
+
+> 使用方式：每次把“模板”整段复制给 Trae Work，再按需要替换 `<...>` 占位内容。
+
+### 模板 A：开发总控（每次对齐用）
+
+```
+进入开发模式。请先阅读并理解：
+1) doc/spec.md
+2) doc/tasks.md
+3) doc/checklist.md
+4) doc/前端开发规范和要求.md
+5) prototype/charging-station-system-prototype.html
+
+强约束：
+- 严格按 doc/tasks.md 的顺序执行
+- 每完成一个 task 必须执行一次 git commit（conventional commits）
+- UI/交互以 prototype/charging-station-system-prototype.html 为基准
+- 弹窗不能点击遮罩关闭，只能通过关闭/取消/保存关闭；编辑中禁止切换站点并提示
+
+在开始写代码前，先输出：
+- 你理解到的当前 task 列表分组
+- 你建议的第一期实现顺序（必须与 tasks.md 一致）
+- 你要先做的第一个 task 是什么（等我确认后再执行）
+```
+
+### 模板 B：Task 0（初始化仓库 + 原型/规范落地版）
+
+```
+进入开发模式。请先完整阅读并理解：
+- doc/spec.md、doc/tasks.md、doc/checklist.md
+- doc/前端开发规范和要求.md（前端开发强约束）
+- prototype/charging-station-system-prototype.html（UI/流程基准）
+
+现在执行 Task 0：初始化 Git 仓库与工程骨架（前端 Vue3+ElementPlus，后端 Spring Boot，DB MySQL）。
+
+必须完成：
+1) 在仓库根目录 git init，并创建合理的 .gitignore（node_modules/dist/target/.env/*.log 等）
+2) 保持现有 doc/ 与 prototype/ 不变；创建 frontend/ backend/ db/
+3) 前端工程（frontend/）：
+   - Vite 初始化 Vue3（建议 TypeScript）
+   - 安装 element-plus / pinia / vue-router
+   - 落地 ESLint + Prettier，并提供 npm scripts：lint / format
+   - 建立与原型一致的路由壳子与菜单结构（页面可先空壳）
+4) 后端工程（backend/）：
+   - Spring Boot（建议 Maven）
+   - 依赖：Spring Web、Validation、Spring Data JPA、MySQL Driver、Lombok
+   - 健康检查接口：/api/health
+5) db/：
+   - 放置数据库初始化说明与占位脚本（schema.sql/README.md），明确字符集/时区/命名规则
+6) README.md：
+   - 写清楚如何启动前端、后端、数据库配置
+   - 明确原型位置 prototype/charging-station-system-prototype.html 为第一期 UI/流程基准
+   - 明确前端规范位置 doc/前端开发规范和要求.md 为强约束
+7) 完成后执行一次 git commit：
+   - message：chore: init project skeleton
+
+在执行命令前，先检查 Node/npm、Java、Maven、MySQL 是否可用；缺失则给出最省事替代方案。
+输出：你新增/修改了哪些文件、如何本地启动验证、以及最终 commit 信息。
+```
+
+### 模板 C：执行单个 Task（每个任务通用）
+
+```
+现在开始执行 doc/tasks.md 中的任务：<把任务标题原样粘贴>
+
+要求：
+1) 按 doc/spec.md 与原型 prototype/charging-station-system-prototype.html 实现
+2) 前端遵循 doc/前端开发规范和要求.md
+3) 提供最小可运行验证方式（脚本/手工步骤均可，但要明确）
+4) 如实现导致需求变化：先更新 doc/spec.md 并同步 tasks/checklist
+5) 完成后必须 git commit 一次（conventional commits）
+
+先输出：
+- 你将修改/新增哪些目录与文件
+- 你如何验证这个 task 已完成
+得到我确认后再开始写代码
+```
+
+### 模板 D：联调阶段（前后端对齐用）
+
+```
+进入联调阶段。请输出并对齐以下内容后再写代码：
+1) 接口清单（路径、方法、请求体、响应体、分页/筛选字段）
+2) DTO 字段命名规范（前后端一致）
+3) 错误码/错误信息规范
+4) 日志/审计写入规则（增删改/状态变更/股权调整/退股等）
+
+对齐后：
+- 后端先提供可用的 mock/接口
+- 前端完成 api 封装并接入页面
+- 最后给出联调验证步骤
+```
+
+### 模板 E：验收阶段（对照 checklist）
+
+```
+现在进入验收阶段：严格逐条对照 doc/checklist.md 自检并修复。
+
+输出：
+1) 每条 checklist 的验收结果（通过/不通过/原因）
+2) 不通过项的修复提交记录（commit message 列表）
+3) 最终如何启动前端、后端、初始化数据库的步骤
+```
+
+---
+
+## 提交规范建议（conventional commits）
+
+- `chore:` 工程/脚手架/依赖调整
+- `feat(frontend):` 前端功能
+- `feat(backend):` 后端功能
+- `fix(frontend):` 前端修复
+- `fix(backend):` 后端修复
+- `docs:` 文档更新
+- `refactor:` 重构（要求行为不变并能验证）
+
+> 约定：一个 task 对应一个 commit，避免“巨型提交”。
+

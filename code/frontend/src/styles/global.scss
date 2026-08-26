@@ -1,0 +1,25 @@
+:root {
+  // 为什么：与原型保持同一套深色工业能源中控台基调，后续可统一沉淀到 tokens.scss
+  --bg-page: #07111a;
+  --bg-panel: rgba(10, 22, 34, 0.78);
+  --bg-panel-strong: rgba(7, 18, 29, 0.94);
+  --bg-soft: rgba(117, 191, 255, 0.08);
+  --line-soft: rgba(150, 206, 255, 0.14);
+  --text-primary: #edf7ff;
+  --text-secondary: #9fb6c9;
+  --text-muted: #6f889d;
+  --brand-primary: #39c8ff;
+  --brand-accent: #1ff2b2;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg-page);
+}
+
+* {
+  box-sizing: border-box;
+}
+
