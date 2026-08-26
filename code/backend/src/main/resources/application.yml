@@ -7,7 +7,7 @@ spring:
   datasource:
     # 注意：不要把真实密码写入仓库。通过环境变量注入（见根目录 README.md）。
     url: jdbc:mysql://${CSZD_DB_HOST:192.168.3.52}:${CSZD_DB_PORT:3306}/${CSZD_DB_NAME:cszd_db}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
-    username: ${CSZD_DB_USER:cdzd}
+    username: ${CSZD_DB_USER:cszd}
     password: ${CSZD_DB_PASSWORD:}
     hikari:
       # 为什么：默认连接超时 30s，会导致启动卡顿且不易定位错误；这里缩短以便快速反馈 DB 授权/网络问题。

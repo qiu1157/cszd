@@ -74,7 +74,7 @@ gradlew.bat bootRun
 
 - DB：`cszd_db`
 - Host：`192.168.3.52:3306`
-- 账号：`cdzd`
+- 账号：`cszd`
 - 密码：通过环境变量注入（PowerShell 示例）：
 
 ```powershell
@@ -87,5 +87,5 @@ $env:CSZD_DB_PASSWORD="123456"
 $env:CSZD_DB_HOST="192.168.3.52"
 $env:CSZD_DB_PORT="3306"
 $env:CSZD_DB_NAME="cszd_db"
-$env:CSZD_DB_USER="cdzd"
+$env:CSZD_DB_USER="cszd"
 ```
