@@ -53,7 +53,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void loginShouldAllowDefaultAdminWhenDatabaseIsUnavailable() throws Exception {
+    void loginShouldRejectWhenDatabaseBackedAccountIsUnavailable() throws Exception {
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -62,11 +62,9 @@ class AuthControllerTest {
                                   "password": "123456"
                                 }
                                 """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.token").isString())
-                .andExpect(jsonPath("$.data.user.account").value("admin"))
-                .andExpect(jsonPath("$.data.user.role").value("SYSTEM_ADMIN"));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value("AUTH_INVALID_CREDENTIALS"));
     }
 
     @Test

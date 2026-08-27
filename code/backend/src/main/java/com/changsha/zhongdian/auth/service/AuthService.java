@@ -15,22 +15,18 @@ public class AuthService {
     public static final String CURRENT_USER_REQUEST_ATTRIBUTE = "currentLoginUser";
 
     private final SystemUserAuthenticationService systemUserAuthenticationService;
-    private final DevAuthAccountProvider devAuthAccountProvider;
     private final TokenService tokenService;
 
     public AuthService(
             SystemUserAuthenticationService systemUserAuthenticationService,
-            DevAuthAccountProvider devAuthAccountProvider,
             TokenService tokenService
     ) {
         this.systemUserAuthenticationService = systemUserAuthenticationService;
-        this.devAuthAccountProvider = devAuthAccountProvider;
         this.tokenService = tokenService;
     }
 
     public LoginResponse login(LoginRequest loginRequest) {
         LoginUser loginUser = systemUserAuthenticationService.authenticate(loginRequest.account(), loginRequest.password())
-                .or(() -> devAuthAccountProvider.validate(loginRequest.account(), loginRequest.password()))
                 .orElseThrow(() -> new BusinessException("AUTH_INVALID_CREDENTIALS", "账号或密码错误", HttpStatus.UNAUTHORIZED));
 
         String token = tokenService.issueToken(loginUser);
