@@ -21,6 +21,8 @@ export type CreateBusinessAdminPayload = {
   initialPassword: string
 }
 
+export type UpdateBusinessAdminStatusAction = 'enable' | 'disable'
+
 export async function getBusinessAdmins() {
   const response = await request.get<ApiResponse<BusinessAdminListItem[]>>('/api/users/business-admins')
   return response.data.data
@@ -28,5 +30,10 @@ export async function getBusinessAdmins() {
 
 export async function createBusinessAdmin(payload: CreateBusinessAdminPayload) {
   const response = await request.post<ApiResponse<null>>('/api/users/business-admins', payload)
+  return response.data
+}
+
+export async function updateBusinessAdminStatus(account: string, action: UpdateBusinessAdminStatusAction) {
+  const response = await request.post<ApiResponse<null>>(`/api/users/business-admins/${account}/${action}`)
   return response.data
 }

@@ -48,6 +48,21 @@ public class BusinessAdminCommandService {
         }
     }
 
+    public void updateBusinessAdminStatus(String account, UserStatus targetStatus) {
+        String normalizedAccount = requireNonBlank(account, "账号不能为空");
+        SystemUser systemUser = systemUserRepository.findByAccount(normalizedAccount)
+                .filter(user -> user.getRoleCode() == UserRole.BUSINESS_ADMIN)
+                .orElseThrow(() -> new BusinessException("USER_NOT_FOUND", "业务管理员不存在", HttpStatus.NOT_FOUND));
+
+        systemUser.setUserStatus(targetStatus);
+
+        try {
+            systemUserRepository.save(systemUser);
+        } catch (DataAccessException exception) {
+            throw new BusinessException("USER_STATUS_UPDATE_FAILED", "当前数据库不可用，暂时无法更新业务管理员状态", HttpStatus.SERVICE_UNAVAILABLE);
+        }
+    }
+
     private String requireNonBlank(String value, String message) {
         if (value == null || value.trim().isEmpty()) {
             throw new BusinessException("VALIDATION_ERROR", message, HttpStatus.BAD_REQUEST);

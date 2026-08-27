@@ -6,16 +6,22 @@ type UserTableRow = {
   roleLabel: string
   statusLabel: string
   statusType: 'success' | 'info'
+  canEnable: boolean
+  canDisable: boolean
   lastLoginText: string
 }
 
 export function mapBusinessAdminToTableRow(item: BusinessAdminListItem): UserTableRow {
+  const isEnabled = item.status === 'ENABLED'
+
   return {
     account: item.account,
     subtitle: `业务管理员 · ${item.name}`,
     roleLabel: '业务管理员',
-    statusLabel: item.status === 'ENABLED' ? '启用' : '停用',
-    statusType: item.status === 'ENABLED' ? 'success' : 'info',
+    statusLabel: isEnabled ? '启用' : '停用',
+    statusType: isEnabled ? 'success' : 'info',
+    canEnable: !isEnabled,
+    canDisable: isEnabled,
     lastLoginText: formatLastLoginAt(item.lastLoginAt),
   }
 }

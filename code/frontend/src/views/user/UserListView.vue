@@ -5,7 +5,7 @@
         <div class="section-head">
           <div>
             <h3>业务管理员列表</h3>
-            <p>系统管理员可新增业务管理员并查看账号状态与最后登录时间；启停、重置密码将在后续任务中实现。</p>
+            <p>系统管理员可新增、启用、停用业务管理员，并查看账号状态与最后登录时间；重置密码将在后续任务中实现。</p>
           </div>
           <el-button type="primary" @click="openCreateDialog">新增业务管理员</el-button>
         </div>
@@ -15,6 +15,7 @@
         <div class="summary-chip">当前仅展示业务管理员，不显示 `admin`</div>
         <div class="summary-chip">最后登录时间在登录成功后自动更新</div>
         <div class="summary-chip">新增时会校验中国大陆 11 位手机号格式</div>
+        <div class="summary-chip">列表内支持启用 / 停用，操作前需二次确认</div>
       </div>
 
       <el-table v-loading="loading" :data="tableRows" class="user-table" empty-text="暂无业务管理员，可点击右上角新增业务管理员。">
@@ -46,11 +47,25 @@
         </el-table-column>
 
         <el-table-column label="操作" min-width="220" fixed="right">
-          <template #default>
+          <template #default="{ row }">
             <div class="action-group">
               <el-button link type="primary" disabled>重置密码</el-button>
-              <el-button link disabled>启用</el-button>
-              <el-button link disabled>停用</el-button>
+              <el-button
+                link
+                :disabled="!row.canEnable || statusSubmitting"
+                :loading="statusSubmitting && statusSubmittingAccount === row.account && statusSubmittingAction === 'enable'"
+                @click="submitBusinessAdminStatus(row.account, 'enable')"
+              >
+                启用
+              </el-button>
+              <el-button
+                link
+                :disabled="!row.canDisable || statusSubmitting"
+                :loading="statusSubmitting && statusSubmittingAccount === row.account && statusSubmittingAction === 'disable'"
+                @click="submitBusinessAdminStatus(row.account, 'disable')"
+              >
+                停用
+              </el-button>
             </div>
           </template>
         </el-table-column>
@@ -116,10 +131,10 @@
 
 <script setup lang="ts">
 import axios from 'axios'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 
-import { createBusinessAdmin, getBusinessAdmins } from '@/api/user'
+import { createBusinessAdmin, getBusinessAdmins, updateBusinessAdminStatus, type UpdateBusinessAdminStatusAction } from '@/api/user'
 
 import { mapBusinessAdminToTableRow } from './adapters'
 import {
@@ -131,6 +146,9 @@ import {
 
 const loading = ref(false)
 const saving = ref(false)
+const statusSubmitting = ref(false)
+const statusSubmittingAccount = ref('')
+const statusSubmittingAction = ref<UpdateBusinessAdminStatusAction | ''>('')
 const dialogVisible = ref(false)
 const businessAdmins = ref<Awaited<ReturnType<typeof getBusinessAdmins>>>([])
 const createForm = ref<CreateBusinessAdminForm>(createInitialForm())
@@ -191,6 +209,38 @@ async function submitCreateBusinessAdmin() {
     ElMessage.error(resolveApiErrorMessage(error, '业务管理员新增失败，请稍后重试'))
   } finally {
     saving.value = false
+  }
+}
+
+async function submitBusinessAdminStatus(account: string, action: UpdateBusinessAdminStatusAction) {
+  const actionText = action === 'enable' ? '启用' : '停用'
+
+  try {
+    await ElMessageBox.confirm(`确认${actionText}业务管理员 ${account} 吗？`, `${actionText}业务管理员`, {
+      confirmButtonText: actionText,
+      cancelButtonText: '取消',
+      type: 'warning',
+      closeOnClickModal: false,
+      closeOnPressEscape: false,
+    })
+  } catch {
+    return
+  }
+
+  statusSubmitting.value = true
+  statusSubmittingAccount.value = account
+  statusSubmittingAction.value = action
+
+  try {
+    await updateBusinessAdminStatus(account, action)
+    ElMessage.success(`业务管理员已${action === 'enable' ? '启用' : '停用'}`)
+    await loadBusinessAdmins()
+  } catch (error) {
+    ElMessage.error(resolveApiErrorMessage(error, `业务管理员${actionText}失败，请稍后重试`))
+  } finally {
+    statusSubmitting.value = false
+    statusSubmittingAccount.value = ''
+    statusSubmittingAction.value = ''
   }
 }
 

@@ -3,26 +3,23 @@ import { describe, expect, it } from 'vitest'
 import { mapBusinessAdminToTableRow } from './adapters'
 
 describe('mapBusinessAdminToTableRow', () => {
-  it('应把最后登录时间映射为可展示文本', () => {
+  it('应为启用账号开放停用按钮并禁用启用按钮', () => {
     expect(
       mapBusinessAdminToTableRow({
         account: '13800138000',
         name: '李丹',
         role: 'BUSINESS_ADMIN',
         status: 'ENABLED',
-        lastLoginAt: '2026-08-26T09:18:00',
+        lastLoginAt: '2026-08-27T18:00:00',
       }),
-    ).toEqual({
-      account: '13800138000',
-      subtitle: '业务管理员 · 李丹',
-      roleLabel: '业务管理员',
+    ).toMatchObject({
       statusLabel: '启用',
-      statusType: 'success',
-      lastLoginText: '2026-08-26 09:18',
+      canEnable: false,
+      canDisable: true,
     })
   })
 
-  it('应在最后登录时间为空时显示未登录', () => {
+  it('应为停用账号开放启用按钮并禁用停用按钮', () => {
     expect(
       mapBusinessAdminToTableRow({
         account: '13900139000',
@@ -30,7 +27,11 @@ describe('mapBusinessAdminToTableRow', () => {
         role: 'BUSINESS_ADMIN',
         status: 'DISABLED',
         lastLoginAt: null,
-      }).lastLoginText,
-    ).toBe('未登录')
+      }),
+    ).toMatchObject({
+      statusLabel: '停用',
+      canEnable: true,
+      canDisable: false,
+    })
   })
 })

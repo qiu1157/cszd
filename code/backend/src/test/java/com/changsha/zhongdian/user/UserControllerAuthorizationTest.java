@@ -54,6 +54,16 @@ class UserControllerAuthorizationTest {
     }
 
     @Test
+    void businessAdminShouldNotDisableBusinessAdmin() throws Exception {
+        String token = loginAsBusinessAdmin();
+
+        mockMvc.perform(post("/api/users/business-admins/13800138000/disable")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
+    @Test
     void preflightRequestShouldPassWithoutAuthorization() throws Exception {
         mockMvc.perform(options("/api/users/business-admins")
                         .header("Origin", "http://localhost:5173")

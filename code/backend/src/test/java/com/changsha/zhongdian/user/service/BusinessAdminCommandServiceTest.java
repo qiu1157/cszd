@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.Optional;
+
 import com.changsha.zhongdian.common.exception.BusinessException;
 import com.changsha.zhongdian.user.entity.SystemUser;
 import com.changsha.zhongdian.user.entity.UserRole;
@@ -89,5 +91,41 @@ class BusinessAdminCommandServiceTest {
 
         assertEquals("USER_SAVE_FAILED", exception.getCode());
         assertEquals("当前数据库不可用，暂时无法新增业务管理员", exception.getMessage());
+    }
+
+    @Test
+    void updateBusinessAdminStatusShouldDisableBusinessAdmin() {
+        SystemUserRepository userRepository = org.mockito.Mockito.mock(SystemUserRepository.class);
+        PasswordHasher passwordHasher = org.mockito.Mockito.mock(PasswordHasher.class);
+        BusinessAdminCommandService commandService = new BusinessAdminCommandService(userRepository, passwordHasher);
+
+        SystemUser systemUser = new SystemUser();
+        systemUser.setAccount("13800138000");
+        systemUser.setRoleCode(UserRole.BUSINESS_ADMIN);
+        systemUser.setUserStatus(UserStatus.ENABLED);
+        when(userRepository.findByAccount("13800138000")).thenReturn(Optional.of(systemUser));
+
+        commandService.updateBusinessAdminStatus("13800138000", UserStatus.DISABLED);
+
+        assertEquals(UserStatus.DISABLED, systemUser.getUserStatus());
+        verify(userRepository).save(systemUser);
+    }
+
+    @Test
+    void updateBusinessAdminStatusShouldEnableBusinessAdmin() {
+        SystemUserRepository userRepository = org.mockito.Mockito.mock(SystemUserRepository.class);
+        PasswordHasher passwordHasher = org.mockito.Mockito.mock(PasswordHasher.class);
+        BusinessAdminCommandService commandService = new BusinessAdminCommandService(userRepository, passwordHasher);
+
+        SystemUser systemUser = new SystemUser();
+        systemUser.setAccount("13800139000");
+        systemUser.setRoleCode(UserRole.BUSINESS_ADMIN);
+        systemUser.setUserStatus(UserStatus.DISABLED);
+        when(userRepository.findByAccount("13800139000")).thenReturn(Optional.of(systemUser));
+
+        commandService.updateBusinessAdminStatus("13800139000", UserStatus.ENABLED);
+
+        assertEquals(UserStatus.ENABLED, systemUser.getUserStatus());
+        verify(userRepository).save(systemUser);
     }
 }
