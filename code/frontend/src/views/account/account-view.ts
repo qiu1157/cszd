@@ -39,7 +39,7 @@ export function buildAccountSections(user: AuthUser): AccountSection[] {
     },
     {
       title: '安全设置',
-      items: [{ label: '修改本人密码', value: '下一任务实现' }],
+      items: [{ label: '修改本人密码', value: '支持在线修改，成功后需重新登录' }],
     },
   ]
 }

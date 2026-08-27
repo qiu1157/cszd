@@ -18,6 +18,12 @@ type LoginResponse = {
   user: AuthUser
 }
 
+export type ChangePasswordPayload = {
+  currentPassword: string
+  newPassword: string
+  confirmPassword: string
+}
+
 export async function login(payload: LoginPayload) {
   const response = await request.post<ApiResponse<LoginResponse>>('/api/auth/login', payload)
   return response.data.data
@@ -26,4 +32,9 @@ export async function login(payload: LoginPayload) {
 export async function getCurrentUser() {
   const response = await request.get<ApiResponse<AuthUser>>('/api/auth/me')
   return response.data.data
+}
+
+export async function changePassword(payload: ChangePasswordPayload) {
+  const response = await request.post<ApiResponse<null>>('/api/auth/change-password', payload)
+  return response.data
 }

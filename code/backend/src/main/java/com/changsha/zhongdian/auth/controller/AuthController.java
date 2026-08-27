@@ -1,5 +1,6 @@
 package com.changsha.zhongdian.auth.controller;
 
+import com.changsha.zhongdian.auth.dto.ChangePasswordRequest;
 import com.changsha.zhongdian.auth.dto.LoginRequest;
 import com.changsha.zhongdian.auth.dto.LoginResponse;
 import com.changsha.zhongdian.auth.model.LoginUser;
@@ -31,5 +32,14 @@ public class AuthController {
     @GetMapping("/me")
     public ApiResponse<LoginUser> currentUser(HttpServletRequest request) {
         return ApiResponse.success(authService.getCurrentUser(request));
+    }
+
+    @PostMapping("/change-password")
+    public ApiResponse<Void> changePassword(
+            @Valid @RequestBody ChangePasswordRequest request,
+            HttpServletRequest httpServletRequest
+    ) {
+        authService.changePassword(httpServletRequest, request);
+        return ApiResponse.success("密码修改成功", null);
     }
 }

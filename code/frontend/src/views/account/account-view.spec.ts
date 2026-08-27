@@ -6,7 +6,7 @@ import type { AuthUser } from '@/utils/auth-storage'
 import { buildAccountSections } from './account-view'
 
 describe('buildAccountSections', () => {
-  it('应生成我的账号页面的核心信息与安全设置', () => {
+  it('应生成我的账号页面的核心信息与正式安全设置说明', () => {
     const user: AuthUser = {
       account: '13800138000',
       name: '李丹',
@@ -33,12 +33,12 @@ describe('buildAccountSections', () => {
       },
       {
         title: '安全设置',
-        items: [{ label: '修改本人密码', value: '下一任务实现' }],
+        items: [{ label: '修改本人密码', value: '支持在线修改，成功后需重新登录' }],
       },
     ])
   })
 
-  it('未登录时间为空时应显示未登录，并保留安全设置占位', () => {
+  it('未登录时间为空时应显示未登录，并保留安全设置说明', () => {
     const user: AuthUser = {
       account: 'admin',
       name: '系统管理员',
@@ -50,7 +50,7 @@ describe('buildAccountSections', () => {
 
     expect(buildAccountSections(user)[2]).toEqual({
       title: '安全设置',
-      items: [{ label: '修改本人密码', value: '下一任务实现' }],
+      items: [{ label: '修改本人密码', value: '支持在线修改，成功后需重新登录' }],
     })
   })
 })
