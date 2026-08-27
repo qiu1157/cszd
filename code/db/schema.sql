@@ -29,5 +29,40 @@ CREATE TABLE IF NOT EXISTS sys_user (
   KEY idx_sys_user_status (user_status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='系统用户表';
 
--- TODO: 里程碑 B 后续任务继续补齐：默认管理员初始化、平台字典；
+-- 为什么：平台、充电站状态、充电桩状态统一收口到系统字典，避免后续各页面维护独立枚举。
+-- 第一版仅内置 PLATFORM / STATION_STATUS / PILE_STATUS 三类，页面暂不开放新增字典类型。
+CREATE TABLE IF NOT EXISTS sys_dict_type (
+  id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  type_code VARCHAR(64) NOT NULL COMMENT '类型编码：PLATFORM / STATION_STATUS / PILE_STATUS',
+  type_name VARCHAR(64) NOT NULL COMMENT '类型名称',
+  type_status VARCHAR(16) NOT NULL DEFAULT 'ENABLED' COMMENT '类型状态：ENABLED / DISABLED',
+  sort_order INT NOT NULL DEFAULT 0 COMMENT '排序',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_sys_dict_type_code (type_code),
+  UNIQUE KEY uk_sys_dict_type_name (type_name),
+  KEY idx_sys_dict_type_status (type_status),
+  KEY idx_sys_dict_type_sort_order (sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='系统字典类型表';
+
+-- 为什么：字典项统一使用编码、名称、状态、排序四个核心字段，满足后续列表、下拉和筛选复用。
+CREATE TABLE IF NOT EXISTS sys_dict_item (
+  id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  type_id BIGINT NOT NULL COMMENT '字典类型ID',
+  item_code VARCHAR(64) NOT NULL COMMENT '项目编码',
+  item_name VARCHAR(64) NOT NULL COMMENT '项目名称',
+  item_status VARCHAR(16) NOT NULL DEFAULT 'ENABLED' COMMENT '项目状态：ENABLED / DISABLED',
+  sort_order INT NOT NULL DEFAULT 0 COMMENT '排序',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_sys_dict_item_type_code (type_id, item_code),
+  UNIQUE KEY uk_sys_dict_item_type_name (type_id, item_name),
+  KEY idx_sys_dict_item_status (item_status),
+  KEY idx_sys_dict_item_sort_order (sort_order),
+  CONSTRAINT fk_sys_dict_item_type_id FOREIGN KEY (type_id) REFERENCES sys_dict_type (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='系统字典项表';
+
+-- TODO: 里程碑 B 后续任务继续补齐：默认管理员初始化、系统字典页面与接口；
 -- TODO: 里程碑 C 起补齐：station/pile/shareholder/... 等业务表。
