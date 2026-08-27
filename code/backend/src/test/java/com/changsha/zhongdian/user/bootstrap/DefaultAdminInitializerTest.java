@@ -51,11 +51,32 @@ class DefaultAdminInitializerTest {
     }
 
     @Test
-    void initializeShouldSkipWhenPasswordIsBlank() {
+    void initializeShouldSkipWhenRepositoryIsUnavailable() {
+        @SuppressWarnings("unchecked")
+        ObjectProvider<SystemUserRepository> repositoryProvider = org.mockito.Mockito.mock(ObjectProvider.class);
+        PasswordHasher passwordHasher = org.mockito.Mockito.mock(PasswordHasher.class);
+        when(repositoryProvider.getIfAvailable()).thenReturn(null);
+
+        DefaultAdminInitializer initializer = new DefaultAdminInitializer(
+                repositoryProvider,
+                passwordHasher,
+                "123456"
+        );
+
+        initializer.initializeDefaultAdmin();
+
+        verify(passwordHasher, never()).hash(any());
+    }
+
+    @Test
+    void initializeShouldUseDefaultPasswordWhenEnvPasswordIsBlank() {
         SystemUserRepository userRepository = org.mockito.Mockito.mock(SystemUserRepository.class);
         @SuppressWarnings("unchecked")
         ObjectProvider<SystemUserRepository> repositoryProvider = org.mockito.Mockito.mock(ObjectProvider.class);
         PasswordHasher passwordHasher = org.mockito.Mockito.mock(PasswordHasher.class);
+        when(repositoryProvider.getIfAvailable()).thenReturn(userRepository);
+        when(userRepository.existsByAccount("admin")).thenReturn(false);
+        when(passwordHasher.hash("123456")).thenReturn("hashed-default-admin-password");
 
         DefaultAdminInitializer initializer = new DefaultAdminInitializer(
                 repositoryProvider,
@@ -65,9 +86,14 @@ class DefaultAdminInitializerTest {
 
         initializer.initializeDefaultAdmin();
 
-        verify(userRepository, never()).existsByAccount(any());
-        verify(userRepository, never()).save(any());
-        verify(passwordHasher, never()).hash(any());
+        ArgumentCaptor<SystemUser> userCaptor = ArgumentCaptor.forClass(SystemUser.class);
+        verify(userRepository).save(userCaptor.capture());
+        verify(passwordHasher).hash("123456");
+
+        SystemUser createdUser = userCaptor.getValue();
+        assertEquals("admin", createdUser.getAccount());
+        assertEquals("hashed-default-admin-password", createdUser.getPasswordHash());
+        assertTrue(createdUser.isDefaultAdmin());
     }
 
     @Test

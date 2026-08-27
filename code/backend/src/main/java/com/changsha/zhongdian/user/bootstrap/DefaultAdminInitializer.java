@@ -20,6 +20,7 @@ public class DefaultAdminInitializer implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DefaultAdminInitializer.class);
     private static final String DEFAULT_ADMIN_ACCOUNT = "admin";
+    private static final String DEFAULT_ADMIN_PASSWORD = "123456";
 
     private final ObjectProvider<SystemUserRepository> systemUserRepositoryProvider;
     private final PasswordHasher passwordHasher;
@@ -41,10 +42,7 @@ public class DefaultAdminInitializer implements ApplicationRunner {
     }
 
     void initializeDefaultAdmin() {
-        if (!StringUtils.hasText(defaultAdminPassword)) {
-            log.warn("未检测到 CSZD_DEFAULT_ADMIN_PASSWORD，已跳过默认系统管理员初始化");
-            return;
-        }
+        String initialPassword = resolveInitialPassword();
 
         SystemUserRepository systemUserRepository = systemUserRepositoryProvider.getIfAvailable();
         if (systemUserRepository == null) {
@@ -61,7 +59,7 @@ public class DefaultAdminInitializer implements ApplicationRunner {
             SystemUser defaultAdmin = new SystemUser();
             defaultAdmin.setAccount(DEFAULT_ADMIN_ACCOUNT);
             defaultAdmin.setName("系统管理员");
-            defaultAdmin.setPasswordHash(passwordHasher.hash(defaultAdminPassword));
+            defaultAdmin.setPasswordHash(passwordHasher.hash(initialPassword));
             defaultAdmin.setRoleCode(UserRole.SYSTEM_ADMIN);
             defaultAdmin.setUserStatus(UserStatus.ENABLED);
             defaultAdmin.setDefaultAdmin(true);
@@ -73,5 +71,14 @@ public class DefaultAdminInitializer implements ApplicationRunner {
             // 因此初始化失败时只记录告警，不直接中断服务启动。
             log.warn("初始化默认系统管理员失败，已跳过本次初始化：{}", exception.getClass().getSimpleName());
         }
+    }
+
+    private String resolveInitialPassword() {
+        if (StringUtils.hasText(defaultAdminPassword)) {
+            return defaultAdminPassword;
+        }
+
+        log.warn("未检测到 CSZD_DEFAULT_ADMIN_PASSWORD，已回退使用默认系统管理员密码");
+        return DEFAULT_ADMIN_PASSWORD;
     }
 }
