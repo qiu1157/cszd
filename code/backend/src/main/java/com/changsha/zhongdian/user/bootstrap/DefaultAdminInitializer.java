@@ -84,10 +84,11 @@ public class DefaultAdminInitializer implements ApplicationRunner {
 
     private void synchronizeExistingDefaultAdmin(SystemUserRepository systemUserRepository, String initialPassword) {
         systemUserRepository.findByAccount(DEFAULT_ADMIN_ACCOUNT)
-                .filter(SystemUser::isDefaultAdmin)
+                .filter(existingAdmin -> existingAdmin.getRoleCode() == UserRole.SYSTEM_ADMIN)
                 .ifPresentOrElse(existingAdmin -> {
                     existingAdmin.setPasswordHash(passwordHasher.hash(initialPassword));
                     existingAdmin.setUserStatus(UserStatus.ENABLED);
+                    existingAdmin.setDefaultAdmin(true);
                     systemUserRepository.save(existingAdmin);
                     log.info("默认系统管理员账号已存在，已同步初始化密码");
                 }, () -> log.info("默认系统管理员账号已存在，跳过初始化"));

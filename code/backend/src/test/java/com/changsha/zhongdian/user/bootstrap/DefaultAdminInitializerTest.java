@@ -97,7 +97,7 @@ class DefaultAdminInitializerTest {
     }
 
     @Test
-    void initializeShouldSkipWhenNonDefaultAdminAlreadyExists() {
+    void initializeShouldResetPasswordWhenSystemAdminAccountAlreadyExists() {
         SystemUserRepository userRepository = org.mockito.Mockito.mock(SystemUserRepository.class);
         @SuppressWarnings("unchecked")
         ObjectProvider<SystemUserRepository> repositoryProvider = org.mockito.Mockito.mock(ObjectProvider.class);
@@ -105,12 +105,14 @@ class DefaultAdminInitializerTest {
         SystemUser existingAdmin = new SystemUser();
         existingAdmin.setAccount("admin");
         existingAdmin.setName("系统管理员");
+        existingAdmin.setPasswordHash("old-hash");
         existingAdmin.setRoleCode(UserRole.SYSTEM_ADMIN);
         existingAdmin.setUserStatus(UserStatus.ENABLED);
         existingAdmin.setDefaultAdmin(false);
         when(repositoryProvider.getIfAvailable()).thenReturn(userRepository);
         when(userRepository.existsByAccount("admin")).thenReturn(true);
         when(userRepository.findByAccount("admin")).thenReturn(java.util.Optional.of(existingAdmin));
+        when(passwordHasher.hash("Init@123456")).thenReturn("hashed-admin-password");
 
         DefaultAdminInitializer initializer = new DefaultAdminInitializer(
                 repositoryProvider,
@@ -121,8 +123,10 @@ class DefaultAdminInitializerTest {
         initializer.initializeDefaultAdmin();
 
         verify(userRepository).existsByAccount("admin");
-        verify(userRepository, never()).save(any());
-        verify(passwordHasher, never()).hash(any());
+        verify(passwordHasher).hash("Init@123456");
+        verify(userRepository).save(existingAdmin);
+        assertEquals("hashed-admin-password", existingAdmin.getPasswordHash());
+        assertTrue(existingAdmin.isDefaultAdmin());
     }
 
     @Test

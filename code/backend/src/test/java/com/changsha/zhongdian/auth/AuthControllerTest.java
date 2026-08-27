@@ -53,6 +53,23 @@ class AuthControllerTest {
     }
 
     @Test
+    void loginShouldAllowDefaultAdminWhenDatabaseIsUnavailable() throws Exception {
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "account": "admin",
+                                  "password": "123456"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.token").isString())
+                .andExpect(jsonPath("$.data.user.account").value("admin"))
+                .andExpect(jsonPath("$.data.user.role").value("SYSTEM_ADMIN"));
+    }
+
+    @Test
     void currentUserShouldRejectAnonymousRequest() throws Exception {
         mockMvc.perform(get("/api/auth/me"))
                 .andExpect(status().isUnauthorized())
