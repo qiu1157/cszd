@@ -52,7 +52,7 @@ public class DefaultAdminInitializer implements ApplicationRunner {
 
         try {
             if (systemUserRepository.existsByAccount(DEFAULT_ADMIN_ACCOUNT)) {
-                log.info("默认系统管理员账号已存在，跳过初始化");
+                synchronizeExistingDefaultAdmin(systemUserRepository, initialPassword);
                 return;
             }
 
@@ -80,5 +80,16 @@ public class DefaultAdminInitializer implements ApplicationRunner {
 
         log.warn("未检测到 CSZD_DEFAULT_ADMIN_PASSWORD，已回退使用默认系统管理员密码");
         return DEFAULT_ADMIN_PASSWORD;
+    }
+
+    private void synchronizeExistingDefaultAdmin(SystemUserRepository systemUserRepository, String initialPassword) {
+        systemUserRepository.findByAccount(DEFAULT_ADMIN_ACCOUNT)
+                .filter(SystemUser::isDefaultAdmin)
+                .ifPresentOrElse(existingAdmin -> {
+                    existingAdmin.setPasswordHash(passwordHasher.hash(initialPassword));
+                    existingAdmin.setUserStatus(UserStatus.ENABLED);
+                    systemUserRepository.save(existingAdmin);
+                    log.info("默认系统管理员账号已存在，已同步初始化密码");
+                }, () -> log.info("默认系统管理员账号已存在，跳过初始化"));
     }
 }
