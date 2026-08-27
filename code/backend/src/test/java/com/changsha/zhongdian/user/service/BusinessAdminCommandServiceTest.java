@@ -128,4 +128,38 @@ class BusinessAdminCommandServiceTest {
         assertEquals(UserStatus.ENABLED, systemUser.getUserStatus());
         verify(userRepository).save(systemUser);
     }
+
+    @Test
+    void resetBusinessAdminPasswordShouldHashAndPersistNewPassword() {
+        SystemUserRepository userRepository = org.mockito.Mockito.mock(SystemUserRepository.class);
+        PasswordHasher passwordHasher = org.mockito.Mockito.mock(PasswordHasher.class);
+        BusinessAdminCommandService commandService = new BusinessAdminCommandService(userRepository, passwordHasher);
+
+        SystemUser systemUser = new SystemUser();
+        systemUser.setAccount("13800139000");
+        systemUser.setRoleCode(UserRole.BUSINESS_ADMIN);
+        systemUser.setPasswordHash("old-hash");
+        when(userRepository.findByAccount("13800139000")).thenReturn(Optional.of(systemUser));
+        when(passwordHasher.hash("Reset123")).thenReturn("new-hash");
+
+        commandService.resetBusinessAdminPassword("13800139000", "Reset123");
+
+        assertEquals("new-hash", systemUser.getPasswordHash());
+        verify(userRepository).save(systemUser);
+    }
+
+    @Test
+    void resetBusinessAdminPasswordShouldRejectInvalidPasswordFormat() {
+        SystemUserRepository userRepository = org.mockito.Mockito.mock(SystemUserRepository.class);
+        PasswordHasher passwordHasher = org.mockito.Mockito.mock(PasswordHasher.class);
+        BusinessAdminCommandService commandService = new BusinessAdminCommandService(userRepository, passwordHasher);
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> commandService.resetBusinessAdminPassword("13800139000", "123456")
+        );
+
+        assertEquals("VALIDATION_ERROR", exception.getCode());
+        assertEquals("请输入6-20位且包含字母和数字的新密码", exception.getMessage());
+    }
 }

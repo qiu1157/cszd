@@ -46,14 +46,20 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" min-width="220" fixed="right">
+        <el-table-column label="操作" min-width="280" fixed="right">
           <template #default="{ row }">
             <div class="action-group">
-              <el-button class="action-button action-button--muted" plain disabled>重置密码</el-button>
+              <el-button
+                class="action-button action-button--secondary"
+                :disabled="statusSubmitting || resetting"
+                @click="openResetPasswordDialog(row.account)"
+              >
+                重置密码
+              </el-button>
               <el-button
                 class="action-button"
                 :class="`action-button--${row.enableActionTone}`"
-                :disabled="!row.canEnable || statusSubmitting"
+                :disabled="!row.canEnable || statusSubmitting || resetting"
                 :loading="statusSubmitting && statusSubmittingAccount === row.account && statusSubmittingAction === 'enable'"
                 @click="submitBusinessAdminStatus(row.account, 'enable')"
               >
@@ -62,7 +68,7 @@
               <el-button
                 class="action-button"
                 :class="`action-button--${row.disableActionTone}`"
-                :disabled="!row.canDisable || statusSubmitting"
+                :disabled="!row.canDisable || statusSubmitting || resetting"
                 :loading="statusSubmitting && statusSubmittingAccount === row.account && statusSubmittingAction === 'disable'"
                 @click="submitBusinessAdminStatus(row.account, 'disable')"
               >
@@ -128,6 +134,49 @@
         </div>
       </template>
     </el-dialog>
+
+    <el-dialog
+      v-model="resetDialogVisible"
+      width="520px"
+      class="reset-password-dialog"
+      :show-close="false"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+      destroy-on-close
+      align-center
+    >
+      <template #header>
+        <div class="dialog-head">
+          <div>
+            <h3>重置业务管理员密码</h3>
+            <p>为账号 {{ resetTargetAccount || '--' }} 手动设置新密码。新密码需为 6-20 位，且同时包含字母和数字。</p>
+          </div>
+          <el-button text @click="closeResetPasswordDialog">关闭</el-button>
+        </div>
+      </template>
+
+      <div class="dialog-body">
+        <div class="form-field">
+          <label>新密码</label>
+          <el-input
+            v-model="resetForm.newPassword"
+            maxlength="20"
+            type="password"
+            show-password
+            placeholder="请输入新密码"
+            @blur="validateResetField('newPassword')"
+          />
+          <p v-if="resetFormErrors.newPassword" class="field-error">{{ resetFormErrors.newPassword }}</p>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="dialog-actions">
+          <el-button @click="closeResetPasswordDialog">取消</el-button>
+          <el-button type="primary" :loading="resetting" @click="submitResetBusinessAdminPassword">保存新密码</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </section>
 </template>
 
@@ -136,7 +185,13 @@ import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 
-import { createBusinessAdmin, getBusinessAdmins, updateBusinessAdminStatus, type UpdateBusinessAdminStatusAction } from '@/api/user'
+import {
+  createBusinessAdmin,
+  getBusinessAdmins,
+  resetBusinessAdminPassword,
+  updateBusinessAdminStatus,
+  type UpdateBusinessAdminStatusAction,
+} from '@/api/user'
 
 import { mapBusinessAdminToTableRow } from './adapters'
 import {
@@ -145,16 +200,27 @@ import {
   type CreateBusinessAdminFormErrors,
   validateCreateBusinessAdminForm,
 } from './create-business-admin'
+import {
+  buildResetBusinessAdminPayload,
+  type ResetBusinessAdminForm,
+  type ResetBusinessAdminFormErrors,
+  validateResetBusinessAdminForm,
+} from './reset-business-admin'
 
 const loading = ref(false)
 const saving = ref(false)
+const resetting = ref(false)
 const statusSubmitting = ref(false)
 const statusSubmittingAccount = ref('')
 const statusSubmittingAction = ref<UpdateBusinessAdminStatusAction | ''>('')
 const dialogVisible = ref(false)
+const resetDialogVisible = ref(false)
+const resetTargetAccount = ref('')
 const businessAdmins = ref<Awaited<ReturnType<typeof getBusinessAdmins>>>([])
 const createForm = ref<CreateBusinessAdminForm>(createInitialForm())
 const formErrors = ref<CreateBusinessAdminFormErrors>({})
+const resetForm = ref<ResetBusinessAdminForm>(createInitialResetForm())
+const resetFormErrors = ref<ResetBusinessAdminFormErrors>({})
 
 const tableRows = computed(() => businessAdmins.value.map(mapBusinessAdminToTableRow))
 
@@ -186,10 +252,32 @@ function closeCreateDialog() {
   dialogVisible.value = false
 }
 
+function openResetPasswordDialog(account: string) {
+  resetDialogVisible.value = true
+  resetTargetAccount.value = account
+  resetForm.value = createInitialResetForm()
+  resetFormErrors.value = {}
+}
+
+function closeResetPasswordDialog() {
+  if (resetting.value) {
+    return
+  }
+  resetDialogVisible.value = false
+}
+
 function validateField(field: keyof CreateBusinessAdminForm) {
   const nextErrors = validateCreateBusinessAdminForm(createForm.value)
   formErrors.value = {
     ...formErrors.value,
+    [field]: nextErrors[field],
+  }
+}
+
+function validateResetField(field: keyof ResetBusinessAdminForm) {
+  const nextErrors = validateResetBusinessAdminForm(resetForm.value)
+  resetFormErrors.value = {
+    ...resetFormErrors.value,
     [field]: nextErrors[field],
   }
 }
@@ -246,11 +334,53 @@ async function submitBusinessAdminStatus(account: string, action: UpdateBusiness
   }
 }
 
+async function submitResetBusinessAdminPassword() {
+  resetFormErrors.value = validateResetBusinessAdminForm(resetForm.value)
+  if (Object.values(resetFormErrors.value).some(Boolean)) {
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确认将账号 ${resetTargetAccount.value} 的密码重置为当前输入的新密码吗？`,
+      '重置业务管理员密码',
+      {
+        confirmButtonText: '确认重置',
+        cancelButtonText: '取消',
+        type: 'warning',
+        closeOnClickModal: false,
+        closeOnPressEscape: false,
+      },
+    )
+  } catch {
+    return
+  }
+
+  resetting.value = true
+  try {
+    await resetBusinessAdminPassword(resetTargetAccount.value, buildResetBusinessAdminPayload(resetForm.value))
+    ElMessage.success('业务管理员密码重置成功')
+    resetDialogVisible.value = false
+    resetTargetAccount.value = ''
+    resetForm.value = createInitialResetForm()
+  } catch (error) {
+    ElMessage.error(resolveApiErrorMessage(error, '业务管理员密码重置失败，请稍后重试'))
+  } finally {
+    resetting.value = false
+  }
+}
+
 function createInitialForm(): CreateBusinessAdminForm {
   return {
     phone: '',
     name: '',
     initialPassword: '',
+  }
+}
+
+function createInitialResetForm(): ResetBusinessAdminForm {
+  return {
+    newPassword: '',
   }
 }
 
@@ -371,6 +501,19 @@ function resolveApiErrorMessage(error: unknown, fallbackMessage: string) {
 .action-button--primary:not(.is-disabled):hover {
   border-color: rgba(123, 231, 255, 0.85);
   box-shadow: 0 14px 28px rgba(57, 200, 255, 0.28);
+}
+
+.action-button--secondary {
+  border-color: rgba(123, 231, 255, 0.22);
+  color: rgba(220, 244, 255, 0.9);
+  background: rgba(57, 200, 255, 0.08);
+  box-shadow: 0 8px 20px rgba(57, 200, 255, 0.1);
+}
+
+.action-button--secondary:not(.is-disabled):hover {
+  border-color: rgba(123, 231, 255, 0.4);
+  background: rgba(57, 200, 255, 0.14);
+  box-shadow: 0 10px 24px rgba(57, 200, 255, 0.14);
 }
 
 .action-button--muted {

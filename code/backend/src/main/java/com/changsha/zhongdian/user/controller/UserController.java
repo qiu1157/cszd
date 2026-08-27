@@ -8,6 +8,7 @@ import com.changsha.zhongdian.common.api.ApiResponse;
 import com.changsha.zhongdian.common.exception.BusinessException;
 import com.changsha.zhongdian.user.dto.BusinessAdminListItemResponse;
 import com.changsha.zhongdian.user.dto.CreateBusinessAdminRequest;
+import com.changsha.zhongdian.user.dto.ResetBusinessAdminPasswordRequest;
 import com.changsha.zhongdian.user.entity.UserStatus;
 import com.changsha.zhongdian.user.service.BusinessAdminCommandService;
 import com.changsha.zhongdian.user.service.UserQueryService;
@@ -72,6 +73,17 @@ public class UserController {
     ) {
         requireSystemAdmin(httpServletRequest);
         businessAdminCommandService.updateBusinessAdminStatus(account, UserStatus.DISABLED);
+        return ApiResponse.success(null);
+    }
+
+    @PostMapping("/business-admins/{account}/reset-password")
+    public ApiResponse<Void> resetBusinessAdminPassword(
+            @PathVariable String account,
+            @Valid @RequestBody ResetBusinessAdminPasswordRequest request,
+            HttpServletRequest httpServletRequest
+    ) {
+        requireSystemAdmin(httpServletRequest);
+        businessAdminCommandService.resetBusinessAdminPassword(account, request.newPassword());
         return ApiResponse.success(null);
     }
 

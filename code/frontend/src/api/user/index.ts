@@ -21,6 +21,10 @@ export type CreateBusinessAdminPayload = {
   initialPassword: string
 }
 
+export type ResetBusinessAdminPasswordPayload = {
+  newPassword: string
+}
+
 export type UpdateBusinessAdminStatusAction = 'enable' | 'disable'
 
 export async function getBusinessAdmins() {
@@ -35,5 +39,10 @@ export async function createBusinessAdmin(payload: CreateBusinessAdminPayload) {
 
 export async function updateBusinessAdminStatus(account: string, action: UpdateBusinessAdminStatusAction) {
   const response = await request.post<ApiResponse<null>>(`/api/users/business-admins/${account}/${action}`)
+  return response.data
+}
+
+export async function resetBusinessAdminPassword(account: string, payload: ResetBusinessAdminPasswordPayload) {
+  const response = await request.post<ApiResponse<null>>(`/api/users/business-admins/${account}/reset-password`, payload)
   return response.data
 }

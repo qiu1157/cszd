@@ -64,6 +64,22 @@ class UserControllerAuthorizationTest {
     }
 
     @Test
+    void businessAdminShouldNotResetBusinessAdminPassword() throws Exception {
+        String token = loginAsBusinessAdmin();
+
+        mockMvc.perform(post("/api/users/business-admins/13800138000/reset-password")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "newPassword": "Reset123"
+                                }
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
+    @Test
     void preflightRequestShouldPassWithoutAuthorization() throws Exception {
         mockMvc.perform(options("/api/users/business-admins")
                         .header("Origin", "http://localhost:5173")

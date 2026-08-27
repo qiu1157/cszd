@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 public class BusinessAdminCommandService {
 
     private static final String MAINLAND_CHINA_PHONE_PATTERN = "^1[3-9]\\d{9}$";
+    private static final String RESET_PASSWORD_PATTERN = "^(?=.*[A-Za-z])(?=.*\\d)\\S{6,20}$";
 
     private final SystemUserRepository systemUserRepository;
     private final PasswordHasher passwordHasher;
@@ -63,6 +64,24 @@ public class BusinessAdminCommandService {
         }
     }
 
+    public void resetBusinessAdminPassword(String account, String newPassword) {
+        String normalizedAccount = requireNonBlank(account, "账号不能为空");
+        String normalizedPassword = requireNonBlank(newPassword, "新密码不能为空");
+        requireValidResetPassword(normalizedPassword);
+
+        SystemUser systemUser = systemUserRepository.findByAccount(normalizedAccount)
+                .filter(user -> user.getRoleCode() == UserRole.BUSINESS_ADMIN)
+                .orElseThrow(() -> new BusinessException("USER_NOT_FOUND", "业务管理员不存在", HttpStatus.NOT_FOUND));
+
+        systemUser.setPasswordHash(passwordHasher.hash(normalizedPassword));
+
+        try {
+            systemUserRepository.save(systemUser);
+        } catch (DataAccessException exception) {
+            throw new BusinessException("USER_PASSWORD_RESET_FAILED", "当前数据库不可用，暂时无法重置业务管理员密码", HttpStatus.SERVICE_UNAVAILABLE);
+        }
+    }
+
     private String requireNonBlank(String value, String message) {
         if (value == null || value.trim().isEmpty()) {
             throw new BusinessException("VALIDATION_ERROR", message, HttpStatus.BAD_REQUEST);
@@ -73,6 +92,12 @@ public class BusinessAdminCommandService {
     private void requireValidPhone(String phone) {
         if (!phone.matches(MAINLAND_CHINA_PHONE_PATTERN)) {
             throw new BusinessException("VALIDATION_ERROR", "请输入正确的手机号", HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    private void requireValidResetPassword(String password) {
+        if (!password.matches(RESET_PASSWORD_PATTERN)) {
+            throw new BusinessException("VALIDATION_ERROR", "请输入6-20位且包含字母和数字的新密码", HttpStatus.BAD_REQUEST);
         }
     }
 }
