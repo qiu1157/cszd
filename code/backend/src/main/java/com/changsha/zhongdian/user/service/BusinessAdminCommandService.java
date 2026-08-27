@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class BusinessAdminCommandService {
 
+    private static final String MAINLAND_CHINA_PHONE_PATTERN = "^1[3-9]\\d{9}$";
+
     private final SystemUserRepository systemUserRepository;
     private final PasswordHasher passwordHasher;
 
@@ -23,6 +25,7 @@ public class BusinessAdminCommandService {
 
     public void createBusinessAdmin(String phone, String name, String initialPassword) {
         String normalizedPhone = requireNonBlank(phone, "手机号不能为空");
+        requireValidPhone(normalizedPhone);
         String normalizedName = requireNonBlank(name, "姓名不能为空");
         String normalizedInitialPassword = requireNonBlank(initialPassword, "初始密码不能为空");
 
@@ -50,5 +53,11 @@ public class BusinessAdminCommandService {
             throw new BusinessException("VALIDATION_ERROR", message, HttpStatus.BAD_REQUEST);
         }
         return value.trim();
+    }
+
+    private void requireValidPhone(String phone) {
+        if (!phone.matches(MAINLAND_CHINA_PHONE_PATTERN)) {
+            throw new BusinessException("VALIDATION_ERROR", "请输入正确的手机号", HttpStatus.BAD_REQUEST);
+        }
     }
 }

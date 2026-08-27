@@ -14,7 +14,7 @@
       <div class="summary-row">
         <div class="summary-chip">当前仅展示业务管理员，不显示 `admin`</div>
         <div class="summary-chip">最后登录时间在登录成功后自动更新</div>
-        <div class="summary-chip">新增仅校验必填，手机号规则将在后续任务实现</div>
+        <div class="summary-chip">新增时会校验中国大陆 11 位手机号格式</div>
       </div>
 
       <el-table v-loading="loading" :data="tableRows" class="user-table" empty-text="暂无业务管理员，可点击右上角新增业务管理员。">

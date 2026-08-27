@@ -57,6 +57,21 @@ class BusinessAdminCommandServiceTest {
     }
 
     @Test
+    void createBusinessAdminShouldRejectInvalidPhoneFormat() {
+        SystemUserRepository userRepository = org.mockito.Mockito.mock(SystemUserRepository.class);
+        PasswordHasher passwordHasher = org.mockito.Mockito.mock(PasswordHasher.class);
+        BusinessAdminCommandService commandService = new BusinessAdminCommandService(userRepository, passwordHasher);
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> commandService.createBusinessAdmin("12345", "李丹", "Init@123456")
+        );
+
+        assertEquals("VALIDATION_ERROR", exception.getCode());
+        assertEquals("请输入正确的手机号", exception.getMessage());
+    }
+
+    @Test
     void createBusinessAdminShouldReportReadableMessageWhenDatabaseUnavailable() {
         SystemUserRepository userRepository = org.mockito.Mockito.mock(SystemUserRepository.class);
         PasswordHasher passwordHasher = org.mockito.Mockito.mock(PasswordHasher.class);

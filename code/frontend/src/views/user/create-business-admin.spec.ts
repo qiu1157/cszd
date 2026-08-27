@@ -16,6 +16,18 @@ describe('validateCreateBusinessAdminForm', () => {
       initialPassword: '请输入初始密码',
     })
   })
+
+  it('应校验手机号格式为 11 位中国大陆手机号', () => {
+    expect(
+      validateCreateBusinessAdminForm({
+        phone: '12345',
+        name: '李丹',
+        initialPassword: 'Init@123456',
+      }),
+    ).toEqual({
+      phone: '请输入正确的手机号',
+    })
+  })
 })
 
 describe('buildCreateBusinessAdminPayload', () => {
