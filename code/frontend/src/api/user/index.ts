@@ -15,7 +15,18 @@ export type BusinessAdminListItem = {
   lastLoginAt: string | null
 }
 
+export type CreateBusinessAdminPayload = {
+  phone: string
+  name: string
+  initialPassword: string
+}
+
 export async function getBusinessAdmins() {
   const response = await request.get<ApiResponse<BusinessAdminListItem[]>>('/api/users/business-admins')
   return response.data.data
+}
+
+export async function createBusinessAdmin(payload: CreateBusinessAdminPayload) {
+  const response = await request.post<ApiResponse<null>>('/api/users/business-admins', payload)
+  return response.data
 }
