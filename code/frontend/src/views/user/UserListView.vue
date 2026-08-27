@@ -15,7 +15,7 @@
         <div class="summary-chip">当前仅展示业务管理员，不显示 `admin`</div>
         <div class="summary-chip">最后登录时间在登录成功后自动更新</div>
         <div class="summary-chip">新增时会校验中国大陆 11 位手机号格式</div>
-        <div class="summary-chip">列表内支持启用 / 停用，操作前需二次确认</div>
+        <div class="summary-chip">当前可执行动作会高亮显示，不可执行动作仅作弱提示</div>
       </div>
 
       <el-table v-loading="loading" :data="tableRows" class="user-table" empty-text="暂无业务管理员，可点击右上角新增业务管理员。">
@@ -49,9 +49,10 @@
         <el-table-column label="操作" min-width="220" fixed="right">
           <template #default="{ row }">
             <div class="action-group">
-              <el-button link type="primary" disabled>重置密码</el-button>
+              <el-button class="action-button action-button--muted" plain disabled>重置密码</el-button>
               <el-button
-                link
+                class="action-button"
+                :class="`action-button--${row.enableActionTone}`"
                 :disabled="!row.canEnable || statusSubmitting"
                 :loading="statusSubmitting && statusSubmittingAccount === row.account && statusSubmittingAction === 'enable'"
                 @click="submitBusinessAdminStatus(row.account, 'enable')"
@@ -59,7 +60,8 @@
                 启用
               </el-button>
               <el-button
-                link
+                class="action-button"
+                :class="`action-button--${row.disableActionTone}`"
                 :disabled="!row.canDisable || statusSubmitting"
                 :loading="statusSubmitting && statusSubmittingAccount === row.account && statusSubmittingAction === 'disable'"
                 @click="submitBusinessAdminStatus(row.account, 'disable')"
@@ -338,6 +340,60 @@ function resolveApiErrorMessage(error: unknown, fallbackMessage: string) {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  align-items: center;
+}
+
+.action-button {
+  min-width: 68px;
+  margin: 0;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 600;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.action-button:not(.is-disabled):hover {
+  transform: translateY(-1px);
+}
+
+.action-button--primary {
+  border-color: rgba(57, 200, 255, 0.45);
+  color: #06131d;
+  background: linear-gradient(135deg, #39c8ff, #7be7ff);
+  box-shadow: 0 10px 24px rgba(57, 200, 255, 0.22);
+}
+
+.action-button--primary:not(.is-disabled):hover {
+  border-color: rgba(123, 231, 255, 0.85);
+  box-shadow: 0 14px 28px rgba(57, 200, 255, 0.28);
+}
+
+.action-button--muted {
+  border-color: rgba(148, 163, 184, 0.18);
+  color: rgba(206, 216, 230, 0.58);
+  background: rgba(148, 163, 184, 0.06);
+  box-shadow: none;
+}
+
+.action-button--muted.is-disabled,
+.action-button--muted[disabled] {
+  border-color: rgba(148, 163, 184, 0.14);
+  color: rgba(206, 216, 230, 0.42);
+  background: rgba(148, 163, 184, 0.04);
+}
+
+.action-button.is-disabled.action-button--primary,
+.action-button--primary.is-disabled,
+.action-button--primary[disabled] {
+  border-color: rgba(148, 163, 184, 0.14);
+  color: rgba(206, 216, 230, 0.42);
+  background: rgba(148, 163, 184, 0.04);
+  box-shadow: none;
 }
 
 .dialog-head {

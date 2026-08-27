@@ -8,6 +8,8 @@ type UserTableRow = {
   statusType: 'success' | 'info'
   canEnable: boolean
   canDisable: boolean
+  enableActionTone: 'primary' | 'muted'
+  disableActionTone: 'primary' | 'muted'
   lastLoginText: string
 }
 
@@ -22,6 +24,8 @@ export function mapBusinessAdminToTableRow(item: BusinessAdminListItem): UserTab
     statusType: isEnabled ? 'success' : 'info',
     canEnable: !isEnabled,
     canDisable: isEnabled,
+    enableActionTone: isEnabled ? 'muted' : 'primary',
+    disableActionTone: isEnabled ? 'primary' : 'muted',
     lastLoginText: formatLastLoginAt(item.lastLoginAt),
   }
 }
