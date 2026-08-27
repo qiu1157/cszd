@@ -38,6 +38,9 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.token").isString())
                 .andExpect(jsonPath("$.data.user.account").value("13800000001"))
+                .andExpect(jsonPath("$.data.user.phone").value("13800000001"))
+                .andExpect(jsonPath("$.data.user.status").value("ENABLED"))
+                .andExpect(jsonPath("$.data.user.lastLoginAt").isNotEmpty())
                 .andExpect(jsonPath("$.data.user.role").value("BUSINESS_ADMIN"))
                 .andReturn();
 
@@ -49,6 +52,9 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.account").value("13800000001"))
+                .andExpect(jsonPath("$.data.phone").value("13800000001"))
+                .andExpect(jsonPath("$.data.status").value("ENABLED"))
+                .andExpect(jsonPath("$.data.lastLoginAt").isNotEmpty())
                 .andExpect(jsonPath("$.data.role").value("BUSINESS_ADMIN"));
     }
 

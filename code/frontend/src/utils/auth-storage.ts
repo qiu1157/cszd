@@ -1,9 +1,14 @@
 import type { UserRole } from '@/constants/enums/user-role'
 
+export type AuthUserStatus = 'ENABLED' | 'DISABLED'
+
 export type AuthUser = {
   account: string
   name: string
+  phone: string | null
   role: UserRole
+  status: AuthUserStatus
+  lastLoginAt: string | null
 }
 
 export type AuthSession = {

@@ -54,7 +54,10 @@ public class SystemUserAuthenticationService {
         return new LoginUser(
                 systemUser.getAccount(),
                 systemUser.getName(),
-                systemUser.getRoleCode().name()
+                systemUser.getPhone(),
+                systemUser.getRoleCode().name(),
+                systemUser.getUserStatus().name(),
+                systemUser.getLastLoginAt()
         );
     }
 

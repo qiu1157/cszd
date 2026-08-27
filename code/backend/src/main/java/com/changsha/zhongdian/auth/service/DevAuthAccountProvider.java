@@ -24,7 +24,10 @@ public class DevAuthAccountProvider {
         return Optional.of(new LoginUser(
                 matchedAccount.account(),
                 matchedAccount.name(),
-                matchedAccount.role()
+                matchedAccount.account(),
+                matchedAccount.role(),
+                "ENABLED",
+                null
         ));
     }
 
