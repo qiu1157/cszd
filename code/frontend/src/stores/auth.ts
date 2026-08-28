@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { getCurrentUser, login, type LoginPayload } from '@/api/auth'
-import { USER_ROLES, type UserRole } from '@/constants/enums/user-role'
 import {
   clearAuthSession,
   readAuthSession,
@@ -10,10 +9,7 @@ import {
   type AuthSession,
   type AuthUser,
 } from '@/utils/auth-storage'
-
-function getDefaultRouteByRole(role: UserRole) {
-  return role === USER_ROLES.SYSTEM_ADMIN ? '/platforms' : '/stations'
-}
+import { getDefaultRouteByRole } from '@/router/navigation'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref('')

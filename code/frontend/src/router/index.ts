@@ -4,6 +4,12 @@ import { USER_ROLES, type UserRole } from '@/constants/enums/user-role'
 import AppLayout from '@/layout/AppLayout.vue'
 import pinia from '@/stores'
 import { useAuthStore } from '@/stores/auth'
+import {
+  getDefaultRouteByRole,
+  getForbiddenFallbackRouteByRole,
+  LEGACY_PLATFORMS_PATH,
+  SYSTEM_DICTIONARY_PATH,
+} from './navigation'
 
 type AppRouteMeta = {
   title: string
@@ -50,6 +56,11 @@ const routes: Array<RouteRecordRaw & { meta: AppRouteMeta }> = [
         meta: { title: '系统字典', requiresAuth: true, roles: [USER_ROLES.SYSTEM_ADMIN] },
       },
       {
+        path: LEGACY_PLATFORMS_PATH,
+        redirect: SYSTEM_DICTIONARY_PATH,
+        meta: { title: '系统字典', requiresAuth: true, roles: [USER_ROLES.SYSTEM_ADMIN] },
+      },
+      {
         path: '/logs',
         name: 'Logs',
         component: () => import('@/views/logs/LogsView.vue'),
@@ -83,7 +94,7 @@ router.beforeEach(async (to) => {
   const targetMeta = to.meta as AppRouteMeta
 
   if (targetMeta.publicOnly && authStore.isAuthenticated) {
-    return authStore.user?.role === USER_ROLES.SYSTEM_ADMIN ? '/system-dictionaries' : '/stations'
+    return authStore.user ? getDefaultRouteByRole(authStore.user.role) : true
   }
 
   if (targetMeta.requiresAuth && !authStore.isAuthenticated) {
@@ -100,7 +111,7 @@ router.beforeEach(async (to) => {
   }
 
   if (targetMeta.roles?.length && authStore.user && !targetMeta.roles.includes(authStore.user.role)) {
-    return authStore.user.role === USER_ROLES.SYSTEM_ADMIN ? '/system-dictionaries' : '/stations'
+    return getForbiddenFallbackRouteByRole(authStore.user.role)
   }
 
   return true

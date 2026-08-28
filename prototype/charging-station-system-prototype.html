@@ -289,6 +289,13 @@
       transform: translateY(-1px);
     }
 
+    .button:disabled {
+      cursor: not-allowed;
+      opacity: 0.48;
+      box-shadow: none;
+      transform: none;
+    }
+
     .button-primary {
       color: #04121e;
       background: linear-gradient(135deg, var(--brand-accent), #83ffd5);
@@ -787,6 +794,36 @@
       grid-column: span 2;
     }
 
+    .dictionary-toolbar {
+      grid-template-columns: minmax(220px, 260px) minmax(0, 1fr) auto;
+      align-items: end;
+    }
+
+    .dictionary-toolbar .toolbar-spacer {
+      min-height: 1px;
+    }
+
+    .table-action-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .table-action {
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 9px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      background: rgba(255,255,255,0.05);
+      color: var(--text-muted);
+      cursor: not-allowed;
+    }
+
+    .table-action:disabled {
+      opacity: 1;
+    }
+
     .actions-row {
       display: flex;
       flex-wrap: wrap;
@@ -1096,6 +1133,10 @@
         grid-template-columns: 1fr;
       }
 
+      .dictionary-toolbar {
+        grid-template-columns: 1fr;
+      }
+
       .status-line {
         grid-template-columns: 1fr;
       }
@@ -1129,7 +1170,7 @@
         </div>
         <h1 class="hero-title">充电站管理系统</h1>
         <p class="hero-desc">
-          统一运营后台（PC 优先，手机自适应）。支持站点管理、桩管理、股东与持股关系、股权调整、平台字典与日志审计。
+          统一运营后台（PC 优先，手机自适应）。支持站点管理、桩管理、股东与持股关系、股权调整、系统字典与日志审计。
         </p>
 
         <div class="hero-grid">
@@ -1222,7 +1263,7 @@
           <span class="menu-badge">03</span>
         </button>
         <button class="menu-item" data-view="platform">
-          <span>平台管理</span>
+          <span>系统字典</span>
           <span class="menu-badge">04</span>
         </button>
         <button class="menu-item" data-view="logs">
@@ -1349,8 +1390,8 @@
               </div>
               <div class="mini-item">
                 <div>
-                  <strong>平台管理</strong>
-                  <p>仅系统管理员可维护平台字典，为站点归属提供统一来源。</p>
+                  <strong>系统字典</strong>
+                  <p>统一维护平台、充电站状态、充电桩状态等基础字典。</p>
                 </div>
                 <span class="tag tag-neutral">系统</span>
               </div>
@@ -1763,77 +1804,81 @@
       </section>
 
       <section class="view" id="view-platform">
-        <div class="dual-grid">
-          <div class="section-card">
-            <div class="section-head">
-              <div>
-                <h3>平台字典管理</h3>
-                <p>第一期只做基础字典，不出现 API 地址、AppId、密钥等字段。</p>
-              </div>
-              <button class="button button-primary">新增平台</button>
-            </div>
-            <div class="table-wrap" style="padding: 0; border: none; background: transparent; box-shadow: none;">
-              <table>
-                <thead>
-                  <tr>
-                    <th>平台名称</th>
-                    <th>编码</th>
-                    <th>状态</th>
-                    <th>更新时间</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td><div class="title-cell"><strong>星络平台</strong><span class="subtitle">用于湖南主运营站点</span></div></td>
-                    <td>XL</td>
-                    <td><span class="tag tag-success">启用</span></td>
-                    <td>2026-08-24 17:20</td>
-                  </tr>
-                  <tr>
-                    <td><div class="title-cell"><strong>云快充</strong><span class="subtitle">用于合作站点映射</span></div></td>
-                    <td>YKC</td>
-                    <td><span class="tag tag-success">启用</span></td>
-                    <td>2026-08-21 10:42</td>
-                  </tr>
-                  <tr>
-                    <td><div class="title-cell"><strong>城市充电云</strong><span class="subtitle">历史平台保留</span></div></td>
-                    <td>CSCD</td>
-                    <td><span class="tag tag-neutral">停用</span></td>
-                    <td>2026-08-10 09:11</td>
-                  </tr>
-                </tbody>
-              </table>
+        <div class="section-card">
+          <div class="section-head">
+            <div>
+              <h3>系统字典</h3>
             </div>
           </div>
-
-          <div class="section-card">
-            <div class="section-head">
-              <div>
-                <h3>新增 / 编辑平台表单</h3>
-                <p>最小字段集，后续可扩展对接参数。</p>
-              </div>
+          <div class="toolbar dictionary-toolbar">
+            <div class="field">
+              <label>字典类型</label>
+              <select>
+                <option selected>平台</option>
+                <option>充电站状态</option>
+                <option>充电桩状态</option>
+              </select>
             </div>
-            <div class="toolbar" style="grid-template-columns: 1fr;">
-              <div class="field">
-                <label>平台名称</label>
-                <input value="星络平台" />
-              </div>
-              <div class="field">
-                <label>平台编码 / 简称</label>
-                <input value="XL" />
-              </div>
-              <div class="field">
-                <label>状态</label>
-                <select>
-                  <option selected>启用</option>
-                  <option>停用</option>
-                </select>
-              </div>
-            </div>
-            <div class="actions-row">
-              <button class="button button-secondary">取消</button>
-              <button class="button button-primary">保存平台字典</button>
-            </div>
+            <div class="toolbar-spacer"></div>
+            <button class="button button-primary" disabled>新增字典项</button>
+          </div>
+          <div class="table-wrap" style="padding: 0; border: none; background: transparent; box-shadow: none;">
+            <table>
+              <thead>
+                <tr>
+                  <th>名称</th>
+                  <th>编码</th>
+                  <th>状态</th>
+                  <th>排序</th>
+                  <th>更新时间</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><div class="title-cell"><strong>星络平台</strong><span class="subtitle">用于湖南主运营站点</span></div></td>
+                  <td>XL</td>
+                  <td><span class="tag tag-success">启用</span></td>
+                  <td>10</td>
+                  <td>2026-08-24 17:20</td>
+                  <td>
+                    <div class="table-action-group">
+                      <button class="table-action" disabled>编辑</button>
+                      <button class="table-action" disabled>启用</button>
+                      <button class="table-action" disabled>停用</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td><div class="title-cell"><strong>云快充</strong><span class="subtitle">用于合作站点映射</span></div></td>
+                  <td>YKC</td>
+                  <td><span class="tag tag-success">启用</span></td>
+                  <td>20</td>
+                  <td>2026-08-21 10:42</td>
+                  <td>
+                    <div class="table-action-group">
+                      <button class="table-action" disabled>编辑</button>
+                      <button class="table-action" disabled>启用</button>
+                      <button class="table-action" disabled>停用</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td><div class="title-cell"><strong>城市充电云</strong><span class="subtitle">历史平台保留</span></div></td>
+                  <td>CSCD</td>
+                  <td><span class="tag tag-neutral">停用</span></td>
+                  <td>30</td>
+                  <td>2026-08-10 09:11</td>
+                  <td>
+                    <div class="table-action-group">
+                      <button class="table-action" disabled>编辑</button>
+                      <button class="table-action" disabled>启用</button>
+                      <button class="table-action" disabled>停用</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
@@ -2124,7 +2169,7 @@
       ],
       recentEvents: [
         { time: "10:26", actor: "13800138000", type: "状态变更", title: "将“芙蓉东智慧能源港”调整为运营异常", desc: "业务管理员更新了站点状态，备注为“主变压器检修中，暂停部分快充服务”。" },
-        { time: "09:58", actor: "admin", type: "平台维护", title: "新增平台字典“云快充”", desc: "系统管理员新增了平台字典，供站点归属选择使用。" },
+        { time: "09:58", actor: "admin", type: "系统字典维护", title: "新增平台字典“云快充”", desc: "系统管理员新增了平台字典，供站点归属选择使用。" },
         { time: "09:12", actor: "13800138000", type: "新增站点", title: "新建“雨花城际快充港”", desc: "完成基础信息录入后进入详情页，继续补充充电桩与股东关系。" }
       ],
       stationTimeline: [
@@ -2140,7 +2185,7 @@
       ],
       logs: [
         { time: "2026-08-25 10:26", actor: "13800138000", role: "业务管理员", type: "充电站", title: "修改站点状态", desc: "对象：芙蓉东智慧能源港 · 修改前：运营中 · 修改后：运营异常" },
-        { time: "2026-08-25 09:58", actor: "admin", role: "系统管理员", type: "平台", title: "新增平台字典", desc: "对象：云快充 · 状态：启用" },
+        { time: "2026-08-25 09:58", actor: "admin", role: "系统管理员", type: "系统字典", title: "新增平台字典", desc: "对象：平台 / 云快充 · 状态：启用" },
         { time: "2026-08-25 09:40", actor: "13800138000", role: "业务管理员", type: "持股关系", title: "执行股权调整", desc: "对象：星城南服务区超级站 · 涉及 3 位股东 · 调整后总占比 100%" },
         { time: "2026-08-24 18:20", actor: "admin", role: "系统管理员", type: "用户", title: "重置业务管理员密码", desc: "对象：13900139000 · 原因：账号恢复使用" }
       ]
@@ -2153,7 +2198,7 @@
       "station-detail": { title: "站点详情", desc: "基础信息、充电桩、股东与时间线。" },
       shareholder: { title: "股东管理", desc: "股东主档与跨站事件时间线。" },
       equity: { title: "股权调整", desc: "一次性调整多个股东占比（总和=100%）。" },
-      platform: { title: "平台管理", desc: "平台字典维护。" },
+      platform: { title: "系统字典", desc: "平台、充电站状态、充电桩状态统一维护。" },
       logs: { title: "操作日志", desc: "全局审计事件查询与详情。" },
       users: { title: "用户管理", desc: "业务管理员账号维护与重置密码。" }
     };
