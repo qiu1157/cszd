@@ -12,7 +12,7 @@ export const appMenuItems: AppMenuItem[] = [
   { path: '/dashboard', title: '首页', roles: BOTH_ROLES },
   { path: '/stations', title: '充电站管理', roles: [USER_ROLES.BUSINESS_ADMIN] },
   { path: '/shareholders', title: '股东管理', roles: [USER_ROLES.BUSINESS_ADMIN] },
-  { path: '/platforms', title: '平台管理', roles: [USER_ROLES.SYSTEM_ADMIN] },
+  { path: '/system-dictionaries', title: '系统字典', roles: [USER_ROLES.SYSTEM_ADMIN] },
   { path: '/logs', title: '操作日志', roles: BOTH_ROLES },
   { path: '/users', title: '用户管理', roles: [USER_ROLES.SYSTEM_ADMIN] },
   { path: '/account', title: '我的账号', roles: BOTH_ROLES },

@@ -14,7 +14,7 @@ describe('appMenuItems', () => {
   it('系统管理员只看到系统侧入口', () => {
     expect(getTitlesByRole('SYSTEM_ADMIN')).toEqual([
       '首页',
-      '平台管理',
+      '系统字典',
       '操作日志',
       '用户管理',
       '我的账号',

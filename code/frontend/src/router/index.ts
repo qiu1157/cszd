@@ -44,10 +44,10 @@ const routes: Array<RouteRecordRaw & { meta: AppRouteMeta }> = [
         meta: { title: '股东管理', requiresAuth: true, roles: [USER_ROLES.BUSINESS_ADMIN] },
       },
       {
-        path: '/platforms',
-        name: 'PlatformList',
-        component: () => import('@/views/platform/PlatformListView.vue'),
-        meta: { title: '平台管理', requiresAuth: true, roles: [USER_ROLES.SYSTEM_ADMIN] },
+        path: '/system-dictionaries',
+        name: 'SystemDictionaryList',
+        component: () => import('@/views/system-dictionary/SystemDictionaryListView.vue'),
+        meta: { title: '系统字典', requiresAuth: true, roles: [USER_ROLES.SYSTEM_ADMIN] },
       },
       {
         path: '/logs',
@@ -83,7 +83,7 @@ router.beforeEach(async (to) => {
   const targetMeta = to.meta as AppRouteMeta
 
   if (targetMeta.publicOnly && authStore.isAuthenticated) {
-    return authStore.user?.role === USER_ROLES.SYSTEM_ADMIN ? '/platforms' : '/stations'
+    return authStore.user?.role === USER_ROLES.SYSTEM_ADMIN ? '/system-dictionaries' : '/stations'
   }
 
   if (targetMeta.requiresAuth && !authStore.isAuthenticated) {
@@ -100,7 +100,7 @@ router.beforeEach(async (to) => {
   }
 
   if (targetMeta.roles?.length && authStore.user && !targetMeta.roles.includes(authStore.user.role)) {
-    return authStore.user.role === USER_ROLES.SYSTEM_ADMIN ? '/platforms' : '/stations'
+    return authStore.user.role === USER_ROLES.SYSTEM_ADMIN ? '/system-dictionaries' : '/stations'
   }
 
   return true
