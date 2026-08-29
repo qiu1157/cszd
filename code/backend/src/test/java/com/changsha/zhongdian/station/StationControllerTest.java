@@ -6,7 +6,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
+import com.changsha.zhongdian.station.dto.StationListItemResponse;
 import com.changsha.zhongdian.station.service.StationCodeGenerator;
+import com.changsha.zhongdian.station.service.StationQueryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -30,6 +35,9 @@ class StationControllerTest {
     @MockBean
     private StationCodeGenerator stationCodeGenerator;
 
+    @MockBean
+    private StationQueryService stationQueryService;
+
     @Test
     void nextCodeShouldReturnGeneratedStationCodeForAuthenticatedUser() throws Exception {
         when(stationCodeGenerator.generateNextCode()).thenReturn("ST-202608-0019");
@@ -47,6 +55,32 @@ class StationControllerTest {
         mockMvc.perform(get("/api/stations/next-code"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    void listStationsShouldReturnStationRowsForAuthenticatedUser() throws Exception {
+        when(stationQueryService.listStations()).thenReturn(List.of(
+                new StationListItemResponse(
+                        "ST-202608-0018",
+                        "星城南服务区超级站",
+                        "星络平台",
+                        "XL-4301-889",
+                        "张海峰",
+                        "13800138000",
+                        "运营中",
+                        LocalDateTime.of(2026, 8, 29, 10, 26)
+                )
+        ));
+        String token = loginAsBusinessAdmin();
+
+        mockMvc.perform(get("/api/stations")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].stationCode").value("ST-202608-0018"))
+                .andExpect(jsonPath("$.data[0].stationName").value("星城南服务区超级站"))
+                .andExpect(jsonPath("$.data[0].platformName").value("星络平台"))
+                .andExpect(jsonPath("$.data[0].stationStatusName").value("运营中"));
     }
 
     private String loginAsBusinessAdmin() throws Exception {
