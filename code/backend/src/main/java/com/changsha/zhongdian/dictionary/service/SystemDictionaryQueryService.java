@@ -49,13 +49,14 @@ public class SystemDictionaryQueryService {
         SystemDictType type = typeRepository.findByTypeCode(normalizedTypeCode)
                 .orElseThrow(() -> new BusinessException("DICT_TYPE_NOT_FOUND", "字典类型不存在", HttpStatus.NOT_FOUND));
 
-        return itemRepository.findAllByTypeOrderBySortOrderAscItemCodeAsc(type).stream()
+        return itemRepository.findAllByTypeOrderBySortOrderAscItemNameAsc(type).stream()
                 .map(this::toItemResponse)
                 .toList();
     }
 
     private SystemDictItemListItemResponse toItemResponse(SystemDictItem item) {
         return new SystemDictItemListItemResponse(
+                item.getId(),
                 item.getItemCode(),
                 item.getItemName(),
                 item.getItemStatus().name(),

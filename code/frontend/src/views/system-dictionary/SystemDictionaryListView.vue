@@ -20,7 +20,9 @@
           </el-select>
         </div>
         <div class="toolbar-spacer"></div>
-        <el-button class="create-button" type="primary" disabled>新增字典项</el-button>
+        <el-button class="create-button" type="primary" :disabled="!activeTypeCode || saving" @click="openCreateDialog">
+          新增字典项
+        </el-button>
       </div>
 
       <el-table v-loading="loading" :data="tableRows" class="dictionary-table" empty-text="当前尚未维护字典项。">
@@ -36,7 +38,9 @@
         <el-table-column label="操作" min-width="220" fixed="right">
           <template #default="{ row }">
             <div class="action-group">
-              <el-button class="action-button action-button--muted" :disabled="row.actionDisabled">编辑</el-button>
+              <el-button class="action-button action-button--secondary" :disabled="!row.canEdit || saving" @click="openEditDialog(row)">
+                编辑
+              </el-button>
               <el-button class="action-button action-button--muted" :disabled="row.actionDisabled">启用</el-button>
               <el-button class="action-button action-button--muted" :disabled="row.actionDisabled">停用</el-button>
             </div>
@@ -44,28 +48,103 @@
         </el-table-column>
       </el-table>
     </el-card>
+
+    <el-dialog
+      v-model="dialogVisible"
+      width="520px"
+      class="system-dictionary-dialog"
+      :show-close="false"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+      destroy-on-close
+      align-center
+    >
+      <template #header>
+        <div class="dialog-head">
+          <div>
+            <h3 v-if="dialogMode === 'create'">新增字典项</h3>
+            <h3 v-else>编辑字典项</h3>
+            <p>当前字典类型：{{ activeTypeName || '--' }}</p>
+          </div>
+          <el-button text @click="closeDialog">关闭</el-button>
+        </div>
+      </template>
+
+      <div class="dialog-body">
+        <div class="form-field">
+          <label>名称</label>
+          <el-input v-model="form.itemName" maxlength="64" placeholder="请输入名称" @blur="validateField('itemName')" />
+          <p v-if="formErrors.itemName" class="field-error">{{ formErrors.itemName }}</p>
+        </div>
+
+        <div class="form-field">
+          <label>编码</label>
+          <el-input v-model="form.itemCode" maxlength="64" placeholder="请输入编码" @blur="validateField('itemCode')" />
+          <p v-if="formErrors.itemCode" class="field-error">{{ formErrors.itemCode }}</p>
+        </div>
+
+        <div class="form-field">
+          <label>状态</label>
+          <el-select v-model="form.status" placeholder="请选择状态" @change="validateField('status')">
+            <el-option label="启用" value="ENABLED" />
+            <el-option label="停用" value="DISABLED" />
+          </el-select>
+          <p v-if="formErrors.status" class="field-error">{{ formErrors.status }}</p>
+        </div>
+
+        <div class="form-field">
+          <label>排序</label>
+          <el-input v-model="form.sortOrder" maxlength="9" placeholder="不填默认按0保存" @blur="validateField('sortOrder')" />
+          <p v-if="formErrors.sortOrder" class="field-error">{{ formErrors.sortOrder }}</p>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="dialog-actions">
+          <el-button @click="closeDialog">取消</el-button>
+          <el-button type="primary" :loading="saving" @click="submitForm">保存</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </section>
 </template>
 
 <script setup lang="ts">
+import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 
 import {
+  createSystemDictionaryItem,
   getSystemDictionaryItems,
   getSystemDictionaryTypes,
+  updateSystemDictionaryItem,
   type SystemDictItemListItem,
   type SystemDictTypeListItem,
 } from '@/api/system-dictionary'
 
 import { mapDictItemToTableRow } from './adapters'
+import {
+  buildSystemDictItemPayload,
+  validateSystemDictItemForm,
+  type SystemDictItemForm,
+  type SystemDictItemFormErrors,
+} from './system-dictionary-form'
 
 type DictTypeCode = SystemDictTypeListItem['typeCode']
+type DictTableRow = ReturnType<typeof mapDictItemToTableRow>
+type DialogMode = 'create' | 'edit'
 
 const loading = ref(false)
+const saving = ref(false)
+const dialogVisible = ref(false)
+const dialogMode = ref<DialogMode>('create')
+const editingItemId = ref<number | null>(null)
 const activeTypeCode = ref<DictTypeCode | ''>('PLATFORM')
 const types = ref<SystemDictTypeListItem[]>([])
 const items = ref<SystemDictItemListItem[]>([])
+const form = ref<SystemDictItemForm>(createInitialForm())
+const formErrors = ref<SystemDictItemFormErrors>({})
 
 const tableRows = computed(() => items.value.map(mapDictItemToTableRow))
 const typeOptions = computed(() =>
@@ -74,6 +153,7 @@ const typeOptions = computed(() =>
     label: item.typeName,
   })),
 )
+const activeTypeName = computed(() => types.value.find((item) => item.typeCode === activeTypeCode.value)?.typeName ?? '')
 
 async function loadTypes() {
   types.value = await getSystemDictionaryTypes()
@@ -101,12 +181,95 @@ async function handleTypeChange(typeCode: DictTypeCode | '') {
   await loadItems(typeCode)
 }
 
+function openCreateDialog() {
+  dialogMode.value = 'create'
+  editingItemId.value = null
+  form.value = createInitialForm()
+  formErrors.value = {}
+  dialogVisible.value = true
+}
+
+function openEditDialog(row: DictTableRow) {
+  dialogMode.value = 'edit'
+  editingItemId.value = row.id
+  form.value = {
+    itemName: row.name,
+    itemCode: row.code,
+    status: row.statusType === 'success' ? 'ENABLED' : 'DISABLED',
+    sortOrder: String(row.sortOrder),
+  }
+  formErrors.value = {}
+  dialogVisible.value = true
+}
+
+function closeDialog() {
+  if (saving.value) {
+    return
+  }
+  dialogVisible.value = false
+}
+
+function validateField(field: keyof SystemDictItemForm) {
+  const nextErrors = validateSystemDictItemForm(form.value)
+  formErrors.value = {
+    ...formErrors.value,
+    [field]: nextErrors[field],
+  }
+}
+
+async function submitForm() {
+  formErrors.value = validateSystemDictItemForm(form.value)
+  if (Object.values(formErrors.value).some(Boolean) || !activeTypeCode.value) {
+    return
+  }
+
+  saving.value = true
+  try {
+    const payload = buildSystemDictItemPayload(form.value)
+    if (dialogMode.value === 'create') {
+      await createSystemDictionaryItem(activeTypeCode.value, payload)
+      ElMessage.success('字典项新增成功')
+    } else if (editingItemId.value !== null) {
+      await updateSystemDictionaryItem(activeTypeCode.value, editingItemId.value, payload)
+      ElMessage.success('字典项更新成功')
+    }
+
+    dialogVisible.value = false
+    editingItemId.value = null
+    form.value = createInitialForm()
+    await loadItems(activeTypeCode.value)
+  } catch (error) {
+    ElMessage.error(resolveApiErrorMessage(error, dialogMode.value === 'create' ? '字典项新增失败，请稍后重试' : '字典项更新失败，请稍后重试'))
+  } finally {
+    saving.value = false
+  }
+}
+
 function resolveInitialTypeCode(dictTypes: SystemDictTypeListItem[]): DictTypeCode | '' {
   if (dictTypes.some((item) => item.typeCode === 'PLATFORM')) {
     return 'PLATFORM'
   }
 
   return dictTypes[0]?.typeCode ?? ''
+}
+
+function createInitialForm(): SystemDictItemForm {
+  return {
+    itemName: '',
+    itemCode: '',
+    status: 'ENABLED',
+    sortOrder: '',
+  }
+}
+
+function resolveApiErrorMessage(error: unknown, fallbackMessage: string) {
+  if (axios.isAxiosError(error)) {
+    const message = error.response?.data?.message
+    if (typeof message === 'string' && message.trim()) {
+      return message
+    }
+  }
+  return fallbackMessage
 }
 
 onMounted(async () => {
@@ -168,14 +331,6 @@ onMounted(async () => {
   min-height: 1px;
 }
 
-.create-button.is-disabled,
-.create-button[disabled] {
-  border-color: rgba(148, 163, 184, 0.14);
-  color: rgba(206, 216, 230, 0.42);
-  background: rgba(148, 163, 184, 0.04);
-  box-shadow: none;
-}
-
 .dictionary-table {
   --el-table-bg-color: transparent;
   --el-table-tr-bg-color: transparent;
@@ -201,6 +356,12 @@ onMounted(async () => {
   font-weight: 600;
 }
 
+.action-button--secondary {
+  border-color: rgba(57, 200, 255, 0.24);
+  color: #dff9ff;
+  background: rgba(57, 200, 255, 0.1);
+}
+
 .action-button--muted {
   border-color: rgba(148, 163, 184, 0.18);
   color: rgba(206, 216, 230, 0.58);
@@ -213,6 +374,51 @@ onMounted(async () => {
   border-color: rgba(148, 163, 184, 0.14);
   color: rgba(206, 216, 230, 0.42);
   background: rgba(148, 163, 184, 0.04);
+}
+
+.dialog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dialog-head h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.dialog-head p {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+}
+
+.dialog-body {
+  display: grid;
+  gap: 16px;
+}
+
+.form-field {
+  display: grid;
+  gap: 8px;
+}
+
+.form-field label {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.field-error {
+  margin: 0;
+  color: #ff8f8f;
+  font-size: 13px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
 }
 
 @media (max-width: 960px) {

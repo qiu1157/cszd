@@ -7,12 +7,18 @@ import com.changsha.zhongdian.auth.service.AuthService;
 import com.changsha.zhongdian.common.api.ApiResponse;
 import com.changsha.zhongdian.common.exception.BusinessException;
 import com.changsha.zhongdian.dictionary.dto.SystemDictItemListItemResponse;
+import com.changsha.zhongdian.dictionary.dto.SystemDictItemUpsertRequest;
 import com.changsha.zhongdian.dictionary.dto.SystemDictTypeListItemResponse;
+import com.changsha.zhongdian.dictionary.service.SystemDictionaryCommandService;
 import com.changsha.zhongdian.dictionary.service.SystemDictionaryQueryService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -21,10 +27,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class SystemDictionaryController {
 
     private final AuthService authService;
+    private final SystemDictionaryCommandService commandService;
     private final SystemDictionaryQueryService queryService;
 
-    public SystemDictionaryController(AuthService authService, SystemDictionaryQueryService queryService) {
+    public SystemDictionaryController(
+            AuthService authService,
+            SystemDictionaryCommandService commandService,
+            SystemDictionaryQueryService queryService
+    ) {
         this.authService = authService;
+        this.commandService = commandService;
         this.queryService = queryService;
     }
 
@@ -41,6 +53,29 @@ public class SystemDictionaryController {
     ) {
         requireSystemAdmin(request);
         return ApiResponse.success(queryService.listItems(typeCode));
+    }
+
+    @PostMapping("/{typeCode}/items")
+    public ApiResponse<Void> createItem(
+            @PathVariable String typeCode,
+            @Valid @RequestBody SystemDictItemUpsertRequest request,
+            HttpServletRequest httpServletRequest
+    ) {
+        requireSystemAdmin(httpServletRequest);
+        commandService.createItem(typeCode, request.itemCode(), request.itemName(), request.status(), request.sortOrder());
+        return ApiResponse.success(null);
+    }
+
+    @PutMapping("/{typeCode}/items/{itemId}")
+    public ApiResponse<Void> updateItem(
+            @PathVariable String typeCode,
+            @PathVariable Long itemId,
+            @Valid @RequestBody SystemDictItemUpsertRequest request,
+            HttpServletRequest httpServletRequest
+    ) {
+        requireSystemAdmin(httpServletRequest);
+        commandService.updateItem(itemId, typeCode, request.itemCode(), request.itemName(), request.status(), request.sortOrder());
+        return ApiResponse.success(null);
     }
 
     private void requireSystemAdmin(HttpServletRequest request) {

@@ -22,6 +22,7 @@ describe('system dictionary adapters', () => {
   it('应将停用字典项映射为禁用态展示', () => {
     expect(
       mapDictItemToTableRow({
+        id: 5,
         itemCode: 'DISABLED',
         itemName: '停用',
         status: 'DISABLED',
@@ -29,10 +30,12 @@ describe('system dictionary adapters', () => {
         updatedAt: '2026-08-27T20:30:00',
       }),
     ).toMatchObject({
+      id: 5,
       code: 'DISABLED',
       name: '停用',
       statusLabel: '停用',
       statusType: 'info',
+      canEdit: true,
       actionDisabled: true,
     })
   })

@@ -1,6 +1,7 @@
 package com.changsha.zhongdian.dictionary.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import com.changsha.zhongdian.dictionary.entity.SystemDictItem;
 import com.changsha.zhongdian.dictionary.entity.SystemDictType;
@@ -10,5 +11,7 @@ public interface SystemDictItemRepository extends JpaRepository<SystemDictItem, 
 
     long countByType(SystemDictType type);
 
-    List<SystemDictItem> findAllByTypeOrderBySortOrderAscItemCodeAsc(SystemDictType type);
+    List<SystemDictItem> findAllByTypeOrderBySortOrderAscItemNameAsc(SystemDictType type);
+
+    Optional<SystemDictItem> findByIdAndType(Long id, SystemDictType type);
 }
