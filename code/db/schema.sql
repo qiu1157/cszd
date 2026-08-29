@@ -65,33 +65,34 @@ CREATE TABLE IF NOT EXISTS sys_dict_item (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='系统字典项表';
 
 -- TODO: 里程碑 B 后续任务继续补齐：默认管理员初始化、系统字典页面与接口；
--- 为什么：充电站管理采用“列表 + 详情页 + 两段式录入”，
+-- 为什么：业务域表统一使用 biz_ 前缀，系统域保留 sys_ 前缀，
+-- 这样能与 sys_user、sys_dict_type、sys_dict_item 保持清晰分层。
 -- 当前阶段先定义支撑基础信息录入、平台筛选、状态筛选和后续详情扩展的最小真实表结构。
--- 其中 system_id 由系统自动生成，且全局唯一；
--- platform_station_id 为人工录入的平台ID，可为空，但平台ID在同一平台内唯一；
--- station_status_dict_item_id 表示当前单一生命周期状态，第一期范围为：签合同 / 建设中 / 运营中 / 运营异常 / 停用，
+-- 其中 station_code 为充电站编号；充电站编号由系统自动生成，且全局唯一。
+-- platform_station_code 为人工录入的平台站点编号，可为空，但平台站点编号在同一平台内唯一。
+-- station_status_item_id 表示当前单一生命周期状态，第一期范围为：签合同 / 建设中 / 运营中 / 运营异常 / 停用，
 -- 后续新增充电站时默认应落到“签合同”对应的启用字典项。
-CREATE TABLE IF NOT EXISTS charging_station (
+CREATE TABLE IF NOT EXISTS biz_station (
   id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  system_id VARCHAR(32) NOT NULL COMMENT '系统ID；系统自动生成，且全局唯一',
+  station_code VARCHAR(32) NOT NULL COMMENT '充电站编号；充电站编号由系统自动生成，且全局唯一',
   station_name VARCHAR(128) NOT NULL COMMENT '充电站名称',
-  platform_dict_item_id BIGINT NOT NULL COMMENT '所在平台字典项ID；关联 PLATFORM 类型字典项',
-  platform_station_id VARCHAR(64) DEFAULT NULL COMMENT '平台ID；人工录入，可为空，平台ID在同一平台内唯一',
-  station_address VARCHAR(255) DEFAULT NULL COMMENT '地址',
+  platform_item_id BIGINT NOT NULL COMMENT '所在平台字典项ID；关联 PLATFORM 类型字典项',
+  platform_station_code VARCHAR(64) DEFAULT NULL COMMENT '平台站点编号；人工录入，可为空，平台站点编号在同一平台内唯一',
+  address VARCHAR(255) DEFAULT NULL COMMENT '地址',
   contact_name VARCHAR(64) DEFAULT NULL COMMENT '联系人',
   contact_phone VARCHAR(20) DEFAULT NULL COMMENT '联系电话',
-  station_status_dict_item_id BIGINT NOT NULL COMMENT '生命周期状态字典项ID；单一状态，默认指向签合同',
+  station_status_item_id BIGINT NOT NULL COMMENT '生命周期状态字典项ID；单一状态，默认指向签合同',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (id),
-  UNIQUE KEY uk_charging_station_system_id (system_id),
-  UNIQUE KEY uk_charging_station_platform_station_id (platform_dict_item_id, platform_station_id),
-  KEY idx_charging_station_name (station_name),
-  KEY idx_charging_station_platform_dict_item_id (platform_dict_item_id),
-  KEY idx_charging_station_status_dict_item_id (station_status_dict_item_id),
-  CONSTRAINT fk_charging_station_platform_dict_item_id FOREIGN KEY (platform_dict_item_id) REFERENCES sys_dict_item (id),
-  CONSTRAINT fk_charging_station_status_dict_item_id FOREIGN KEY (station_status_dict_item_id) REFERENCES sys_dict_item (id)
+  UNIQUE KEY uk_biz_station_station_code (station_code),
+  UNIQUE KEY uk_biz_station_platform_station_code (platform_item_id, platform_station_code),
+  KEY idx_biz_station_station_name (station_name),
+  KEY idx_biz_station_platform_item_id (platform_item_id),
+  KEY idx_biz_station_station_status_item_id (station_status_item_id),
+  CONSTRAINT fk_biz_station_platform_item_id FOREIGN KEY (platform_item_id) REFERENCES sys_dict_item (id),
+  CONSTRAINT fk_biz_station_station_status_item_id FOREIGN KEY (station_status_item_id) REFERENCES sys_dict_item (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='充电站表';
 
--- TODO: 里程碑 C 后续任务继续补齐：system_id 生成逻辑、站点列表/详情、状态切换；
+-- TODO: 里程碑 C 后续任务继续补齐：station_code 生成逻辑、站点列表/详情、状态切换；
 -- TODO: 里程碑 D 起补齐：pile/shareholder/equity/log ... 等业务表。
