@@ -13,6 +13,9 @@ describe('SystemDictionaryListView source', () => {
     expect(source).toContain('编辑字典项</h3>')
     expect(source).toContain('@click="openCreateDialog"')
     expect(source).toContain('@click="openEditDialog(row)"')
+    expect(source).toContain(`@click="submitItemStatus(row, 'enable')"`)
+    expect(source).toContain(`@click="submitItemStatus(row, 'disable')"`)
+    expect(source).toContain('ElMessageBox.confirm')
     expect(source).toContain(':close-on-click-modal="false"')
     expect(source).toContain(':close-on-press-escape="false"')
 

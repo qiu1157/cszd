@@ -83,6 +83,16 @@ class SystemDictionaryControllerAuthorizationTest {
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"));
     }
 
+    @Test
+    void businessAdminShouldNotChangeSystemDictionaryItemStatus() throws Exception {
+        String token = loginAsBusinessAdmin();
+
+        mockMvc.perform(post("/api/system-dictionaries/PLATFORM/items/8/enable")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
     private String loginAsBusinessAdmin() throws Exception {
         MvcResult loginResult = mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

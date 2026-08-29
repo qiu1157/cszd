@@ -78,10 +78,30 @@ public class SystemDictionaryController {
         return ApiResponse.success(null);
     }
 
+    @PostMapping("/{typeCode}/items/{itemId}/{action}")
+    public ApiResponse<Void> updateItemStatus(
+            @PathVariable String typeCode,
+            @PathVariable Long itemId,
+            @PathVariable String action,
+            HttpServletRequest httpServletRequest
+    ) {
+        requireSystemAdmin(httpServletRequest);
+        commandService.updateItemStatus(itemId, typeCode, resolveTargetStatus(action));
+        return ApiResponse.success(null);
+    }
+
     private void requireSystemAdmin(HttpServletRequest request) {
         LoginUser currentUser = authService.getCurrentUser(request);
         if (!"SYSTEM_ADMIN".equals(currentUser.role())) {
             throw new BusinessException("FORBIDDEN", "仅系统管理员可执行该操作", HttpStatus.FORBIDDEN);
         }
+    }
+
+    private String resolveTargetStatus(String action) {
+        return switch (action) {
+            case "enable" -> "ENABLED";
+            case "disable" -> "DISABLED";
+            default -> throw new BusinessException("VALIDATION_ERROR", "状态操作不合法", HttpStatus.BAD_REQUEST);
+        };
     }
 }

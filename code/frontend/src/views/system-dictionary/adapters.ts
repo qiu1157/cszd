@@ -10,15 +10,20 @@ export function mapDictTypeToNavItem(item: SystemDictTypeListItem) {
 }
 
 export function mapDictItemToTableRow(item: SystemDictItemListItem) {
+  const isEnabled = item.status === 'ENABLED'
+
   return {
     id: item.id,
     code: item.itemCode,
     name: item.itemName,
     sortOrder: item.sortOrder,
     updatedAtText: item.updatedAt.slice(0, 16).replace('T', ' '),
-    statusLabel: item.status === 'ENABLED' ? '启用' : '停用',
-    statusType: item.status === 'ENABLED' ? 'success' : 'info',
+    statusLabel: isEnabled ? '启用' : '停用',
+    statusType: isEnabled ? 'success' : 'info',
     canEdit: true,
-    actionDisabled: true,
+    canEnable: !isEnabled,
+    canDisable: isEnabled,
+    enableActionTone: isEnabled ? 'muted' : 'primary',
+    disableActionTone: isEnabled ? 'primary' : 'muted',
   }
 }

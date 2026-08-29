@@ -30,6 +30,8 @@ export type SystemDictItemPayload = {
   sortOrder: number
 }
 
+export type UpdateSystemDictionaryItemStatusAction = 'enable' | 'disable'
+
 export async function getSystemDictionaryTypes() {
   const response = await request.get<ApiResponse<SystemDictTypeListItem[]>>('/api/system-dictionaries/types')
   return response.data.data
@@ -47,5 +49,14 @@ export async function createSystemDictionaryItem(typeCode: string, payload: Syst
 
 export async function updateSystemDictionaryItem(typeCode: string, itemId: number, payload: SystemDictItemPayload) {
   const response = await request.put<ApiResponse<null>>(`/api/system-dictionaries/${typeCode}/items/${itemId}`, payload)
+  return response.data.data
+}
+
+export async function updateSystemDictionaryItemStatus(
+  typeCode: string,
+  itemId: number,
+  action: UpdateSystemDictionaryItemStatusAction,
+) {
+  const response = await request.post<ApiResponse<null>>(`/api/system-dictionaries/${typeCode}/items/${itemId}/${action}`)
   return response.data.data
 }

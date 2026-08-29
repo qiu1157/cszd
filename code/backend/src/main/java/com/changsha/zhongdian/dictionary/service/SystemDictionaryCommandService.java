@@ -52,6 +52,15 @@ public class SystemDictionaryCommandService {
         saveItem(item);
     }
 
+    public void updateItemStatus(Long itemId, String typeCode, String status) {
+        SystemDictType type = findType(typeCode);
+        SystemDictItem item = itemRepository.findByIdAndType(itemId, type)
+                .orElseThrow(() -> new BusinessException("DICT_ITEM_NOT_FOUND", "字典项不存在", HttpStatus.NOT_FOUND));
+
+        item.setItemStatus(parseStatus(status));
+        saveItem(item);
+    }
+
     private SystemDictType findType(String typeCode) {
         DictionaryTypeCode normalizedTypeCode;
         try {

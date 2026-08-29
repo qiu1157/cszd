@@ -38,11 +38,27 @@
         <el-table-column label="操作" min-width="220" fixed="right">
           <template #default="{ row }">
             <div class="action-group">
-              <el-button class="action-button action-button--secondary" :disabled="!row.canEdit || saving" @click="openEditDialog(row)">
+              <el-button class="action-button action-button--secondary" :disabled="!row.canEdit || saving || statusSubmitting" @click="openEditDialog(row)">
                 编辑
               </el-button>
-              <el-button class="action-button action-button--muted" :disabled="row.actionDisabled">启用</el-button>
-              <el-button class="action-button action-button--muted" :disabled="row.actionDisabled">停用</el-button>
+              <el-button
+                class="action-button"
+                :class="`action-button--${row.enableActionTone}`"
+                :disabled="!row.canEnable || saving || statusSubmitting"
+                :loading="statusSubmitting && statusSubmittingItemId === row.id && statusSubmittingAction === 'enable'"
+                @click="submitItemStatus(row, 'enable')"
+              >
+                启用
+              </el-button>
+              <el-button
+                class="action-button"
+                :class="`action-button--${row.disableActionTone}`"
+                :disabled="!row.canDisable || saving || statusSubmitting"
+                :loading="statusSubmitting && statusSubmittingItemId === row.id && statusSubmittingAction === 'disable'"
+                @click="submitItemStatus(row, 'disable')"
+              >
+                停用
+              </el-button>
             </div>
           </template>
         </el-table-column>
@@ -111,7 +127,7 @@
 
 <script setup lang="ts">
 import axios from 'axios'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 
 import {
@@ -119,8 +135,10 @@ import {
   getSystemDictionaryItems,
   getSystemDictionaryTypes,
   updateSystemDictionaryItem,
+  updateSystemDictionaryItemStatus,
   type SystemDictItemListItem,
   type SystemDictTypeListItem,
+  type UpdateSystemDictionaryItemStatusAction,
 } from '@/api/system-dictionary'
 
 import { mapDictItemToTableRow } from './adapters'
@@ -137,6 +155,9 @@ type DialogMode = 'create' | 'edit'
 
 const loading = ref(false)
 const saving = ref(false)
+const statusSubmitting = ref(false)
+const statusSubmittingItemId = ref<number | null>(null)
+const statusSubmittingAction = ref<UpdateSystemDictionaryItemStatusAction | ''>('')
 const dialogVisible = ref(false)
 const dialogMode = ref<DialogMode>('create')
 const editingItemId = ref<number | null>(null)
@@ -242,6 +263,42 @@ async function submitForm() {
     ElMessage.error(resolveApiErrorMessage(error, dialogMode.value === 'create' ? '字典项新增失败，请稍后重试' : '字典项更新失败，请稍后重试'))
   } finally {
     saving.value = false
+  }
+}
+
+async function submitItemStatus(row: DictTableRow, action: UpdateSystemDictionaryItemStatusAction) {
+  if (!activeTypeCode.value) {
+    return
+  }
+
+  const actionText = action === 'enable' ? '启用' : '停用'
+
+  try {
+    await ElMessageBox.confirm(`确认${actionText}字典项 ${row.name} 吗？`, `${actionText}字典项`, {
+      confirmButtonText: actionText,
+      cancelButtonText: '取消',
+      type: 'warning',
+      closeOnClickModal: false,
+      closeOnPressEscape: false,
+    })
+  } catch {
+    return
+  }
+
+  statusSubmitting.value = true
+  statusSubmittingItemId.value = row.id
+  statusSubmittingAction.value = action
+
+  try {
+    await updateSystemDictionaryItemStatus(activeTypeCode.value, row.id, action)
+    ElMessage.success(`字典项已${actionText}`)
+    await loadItems(activeTypeCode.value)
+  } catch (error) {
+    ElMessage.error(resolveApiErrorMessage(error, `字典项${actionText}失败，请稍后重试`))
+  } finally {
+    statusSubmitting.value = false
+    statusSubmittingItemId.value = null
+    statusSubmittingAction.value = ''
   }
 }
 
@@ -354,12 +411,41 @@ onMounted(async () => {
   border-radius: 12px;
   padding: 8px 14px;
   font-weight: 600;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.action-button:not(.is-disabled):hover {
+  transform: translateY(-1px);
+}
+
+.action-button--primary {
+  border-color: rgba(57, 200, 255, 0.45);
+  color: #06131d;
+  background: linear-gradient(135deg, #39c8ff, #7be7ff);
+  box-shadow: 0 10px 24px rgba(57, 200, 255, 0.22);
+}
+
+.action-button--primary:not(.is-disabled):hover {
+  border-color: rgba(123, 231, 255, 0.85);
+  box-shadow: 0 14px 28px rgba(57, 200, 255, 0.28);
 }
 
 .action-button--secondary {
   border-color: rgba(57, 200, 255, 0.24);
   color: #dff9ff;
   background: rgba(57, 200, 255, 0.1);
+  box-shadow: 0 8px 20px rgba(57, 200, 255, 0.1);
+}
+
+.action-button--secondary:not(.is-disabled):hover {
+  border-color: rgba(123, 231, 255, 0.4);
+  background: rgba(57, 200, 255, 0.14);
+  box-shadow: 0 10px 24px rgba(57, 200, 255, 0.14);
 }
 
 .action-button--muted {
@@ -374,6 +460,15 @@ onMounted(async () => {
   border-color: rgba(148, 163, 184, 0.14);
   color: rgba(206, 216, 230, 0.42);
   background: rgba(148, 163, 184, 0.04);
+}
+
+.action-button.is-disabled.action-button--primary,
+.action-button--primary.is-disabled,
+.action-button--primary[disabled] {
+  border-color: rgba(148, 163, 184, 0.14);
+  color: rgba(206, 216, 230, 0.42);
+  background: rgba(148, 163, 184, 0.04);
+  box-shadow: none;
 }
 
 .dialog-head {

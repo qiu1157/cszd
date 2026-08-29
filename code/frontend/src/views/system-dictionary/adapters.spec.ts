@@ -36,7 +36,34 @@ describe('system dictionary adapters', () => {
       statusLabel: '停用',
       statusType: 'info',
       canEdit: true,
-      actionDisabled: true,
+      canEnable: true,
+      canDisable: false,
+      enableActionTone: 'primary',
+      disableActionTone: 'muted',
+    })
+  })
+
+  it('应将启用字典项映射为停用动作高亮展示', () => {
+    expect(
+      mapDictItemToTableRow({
+        id: 9,
+        itemCode: 'STATE_GRID',
+        itemName: '国网',
+        status: 'ENABLED',
+        sortOrder: 10,
+        updatedAt: '2026-08-29T10:00:00',
+      }),
+    ).toMatchObject({
+      id: 9,
+      code: 'STATE_GRID',
+      name: '国网',
+      statusLabel: '启用',
+      statusType: 'success',
+      canEdit: true,
+      canEnable: false,
+      canDisable: true,
+      enableActionTone: 'muted',
+      disableActionTone: 'primary',
     })
   })
 })

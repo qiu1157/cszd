@@ -70,6 +70,29 @@ class SystemDictionaryCommandServiceTest {
     }
 
     @Test
+    void updateItemStatusShouldSwitchCurrentItemStatusWithinCurrentType() {
+        SystemDictTypeRepository typeRepository = org.mockito.Mockito.mock(SystemDictTypeRepository.class);
+        SystemDictItemRepository itemRepository = org.mockito.Mockito.mock(SystemDictItemRepository.class);
+        SystemDictionaryCommandService commandService = new SystemDictionaryCommandService(typeRepository, itemRepository);
+
+        SystemDictType platformType = createType(DictionaryTypeCode.PLATFORM);
+        SystemDictItem existingItem = new SystemDictItem();
+        existingItem.setType(platformType);
+        existingItem.setItemCode("STATE_GRID");
+        existingItem.setItemName("国网");
+        existingItem.setItemStatus(DictionaryStatus.DISABLED);
+        existingItem.setSortOrder(10);
+
+        when(typeRepository.findByTypeCode(DictionaryTypeCode.PLATFORM)).thenReturn(Optional.of(platformType));
+        when(itemRepository.findByIdAndType(18L, platformType)).thenReturn(Optional.of(existingItem));
+
+        commandService.updateItemStatus(18L, "PLATFORM", "ENABLED");
+
+        assertEquals(DictionaryStatus.ENABLED, existingItem.getItemStatus());
+        verify(itemRepository).save(existingItem);
+    }
+
+    @Test
     void createItemShouldRejectInvalidStatus() {
         SystemDictTypeRepository typeRepository = org.mockito.Mockito.mock(SystemDictTypeRepository.class);
         SystemDictItemRepository itemRepository = org.mockito.Mockito.mock(SystemDictItemRepository.class);
