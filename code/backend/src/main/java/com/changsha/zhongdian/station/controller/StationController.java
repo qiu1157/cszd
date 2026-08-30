@@ -42,9 +42,10 @@ public class StationController {
 
     @GetMapping
     public ApiResponse<List<StationListItemResponse>> listStations(
-            @RequestParam(name = "stationName", required = false) String stationName
+            @RequestParam(name = "stationName", required = false) String stationName,
+            @RequestParam(name = "platformItemId", required = false) Long platformItemId
     ) {
-        return ApiResponse.success(stationQueryService.listStations(stationName));
+        return ApiResponse.success(stationQueryService.listStations(stationName, platformItemId));
     }
 
     @PostMapping

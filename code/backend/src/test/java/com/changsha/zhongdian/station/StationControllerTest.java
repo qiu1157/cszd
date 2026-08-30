@@ -120,6 +120,32 @@ class StationControllerTest {
     }
 
     @Test
+    void listStationsShouldPassPlatformItemIdToQueryService() throws Exception {
+        when(stationQueryService.listStations(null, 11L)).thenReturn(List.of(
+                new StationListItemResponse(
+                        "ST-202608-0002",
+                        "望城综合能源站",
+                        "手工验收平台",
+                        "PT-330011",
+                        "李工",
+                        "13800138001",
+                        "签合同",
+                        LocalDateTime.of(2026, 8, 30, 8, 40)
+                )
+        ));
+        String token = loginAsBusinessAdmin();
+
+        mockMvc.perform(get("/api/stations")
+                        .param("platformItemId", "11")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].platformName").value("手工验收平台"));
+
+        verify(stationQueryService).listStations(null, 11L);
+    }
+
+    @Test
     void listPlatformOptionsShouldReturnEnabledPlatformItemsForAuthenticatedUser() throws Exception {
         when(stationFormOptionQueryService.listPlatformOptions()).thenReturn(List.of(
                 new StationPlatformOptionResponse(11L, "XL", "星络平台")

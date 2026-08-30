@@ -75,6 +75,30 @@ class StationQueryServiceTest {
         assertEquals("雨花城际快充港", response.get(0).stationName());
     }
 
+    @Test
+    void listStationsShouldUsePlatformFilterWhenPlatformItemIdProvided() {
+        StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
+        when(stationRepository.findAllListItemsByPlatformItemIdOrderByUpdatedAtDesc(11L)).thenReturn(List.of(
+                new TestStationListItemProjection(
+                        "ST-202608-0002",
+                        "望城综合能源站",
+                        "手工验收平台",
+                        "PT-330011",
+                        "李工",
+                        "13800138001",
+                        "签合同",
+                        LocalDateTime.of(2026, 8, 30, 8, 40)
+                )
+        ));
+
+        StationQueryService stationQueryService = new StationQueryService(stationRepository);
+
+        List<StationListItemResponse> response = stationQueryService.listStations(null, 11L);
+
+        assertEquals(1, response.size());
+        assertEquals("望城综合能源站", response.get(0).stationName());
+    }
+
     private static final class TestStationListItemProjection implements StationListItemProjection {
 
         private final String stationCode;
