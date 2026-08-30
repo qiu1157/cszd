@@ -42,6 +42,34 @@ public class StationQueryService {
         return stationList;
     }
 
+    public List<StationListItemResponse> listStations(
+            String stationNameKeyword,
+            Long platformItemId,
+            Long stationStatusItemId
+    ) {
+        String normalizedKeyword = normalizeKeyword(stationNameKeyword);
+        Long normalizedPlatformItemId = normalizePlatformItemId(platformItemId);
+        Long normalizedStationStatusItemId = normalizePlatformItemId(stationStatusItemId);
+
+        List<StationListItemResponse> stationList = resolveStationProjections(
+                normalizedKeyword,
+                normalizedPlatformItemId,
+                normalizedStationStatusItemId
+        ).stream()
+                .map(item -> new StationListItemResponse(
+                        item.getStationCode(),
+                        item.getStationName(),
+                        item.getPlatformName(),
+                        item.getPlatformStationCode(),
+                        item.getContactName(),
+                        item.getContactPhone(),
+                        item.getStationStatusName(),
+                        item.getUpdatedAt()
+                ))
+                .toList();
+        return stationList;
+    }
+
     private List<com.changsha.zhongdian.station.repository.StationListItemProjection> resolveStationProjections(
             String stationNameKeyword,
             Long platformItemId
@@ -59,6 +87,24 @@ public class StationQueryService {
             return stationRepository.findAllListItemsByPlatformItemIdOrderByUpdatedAtDesc(platformItemId);
         }
         return stationRepository.findAllListItemsOrderByUpdatedAtDesc();
+    }
+
+    private List<com.changsha.zhongdian.station.repository.StationListItemProjection> resolveStationProjections(
+            String stationNameKeyword,
+            Long platformItemId,
+            Long stationStatusItemId
+    ) {
+        if (stationStatusItemId == null) {
+            return resolveStationProjections(stationNameKeyword, platformItemId);
+        }
+        if (stationNameKeyword == null && platformItemId == null) {
+            return stationRepository.findAllListItemsByStationStatusItemIdOrderByUpdatedAtDesc(stationStatusItemId);
+        }
+        return stationRepository.findAllListItemsByFiltersOrderByUpdatedAtDesc(
+                stationNameKeyword,
+                platformItemId,
+                stationStatusItemId
+        );
     }
 
     private String normalizeKeyword(String keyword) {

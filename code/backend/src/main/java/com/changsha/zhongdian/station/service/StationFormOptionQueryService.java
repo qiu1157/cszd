@@ -6,6 +6,7 @@ import com.changsha.zhongdian.dictionary.entity.DictionaryStatus;
 import com.changsha.zhongdian.dictionary.entity.DictionaryTypeCode;
 import com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository;
 import com.changsha.zhongdian.station.dto.StationPlatformOptionResponse;
+import com.changsha.zhongdian.station.dto.StationStatusOptionResponse;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -23,6 +24,19 @@ public class StationFormOptionQueryService {
                         DictionaryStatus.ENABLED
                 ).stream()
                 .map(item -> new StationPlatformOptionResponse(
+                        item.getId(),
+                        item.getItemCode(),
+                        item.getItemName()
+                ))
+                .toList();
+    }
+
+    public List<StationStatusOptionResponse> listStatusOptions() {
+        return itemRepository.findAllByTypeTypeCodeAndItemStatusOrderBySortOrderAscItemNameAsc(
+                        DictionaryTypeCode.STATION_STATUS,
+                        DictionaryStatus.ENABLED
+                ).stream()
+                .map(item -> new StationStatusOptionResponse(
                         item.getId(),
                         item.getItemCode(),
                         item.getItemName()

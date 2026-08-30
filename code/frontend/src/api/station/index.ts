@@ -27,11 +27,16 @@ export type StationCreatePayload = {
   contactPhone: string
 }
 
-export async function getStations(stationName?: string, platformItemId?: number | null) {
+export async function getStations(
+  stationName?: string,
+  platformItemId?: number | null,
+  stationStatusItemId?: number | null,
+) {
   const response = await request.get<ApiResponse<StationListItem[]>>('/api/stations', {
     params: {
       stationName: stationName?.trim() || undefined,
       platformItemId: platformItemId ?? undefined,
+      stationStatusItemId: stationStatusItemId ?? undefined,
     },
   })
   return response.data.data

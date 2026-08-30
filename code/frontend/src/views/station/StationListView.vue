@@ -28,6 +28,19 @@
                 :value="item.itemId"
               />
             </el-select>
+            <el-select
+              v-model="searchForm.stationStatusItemId"
+              class="toolbar-input"
+              placeholder="请选择状态"
+              clearable
+            >
+              <el-option
+                v-for="item in statusOptions"
+                :key="item.itemId"
+                :label="item.itemName"
+                :value="item.itemId"
+              />
+            </el-select>
             <el-button class="action-button" type="primary" @click="handleSearch">查询</el-button>
           </div>
         </div>
@@ -65,7 +78,12 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { getStations, type StationListItem } from '@/api/station'
-import { getStationPlatformOptions, type StationPlatformOption } from '@/api/station/form-options'
+import {
+  getStationPlatformOptions,
+  getStationStatusOptions,
+  type StationPlatformOption,
+  type StationStatusOption,
+} from '@/api/station/form-options'
 import { STATION_CREATE_PATH } from '@/router/navigation'
 
 import { mapStationToTableRow } from './adapters'
@@ -74,9 +92,11 @@ const router = useRouter()
 const loading = ref(false)
 const stations = ref<StationListItem[]>([])
 const platformOptions = ref<StationPlatformOption[]>([])
+const statusOptions = ref<StationStatusOption[]>([])
 const searchForm = ref({
   stationName: '',
   platformItemId: null as number | null,
+  stationStatusItemId: null as number | null,
 })
 
 const tableRows = computed(() => stations.value.map(mapStationToTableRow))
@@ -84,7 +104,11 @@ const tableRows = computed(() => stations.value.map(mapStationToTableRow))
 async function loadStations() {
   loading.value = true
   try {
-    stations.value = await getStations(searchForm.value.stationName, searchForm.value.platformItemId)
+    stations.value = await getStations(
+      searchForm.value.stationName,
+      searchForm.value.platformItemId,
+      searchForm.value.stationStatusItemId,
+    )
   } catch (error) {
     ElMessage.error(resolveApiErrorMessage(error, '充电站列表加载失败，请稍后重试'))
   } finally {
@@ -97,6 +121,14 @@ async function loadPlatformOptions() {
     platformOptions.value = await getStationPlatformOptions()
   } catch (error) {
     ElMessage.error(resolveApiErrorMessage(error, '平台选项加载失败，请稍后重试'))
+  }
+}
+
+async function loadStatusOptions() {
+  try {
+    statusOptions.value = await getStationStatusOptions()
+  } catch (error) {
+    ElMessage.error(resolveApiErrorMessage(error, '状态选项加载失败，请稍后重试'))
   }
 }
 
@@ -121,6 +153,7 @@ function resolveApiErrorMessage(error: unknown, fallbackMessage: string) {
 
 onMounted(() => {
   void loadPlatformOptions()
+  void loadStatusOptions()
   void loadStations()
 })
 </script>

@@ -99,6 +99,30 @@ class StationQueryServiceTest {
         assertEquals("望城综合能源站", response.get(0).stationName());
     }
 
+    @Test
+    void listStationsShouldUseStatusFilterWhenStationStatusItemIdProvided() {
+        StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
+        when(stationRepository.findAllListItemsByStationStatusItemIdOrderByUpdatedAtDesc(21L)).thenReturn(List.of(
+                new TestStationListItemProjection(
+                        "ST-202608-0003",
+                        "河西智慧充电站",
+                        "手工验收平台",
+                        "PT-330021",
+                        "王工",
+                        "13800138002",
+                        "运营中",
+                        LocalDateTime.of(2026, 8, 30, 9, 10)
+                )
+        ));
+
+        StationQueryService stationQueryService = new StationQueryService(stationRepository);
+
+        List<StationListItemResponse> response = stationQueryService.listStations(null, null, 21L);
+
+        assertEquals(1, response.size());
+        assertEquals("河西智慧充电站", response.get(0).stationName());
+    }
+
     private static final class TestStationListItemProjection implements StationListItemProjection {
 
         private final String stationCode;

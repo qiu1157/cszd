@@ -7,6 +7,7 @@ import com.changsha.zhongdian.station.dto.StationCreateRequest;
 import com.changsha.zhongdian.station.dto.StationListItemResponse;
 import com.changsha.zhongdian.station.dto.StationNextCodeResponse;
 import com.changsha.zhongdian.station.dto.StationPlatformOptionResponse;
+import com.changsha.zhongdian.station.dto.StationStatusOptionResponse;
 import com.changsha.zhongdian.station.service.StationCodeGenerator;
 import com.changsha.zhongdian.station.service.StationCommandService;
 import com.changsha.zhongdian.station.service.StationFormOptionQueryService;
@@ -43,8 +44,12 @@ public class StationController {
     @GetMapping
     public ApiResponse<List<StationListItemResponse>> listStations(
             @RequestParam(name = "stationName", required = false) String stationName,
-            @RequestParam(name = "platformItemId", required = false) Long platformItemId
+            @RequestParam(name = "platformItemId", required = false) Long platformItemId,
+            @RequestParam(name = "stationStatusItemId", required = false) Long stationStatusItemId
     ) {
+        if (stationStatusItemId != null) {
+            return ApiResponse.success(stationQueryService.listStations(stationName, platformItemId, stationStatusItemId));
+        }
         return ApiResponse.success(stationQueryService.listStations(stationName, platformItemId));
     }
 
@@ -56,6 +61,11 @@ public class StationController {
     @GetMapping("/platform-options")
     public ApiResponse<List<StationPlatformOptionResponse>> listPlatformOptions() {
         return ApiResponse.success(stationFormOptionQueryService.listPlatformOptions());
+    }
+
+    @GetMapping("/status-options")
+    public ApiResponse<List<StationStatusOptionResponse>> listStatusOptions() {
+        return ApiResponse.success(stationFormOptionQueryService.listStatusOptions());
     }
 
     @GetMapping("/next-code")

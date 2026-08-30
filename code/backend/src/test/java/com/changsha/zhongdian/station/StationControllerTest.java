@@ -12,6 +12,7 @@ import java.util.List;
 
 import com.changsha.zhongdian.station.dto.StationListItemResponse;
 import com.changsha.zhongdian.station.dto.StationPlatformOptionResponse;
+import com.changsha.zhongdian.station.dto.StationStatusOptionResponse;
 import com.changsha.zhongdian.station.service.StationCodeGenerator;
 import com.changsha.zhongdian.station.service.StationCommandService;
 import com.changsha.zhongdian.station.service.StationFormOptionQueryService;
@@ -158,6 +159,47 @@ class StationControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].itemId").value(11L))
                 .andExpect(jsonPath("$.data[0].itemName").value("星络平台"));
+    }
+
+    @Test
+    void listStatusOptionsShouldReturnEnabledStationStatusItemsForAuthenticatedUser() throws Exception {
+        when(stationFormOptionQueryService.listStatusOptions()).thenReturn(List.of(
+                new StationStatusOptionResponse(21L, "OPERATING", "运营中")
+        ));
+        String token = loginAsBusinessAdmin();
+
+        mockMvc.perform(get("/api/stations/status-options")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].itemId").value(21L))
+                .andExpect(jsonPath("$.data[0].itemName").value("运营中"));
+    }
+
+    @Test
+    void listStationsShouldPassStatusItemIdToQueryService() throws Exception {
+        when(stationQueryService.listStations(null, null, 21L)).thenReturn(List.of(
+                new StationListItemResponse(
+                        "ST-202608-0003",
+                        "河西智慧充电站",
+                        "手工验收平台",
+                        "PT-330021",
+                        "王工",
+                        "13800138002",
+                        "运营中",
+                        LocalDateTime.of(2026, 8, 30, 9, 10)
+                )
+        ));
+        String token = loginAsBusinessAdmin();
+
+        mockMvc.perform(get("/api/stations")
+                        .param("stationStatusItemId", "21")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].stationStatusName").value("运营中"));
+
+        verify(stationQueryService).listStations(null, null, 21L);
     }
 
     @Test
