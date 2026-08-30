@@ -8,6 +8,7 @@ import {
   getDefaultRouteByRole,
   getForbiddenFallbackRouteByRole,
   LEGACY_PLATFORMS_PATH,
+  STATION_CREATE_PATH,
   SYSTEM_DICTIONARY_PATH,
 } from './navigation'
 
@@ -41,7 +42,13 @@ const routes: Array<RouteRecordRaw & { meta: AppRouteMeta }> = [
         path: '/stations',
         name: 'StationList',
         component: () => import('@/views/station/StationListView.vue'),
-        meta: { title: '充电站管理', requiresAuth: true, roles: [USER_ROLES.BUSINESS_ADMIN] },
+        meta: { title: '充电站管理', requiresAuth: true, roles: [USER_ROLES.SYSTEM_ADMIN, USER_ROLES.BUSINESS_ADMIN] },
+      },
+      {
+        path: STATION_CREATE_PATH,
+        name: 'StationCreate',
+        component: () => import('@/views/station/StationCreateView.vue'),
+        meta: { title: '新增充电站', requiresAuth: true, roles: [USER_ROLES.SYSTEM_ADMIN, USER_ROLES.BUSINESS_ADMIN] },
       },
       {
         path: '/shareholders',

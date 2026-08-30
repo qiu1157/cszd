@@ -18,7 +18,21 @@ export type StationListItem = {
   updatedAt: string
 }
 
+export type StationCreatePayload = {
+  stationName: string
+  platformItemId: number | null
+  platformStationCode: string
+  address: string
+  contactName: string
+  contactPhone: string
+}
+
 export async function getStations() {
   const response = await request.get<ApiResponse<StationListItem[]>>('/api/stations')
+  return response.data.data
+}
+
+export async function createStation(payload: StationCreatePayload) {
+  const response = await request.post<ApiResponse<number>>('/api/stations', payload)
   return response.data.data
 }

@@ -11,9 +11,10 @@ function getTitlesByRole(role: MenuRole) {
 }
 
 describe('appMenuItems', () => {
-  it('系统管理员只看到系统侧入口', () => {
+  it('系统管理员应看到充电站入口，便于进入里程碑 C 页面', () => {
     expect(getTitlesByRole('SYSTEM_ADMIN')).toEqual([
       '首页',
+      '充电站管理',
       '系统字典',
       '操作日志',
       '用户管理',

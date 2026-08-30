@@ -11,6 +11,8 @@ public interface StationRepository extends JpaRepository<Station, Long> {
 
     Optional<Station> findTopByStationCodeStartingWithOrderByStationCodeDesc(String stationCodePrefix);
 
+    boolean existsByPlatformItemIdAndPlatformStationCode(Long platformItemId, String platformStationCode);
+
     @Query(value = """
             SELECT
                 s.station_code AS stationCode,

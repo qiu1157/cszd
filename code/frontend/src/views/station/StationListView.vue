@@ -4,7 +4,7 @@
       <template #header>
         <div class="section-head">
           <h3>充电站管理</h3>
-          <el-button class="action-button action-button--muted" type="primary" :disabled="true">新增充电站</el-button>
+          <el-button class="action-button" type="primary" @click="goToCreate">新增充电站</el-button>
         </div>
       </template>
 
@@ -37,11 +37,14 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 import { getStations, type StationListItem } from '@/api/station'
+import { STATION_CREATE_PATH } from '@/router/navigation'
 
 import { mapStationToTableRow } from './adapters'
 
+const router = useRouter()
 const loading = ref(false)
 const stations = ref<StationListItem[]>([])
 
@@ -56,6 +59,10 @@ async function loadStations() {
   } finally {
     loading.value = false
   }
+}
+
+function goToCreate() {
+  void router.push(STATION_CREATE_PATH)
 }
 
 function resolveApiErrorMessage(error: unknown, fallbackMessage: string) {

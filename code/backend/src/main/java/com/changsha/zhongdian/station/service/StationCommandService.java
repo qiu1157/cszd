@@ -1,0 +1,89 @@
+package com.changsha.zhongdian.station.service;
+
+import com.changsha.zhongdian.common.exception.BusinessException;
+import com.changsha.zhongdian.dictionary.entity.DictionaryStatus;
+import com.changsha.zhongdian.dictionary.entity.DictionaryTypeCode;
+import com.changsha.zhongdian.dictionary.entity.SystemDictItem;
+import com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository;
+import com.changsha.zhongdian.station.dto.StationCreateRequest;
+import com.changsha.zhongdian.station.entity.Station;
+import com.changsha.zhongdian.station.repository.StationRepository;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+
+@Service
+public class StationCommandService {
+
+    private static final String DEFAULT_STATION_STATUS_NAME = "签合同";
+
+    private final StationRepository stationRepository;
+    private final StationCodeGenerator stationCodeGenerator;
+    private final SystemDictItemRepository dictItemRepository;
+
+    public StationCommandService(
+            StationRepository stationRepository,
+            StationCodeGenerator stationCodeGenerator,
+            SystemDictItemRepository dictItemRepository
+    ) {
+        this.stationRepository = stationRepository;
+        this.stationCodeGenerator = stationCodeGenerator;
+        this.dictItemRepository = dictItemRepository;
+    }
+
+    public Long createStation(StationCreateRequest request) {
+        String stationName = requireNonBlank(request.stationName(), "请输入充电站名称");
+        Long platformItemId = requirePositiveId(request.platformItemId(), "请选择所在平台");
+
+        SystemDictItem platformItem = dictItemRepository
+                .findByIdAndTypeTypeCodeAndItemStatus(platformItemId, DictionaryTypeCode.PLATFORM, DictionaryStatus.ENABLED)
+                .orElseThrow(() -> new BusinessException("PLATFORM_NOT_FOUND", "所选平台不存在或已停用", HttpStatus.BAD_REQUEST));
+
+        SystemDictItem contractStatus = dictItemRepository
+                .findByTypeTypeCodeAndItemNameAndItemStatus(
+                        DictionaryTypeCode.STATION_STATUS,
+                        DEFAULT_STATION_STATUS_NAME,
+                        DictionaryStatus.ENABLED
+                )
+                .orElseThrow(() -> new BusinessException("STATION_STATUS_NOT_FOUND", "默认充电站状态不存在", HttpStatus.BAD_REQUEST));
+
+        String platformStationCode = trimToNull(request.platformStationCode());
+        if (platformStationCode != null
+                && stationRepository.existsByPlatformItemIdAndPlatformStationCode(platformItem.getId(), platformStationCode)) {
+            throw new BusinessException("STATION_PLATFORM_CODE_DUPLICATED", "同一平台下的平台站点编号不能重复", HttpStatus.BAD_REQUEST);
+        }
+
+        Station station = new Station();
+        station.setStationCode(stationCodeGenerator.generateNextCode());
+        station.setStationName(stationName);
+        station.setPlatformItemId(platformItem.getId());
+        station.setPlatformStationCode(platformStationCode);
+        station.setAddress(trimToNull(request.address()));
+        station.setContactName(trimToNull(request.contactName()));
+        station.setContactPhone(trimToNull(request.contactPhone()));
+        station.setStationStatusItemId(contractStatus.getId());
+
+        return stationRepository.save(station).getId();
+    }
+
+    private String requireNonBlank(String value, String message) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new BusinessException("VALIDATION_ERROR", message, HttpStatus.BAD_REQUEST);
+        }
+        return value.trim();
+    }
+
+    private Long requirePositiveId(Long value, String message) {
+        if (value == null || value <= 0L) {
+            throw new BusinessException("VALIDATION_ERROR", message, HttpStatus.BAD_REQUEST);
+        }
+        return value;
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalizedValue = value.trim();
+        return normalizedValue.isEmpty() ? null : normalizedValue;
+    }
+}
