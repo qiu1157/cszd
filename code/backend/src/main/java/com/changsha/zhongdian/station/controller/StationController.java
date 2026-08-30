@@ -12,6 +12,7 @@ import com.changsha.zhongdian.station.service.StationCommandService;
 import com.changsha.zhongdian.station.service.StationFormOptionQueryService;
 import com.changsha.zhongdian.station.service.StationQueryService;
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -40,8 +41,10 @@ public class StationController {
     }
 
     @GetMapping
-    public ApiResponse<List<StationListItemResponse>> listStations() {
-        return ApiResponse.success(stationQueryService.listStations());
+    public ApiResponse<List<StationListItemResponse>> listStations(
+            @RequestParam(name = "stationName", required = false) String stationName
+    ) {
+        return ApiResponse.success(stationQueryService.listStations(stationName));
     }
 
     @PostMapping

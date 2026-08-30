@@ -51,6 +51,30 @@ class StationQueryServiceTest {
         assertTrue(stationQueryService.listStations().isEmpty());
     }
 
+    @Test
+    void listStationsShouldTrimKeywordAndUseNameSearchWhenKeywordProvided() {
+        StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
+        when(stationRepository.findAllListItemsByStationNameContainingOrderByUpdatedAtDesc("雨花")).thenReturn(List.of(
+                new TestStationListItemProjection(
+                        "ST-202608-0001",
+                        "雨花城际快充港",
+                        "手工验收平台",
+                        "PT-224211",
+                        "测试联系人",
+                        "13800138000",
+                        "签合同",
+                        LocalDateTime.of(2026, 8, 29, 22, 42)
+                )
+        ));
+
+        StationQueryService stationQueryService = new StationQueryService(stationRepository);
+
+        List<StationListItemResponse> response = stationQueryService.listStations("  雨花  ");
+
+        assertEquals(1, response.size());
+        assertEquals("雨花城际快充港", response.get(0).stationName());
+    }
+
     private static final class TestStationListItemProjection implements StationListItemProjection {
 
         private final String stationCode;

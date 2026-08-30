@@ -2,9 +2,21 @@
   <section class="page-section">
     <el-card class="station-page-card" shadow="never">
       <template #header>
-        <div class="section-head">
-          <h3>充电站管理</h3>
-          <el-button class="action-button" type="primary" @click="goToCreate">新增充电站</el-button>
+        <div class="section-head section-head--stacked">
+          <div class="section-head__top">
+            <h3>充电站管理</h3>
+            <el-button class="action-button" type="primary" @click="goToCreate">新增充电站</el-button>
+          </div>
+          <div class="toolbar-row">
+            <el-input
+              v-model="searchForm.stationName"
+              class="toolbar-input"
+              placeholder="请输入充电站名称"
+              clearable
+              @keyup.enter="handleSearch"
+            />
+            <el-button class="action-button" type="primary" @click="handleSearch">查询</el-button>
+          </div>
         </div>
       </template>
 
@@ -47,13 +59,16 @@ import { mapStationToTableRow } from './adapters'
 const router = useRouter()
 const loading = ref(false)
 const stations = ref<StationListItem[]>([])
+const searchForm = ref({
+  stationName: '',
+})
 
 const tableRows = computed(() => stations.value.map(mapStationToTableRow))
 
 async function loadStations() {
   loading.value = true
   try {
-    stations.value = await getStations()
+    stations.value = await getStations(searchForm.value.stationName)
   } catch (error) {
     ElMessage.error(resolveApiErrorMessage(error, '充电站列表加载失败，请稍后重试'))
   } finally {
@@ -63,6 +78,10 @@ async function loadStations() {
 
 function goToCreate() {
   void router.push(STATION_CREATE_PATH)
+}
+
+function handleSearch() {
+  void loadStations()
 }
 
 function resolveApiErrorMessage(error: unknown, fallbackMessage: string) {
@@ -100,6 +119,19 @@ onMounted(() => {
   gap: 16px;
 }
 
+.section-head--stacked {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.section-head__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
 .section-head h3 {
   margin: 0;
   font-size: 20px;
@@ -113,6 +145,16 @@ onMounted(() => {
   --el-table-row-hover-bg-color: rgba(57, 200, 255, 0.04);
   --el-table-text-color: var(--text-primary);
   --el-table-header-text-color: var(--text-secondary);
+}
+
+.toolbar-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.toolbar-input {
+  width: min(320px, 100%);
 }
 
 .action-group {
@@ -147,5 +189,17 @@ onMounted(() => {
   border-color: rgba(148, 163, 184, 0.14);
   color: rgba(206, 216, 230, 0.42);
   background: rgba(148, 163, 184, 0.04);
+}
+
+@media (max-width: 768px) {
+  .section-head__top,
+  .toolbar-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .toolbar-input {
+    width: 100%;
+  }
 }
 </style>

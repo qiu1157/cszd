@@ -1,6 +1,7 @@
 package com.changsha.zhongdian.station;
 
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -90,6 +91,32 @@ class StationControllerTest {
                 .andExpect(jsonPath("$.data[0].stationName").value("星城南服务区超级站"))
                 .andExpect(jsonPath("$.data[0].platformName").value("星络平台"))
                 .andExpect(jsonPath("$.data[0].stationStatusName").value("运营中"));
+    }
+
+    @Test
+    void listStationsShouldPassStationNameKeywordToQueryService() throws Exception {
+        when(stationQueryService.listStations("雨花")).thenReturn(List.of(
+                new StationListItemResponse(
+                        "ST-202608-0001",
+                        "雨花城际快充港",
+                        "手工验收平台",
+                        "PT-224211",
+                        "测试联系人",
+                        "13800138000",
+                        "签合同",
+                        LocalDateTime.of(2026, 8, 29, 22, 42)
+                )
+        ));
+        String token = loginAsBusinessAdmin();
+
+        mockMvc.perform(get("/api/stations")
+                        .param("stationName", "雨花")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].stationName").value("雨花城际快充港"));
+
+        verify(stationQueryService).listStations("雨花");
     }
 
     @Test

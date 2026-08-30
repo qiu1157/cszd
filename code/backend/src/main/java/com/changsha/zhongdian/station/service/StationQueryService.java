@@ -16,7 +16,14 @@ public class StationQueryService {
     }
 
     public List<StationListItemResponse> listStations() {
-        return stationRepository.findAllListItemsOrderByUpdatedAtDesc().stream()
+        return listStations(null);
+    }
+
+    public List<StationListItemResponse> listStations(String stationNameKeyword) {
+        String normalizedKeyword = normalizeKeyword(stationNameKeyword);
+        List<StationListItemResponse> stationList = (normalizedKeyword == null
+                ? stationRepository.findAllListItemsOrderByUpdatedAtDesc()
+                : stationRepository.findAllListItemsByStationNameContainingOrderByUpdatedAtDesc(normalizedKeyword)).stream()
                 .map(item -> new StationListItemResponse(
                         item.getStationCode(),
                         item.getStationName(),
@@ -28,5 +35,14 @@ public class StationQueryService {
                         item.getUpdatedAt()
                 ))
                 .toList();
+        return stationList;
+    }
+
+    private String normalizeKeyword(String keyword) {
+        if (keyword == null) {
+            return null;
+        }
+        String normalizedKeyword = keyword.trim();
+        return normalizedKeyword.isEmpty() ? null : normalizedKeyword;
     }
 }
