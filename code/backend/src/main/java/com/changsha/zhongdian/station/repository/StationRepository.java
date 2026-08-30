@@ -13,8 +13,15 @@ public interface StationRepository extends JpaRepository<Station, Long> {
 
     boolean existsByPlatformItemIdAndPlatformStationCode(Long platformItemId, String platformStationCode);
 
+    boolean existsByPlatformItemIdAndPlatformStationCodeAndIdNot(
+            Long platformItemId,
+            String platformStationCode,
+            Long id
+    );
+
     @Query(value = """
             SELECT
+                s.id AS id,
                 s.station_code AS stationCode,
                 s.station_name AS stationName,
                 platform.item_name AS platformName,
@@ -32,6 +39,7 @@ public interface StationRepository extends JpaRepository<Station, Long> {
 
     @Query(value = """
             SELECT
+                s.id AS id,
                 s.station_code AS stationCode,
                 s.station_name AS stationName,
                 platform.item_name AS platformName,
@@ -50,6 +58,7 @@ public interface StationRepository extends JpaRepository<Station, Long> {
 
     @Query(value = """
             SELECT
+                s.id AS id,
                 s.station_code AS stationCode,
                 s.station_name AS stationName,
                 platform.item_name AS platformName,
@@ -68,6 +77,7 @@ public interface StationRepository extends JpaRepository<Station, Long> {
 
     @Query(value = """
             SELECT
+                s.id AS id,
                 s.station_code AS stationCode,
                 s.station_name AS stationName,
                 platform.item_name AS platformName,
@@ -86,6 +96,7 @@ public interface StationRepository extends JpaRepository<Station, Long> {
 
     @Query(value = """
             SELECT
+                s.id AS id,
                 s.station_code AS stationCode,
                 s.station_name AS stationName,
                 platform.item_name AS platformName,
@@ -129,4 +140,24 @@ public interface StationRepository extends JpaRepository<Station, Long> {
             Long platformItemId,
             Long stationStatusItemId
     );
+
+    @Query(value = """
+            SELECT
+                s.id AS id,
+                s.station_code AS stationCode,
+                s.station_name AS stationName,
+                s.platform_item_id AS platformItemId,
+                platform.item_name AS platformName,
+                s.platform_station_code AS platformStationCode,
+                s.address AS address,
+                s.contact_name AS contactName,
+                s.contact_phone AS contactPhone,
+                s.station_status_item_id AS stationStatusItemId,
+                status.item_name AS stationStatusName
+            FROM biz_station s
+            LEFT JOIN sys_dict_item platform ON s.platform_item_id = platform.id
+            LEFT JOIN sys_dict_item status ON s.station_status_item_id = status.id
+            WHERE s.id = :stationId
+            """, nativeQuery = true)
+    Optional<StationDetailProjection> findDetailById(Long stationId);
 }

@@ -9,6 +9,7 @@ import {
   getForbiddenFallbackRouteByRole,
   LEGACY_PLATFORMS_PATH,
   STATION_CREATE_PATH,
+  STATION_EDIT_PATH,
   SYSTEM_DICTIONARY_PATH,
 } from './navigation'
 
@@ -49,6 +50,12 @@ const routes: Array<RouteRecordRaw & { meta: AppRouteMeta }> = [
         name: 'StationCreate',
         component: () => import('@/views/station/StationCreateView.vue'),
         meta: { title: '新增充电站', requiresAuth: true, roles: [USER_ROLES.SYSTEM_ADMIN, USER_ROLES.BUSINESS_ADMIN] },
+      },
+      {
+        path: STATION_EDIT_PATH,
+        name: 'StationEdit',
+        component: () => import('@/views/station/StationEditView.vue'),
+        meta: { title: '编辑充电站', requiresAuth: true, roles: [USER_ROLES.SYSTEM_ADMIN, USER_ROLES.BUSINESS_ADMIN] },
       },
       {
         path: '/shareholders',

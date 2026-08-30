@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 
 public interface StationListItemProjection {
 
+    Long getId();
+
     String getStationCode();
 
     String getStationName();

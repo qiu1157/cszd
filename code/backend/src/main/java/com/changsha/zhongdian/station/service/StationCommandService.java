@@ -6,6 +6,7 @@ import com.changsha.zhongdian.dictionary.entity.DictionaryTypeCode;
 import com.changsha.zhongdian.dictionary.entity.SystemDictItem;
 import com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository;
 import com.changsha.zhongdian.station.dto.StationCreateRequest;
+import com.changsha.zhongdian.station.dto.StationUpdateRequest;
 import com.changsha.zhongdian.station.entity.Station;
 import com.changsha.zhongdian.station.repository.StationRepository;
 import org.springframework.http.HttpStatus;
@@ -34,9 +35,7 @@ public class StationCommandService {
         String stationName = requireNonBlank(request.stationName(), "请输入充电站名称");
         Long platformItemId = requirePositiveId(request.platformItemId(), "请选择所在平台");
 
-        SystemDictItem platformItem = dictItemRepository
-                .findByIdAndTypeTypeCodeAndItemStatus(platformItemId, DictionaryTypeCode.PLATFORM, DictionaryStatus.ENABLED)
-                .orElseThrow(() -> new BusinessException("PLATFORM_NOT_FOUND", "所选平台不存在或已停用", HttpStatus.BAD_REQUEST));
+        SystemDictItem platformItem = resolveEnabledPlatform(platformItemId);
 
         SystemDictItem contractStatus = dictItemRepository
                 .findByTypeTypeCodeAndItemNameAndItemStatus(
@@ -47,10 +46,7 @@ public class StationCommandService {
                 .orElseThrow(() -> new BusinessException("STATION_STATUS_NOT_FOUND", "默认充电站状态不存在", HttpStatus.BAD_REQUEST));
 
         String platformStationCode = trimToNull(request.platformStationCode());
-        if (platformStationCode != null
-                && stationRepository.existsByPlatformItemIdAndPlatformStationCode(platformItem.getId(), platformStationCode)) {
-            throw new BusinessException("STATION_PLATFORM_CODE_DUPLICATED", "同一平台下的平台站点编号不能重复", HttpStatus.BAD_REQUEST);
-        }
+        validatePlatformStationCodeUniqueness(platformItem.getId(), platformStationCode);
 
         Station station = new Station();
         station.setStationCode(stationCodeGenerator.generateNextCode());
@@ -63,6 +59,55 @@ public class StationCommandService {
         station.setStationStatusItemId(contractStatus.getId());
 
         return stationRepository.save(station).getId();
+    }
+
+    public Long updateStation(Long stationId, StationUpdateRequest request) {
+        if (stationId == null || stationId <= 0L) {
+            throw new BusinessException("VALIDATION_ERROR", "充电站不存在", HttpStatus.BAD_REQUEST);
+        }
+
+        Station station = stationRepository.findById(stationId)
+                .orElseThrow(() -> new BusinessException("STATION_NOT_FOUND", "充电站不存在", HttpStatus.NOT_FOUND));
+
+        String stationName = requireNonBlank(request.stationName(), "请输入充电站名称");
+        Long platformItemId = requirePositiveId(request.platformItemId(), "请选择所在平台");
+        SystemDictItem platformItem = resolveEnabledPlatform(platformItemId);
+
+        String platformStationCode = trimToNull(request.platformStationCode());
+        validatePlatformStationCodeUniqueness(platformItem.getId(), platformStationCode, stationId);
+
+        station.setStationName(stationName);
+        station.setPlatformItemId(platformItem.getId());
+        station.setPlatformStationCode(platformStationCode);
+        station.setAddress(trimToNull(request.address()));
+        station.setContactName(trimToNull(request.contactName()));
+        station.setContactPhone(trimToNull(request.contactPhone()));
+
+        return stationRepository.save(station).getId();
+    }
+
+    private SystemDictItem resolveEnabledPlatform(Long platformItemId) {
+        return dictItemRepository
+                .findByIdAndTypeTypeCodeAndItemStatus(platformItemId, DictionaryTypeCode.PLATFORM, DictionaryStatus.ENABLED)
+                .orElseThrow(() -> new BusinessException("PLATFORM_NOT_FOUND", "所选平台不存在或已停用", HttpStatus.BAD_REQUEST));
+    }
+
+    private void validatePlatformStationCodeUniqueness(Long platformItemId, String platformStationCode) {
+        if (platformStationCode != null
+                && stationRepository.existsByPlatformItemIdAndPlatformStationCode(platformItemId, platformStationCode)) {
+            throw new BusinessException("STATION_PLATFORM_CODE_DUPLICATED", "同一平台下的平台站点编号不能重复", HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    private void validatePlatformStationCodeUniqueness(Long platformItemId, String platformStationCode, Long stationId) {
+        if (platformStationCode != null
+                && stationRepository.existsByPlatformItemIdAndPlatformStationCodeAndIdNot(
+                platformItemId,
+                platformStationCode,
+                stationId
+        )) {
+            throw new BusinessException("STATION_PLATFORM_CODE_DUPLICATED", "同一平台下的平台站点编号不能重复", HttpStatus.BAD_REQUEST);
+        }
     }
 
     private String requireNonBlank(String value, String message) {

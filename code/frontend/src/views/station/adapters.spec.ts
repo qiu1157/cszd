@@ -6,6 +6,7 @@ describe('mapStationToTableRow', () => {
   it('应将运营中站点映射为绿色状态标签', () => {
     expect(
       mapStationToTableRow({
+        id: 1001,
         stationCode: 'ST-202608-0018',
         stationName: '星城南服务区超级站',
         platformName: '星络平台',
@@ -28,6 +29,7 @@ describe('mapStationToTableRow', () => {
   it('应将签合同站点映射为琥珀状态标签，并处理空平台编号', () => {
     expect(
       mapStationToTableRow({
+        id: 1002,
         stationCode: 'ST-202608-0001',
         stationName: '雨花测试站',
         platformName: '云快充',

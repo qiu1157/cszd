@@ -2,8 +2,11 @@ package com.changsha.zhongdian.station.service;
 
 import java.util.List;
 
+import com.changsha.zhongdian.common.exception.BusinessException;
+import com.changsha.zhongdian.station.dto.StationDetailResponse;
 import com.changsha.zhongdian.station.dto.StationListItemResponse;
 import com.changsha.zhongdian.station.repository.StationRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -29,6 +32,7 @@ public class StationQueryService {
 
         List<StationListItemResponse> stationList = resolveStationProjections(normalizedKeyword, normalizedPlatformItemId).stream()
                 .map(item -> new StationListItemResponse(
+                        item.getId(),
                         item.getStationCode(),
                         item.getStationName(),
                         item.getPlatformName(),
@@ -57,6 +61,7 @@ public class StationQueryService {
                 normalizedStationStatusItemId
         ).stream()
                 .map(item -> new StationListItemResponse(
+                        item.getId(),
                         item.getStationCode(),
                         item.getStationName(),
                         item.getPlatformName(),
@@ -68,6 +73,29 @@ public class StationQueryService {
                 ))
                 .toList();
         return stationList;
+    }
+
+    public StationDetailResponse getStationDetail(Long stationId) {
+        if (stationId == null || stationId <= 0L) {
+            throw new BusinessException("VALIDATION_ERROR", "充电站不存在", HttpStatus.BAD_REQUEST);
+        }
+
+        com.changsha.zhongdian.station.repository.StationDetailProjection detail = stationRepository.findDetailById(stationId)
+                .orElseThrow(() -> new BusinessException("STATION_NOT_FOUND", "充电站不存在", HttpStatus.NOT_FOUND));
+
+        return new StationDetailResponse(
+                detail.getId(),
+                detail.getStationCode(),
+                detail.getStationName(),
+                detail.getPlatformItemId(),
+                detail.getPlatformName(),
+                detail.getPlatformStationCode(),
+                detail.getAddress(),
+                detail.getContactName(),
+                detail.getContactPhone(),
+                detail.getStationStatusItemId(),
+                detail.getStationStatusName()
+        );
     }
 
     private List<com.changsha.zhongdian.station.repository.StationListItemProjection> resolveStationProjections(

@@ -59,9 +59,10 @@
           </template>
         </el-table-column>
         <el-table-column prop="updatedAtText" label="更新时间" min-width="180" />
-        <el-table-column label="操作" min-width="140" fixed="right">
-          <template #default>
+        <el-table-column label="操作" min-width="180" fixed="right">
+          <template #default="{ row }">
             <div class="action-group">
+              <el-button class="action-button action-button--muted" @click="goToEdit(row.id)">编辑</el-button>
               <el-button class="action-button action-button--muted" :disabled="true">查看详情</el-button>
             </div>
           </template>
@@ -84,7 +85,7 @@ import {
   type StationPlatformOption,
   type StationStatusOption,
 } from '@/api/station/form-options'
-import { STATION_CREATE_PATH } from '@/router/navigation'
+import { buildStationEditPath, STATION_CREATE_PATH } from '@/router/navigation'
 
 import { mapStationToTableRow } from './adapters'
 
@@ -134,6 +135,10 @@ async function loadStatusOptions() {
 
 function goToCreate() {
   void router.push(STATION_CREATE_PATH)
+}
+
+function goToEdit(id: number) {
+  void router.push(buildStationEditPath(id))
 }
 
 function handleSearch() {

@@ -3,6 +3,7 @@ package com.changsha.zhongdian.station.dto;
 import java.time.LocalDateTime;
 
 public record StationListItemResponse(
+        Long id,
         String stationCode,
         String stationName,
         String platformName,

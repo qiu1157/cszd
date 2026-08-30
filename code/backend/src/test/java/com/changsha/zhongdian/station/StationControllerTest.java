@@ -4,12 +4,14 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.changsha.zhongdian.station.dto.StationDetailResponse;
 import com.changsha.zhongdian.station.dto.StationListItemResponse;
 import com.changsha.zhongdian.station.dto.StationPlatformOptionResponse;
 import com.changsha.zhongdian.station.dto.StationStatusOptionResponse;
@@ -72,6 +74,7 @@ class StationControllerTest {
     void listStationsShouldReturnStationRowsForAuthenticatedUser() throws Exception {
         when(stationQueryService.listStations()).thenReturn(List.of(
                 new StationListItemResponse(
+                        1001L,
                         "ST-202608-0018",
                         "星城南服务区超级站",
                         "星络平台",
@@ -98,6 +101,7 @@ class StationControllerTest {
     void listStationsShouldPassStationNameKeywordToQueryService() throws Exception {
         when(stationQueryService.listStations("雨花")).thenReturn(List.of(
                 new StationListItemResponse(
+                        1001L,
                         "ST-202608-0001",
                         "雨花城际快充港",
                         "手工验收平台",
@@ -124,6 +128,7 @@ class StationControllerTest {
     void listStationsShouldPassPlatformItemIdToQueryService() throws Exception {
         when(stationQueryService.listStations(null, 11L)).thenReturn(List.of(
                 new StationListItemResponse(
+                        1002L,
                         "ST-202608-0002",
                         "望城综合能源站",
                         "手工验收平台",
@@ -180,6 +185,7 @@ class StationControllerTest {
     void listStationsShouldPassStatusItemIdToQueryService() throws Exception {
         when(stationQueryService.listStations(null, null, 21L)).thenReturn(List.of(
                 new StationListItemResponse(
+                        1003L,
                         "ST-202608-0003",
                         "河西智慧充电站",
                         "手工验收平台",
@@ -218,6 +224,55 @@ class StationControllerTest {
                                   "address": "长沙市雨花区城际大道南段",
                                   "contactName": "张海峰",
                                   "contactPhone": "13800138000"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").value(1001L));
+    }
+
+    @Test
+    void getStationDetailShouldReturnDetailForAuthenticatedUser() throws Exception {
+        when(stationQueryService.getStationDetail(1001L)).thenReturn(new StationDetailResponse(
+                1001L,
+                "ST-202608-0001",
+                "雨花城际快充港",
+                11L,
+                "星络平台",
+                "XL-4301-889",
+                "长沙市雨花区城际大道南段",
+                "张海峰",
+                "13800138000",
+                21L,
+                "签合同"
+        ));
+        String token = loginAsBusinessAdmin();
+
+        mockMvc.perform(get("/api/stations/1001")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.stationCode").value("ST-202608-0001"))
+                .andExpect(jsonPath("$.data.stationStatusName").value("签合同"));
+    }
+
+    @Test
+    void updateStationShouldReturnSuccessForAuthenticatedUser() throws Exception {
+        when(stationCommandService.updateStation(org.mockito.ArgumentMatchers.eq(1001L), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(1001L);
+        String token = loginAsBusinessAdmin();
+
+        mockMvc.perform(put("/api/stations/1001")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "stationName": "雨花城际快充港（更新）",
+                                  "platformItemId": 11,
+                                  "platformStationCode": "XL-4301-990",
+                                  "address": "长沙市雨花区城际大道南段 99 号",
+                                  "contactName": "李工",
+                                  "contactPhone": "13800138111"
                                 }
                                 """))
                 .andExpect(status().isOk())

@@ -1,6 +1,7 @@
 import type { StationListItem } from '@/api/station'
 
 type StationTableRow = {
+  id: number
   stationCode: string
   stationName: string
   platformName: string
@@ -14,6 +15,7 @@ type StationTableRow = {
 
 export function mapStationToTableRow(item: StationListItem): StationTableRow {
   return {
+    id: item.id,
     stationCode: item.stationCode,
     stationName: item.stationName,
     platformName: item.platformName?.trim() || '--',

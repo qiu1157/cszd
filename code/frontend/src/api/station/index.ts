@@ -8,6 +8,7 @@ type ApiResponse<T> = {
 }
 
 export type StationListItem = {
+  id: number
   stationCode: string
   stationName: string
   platformName: string | null
@@ -18,13 +19,30 @@ export type StationListItem = {
   updatedAt: string
 }
 
-export type StationCreatePayload = {
+export type StationBasePayload = {
   stationName: string
   platformItemId: number | null
   platformStationCode: string
   address: string
   contactName: string
   contactPhone: string
+}
+
+export type StationCreatePayload = StationBasePayload
+export type StationUpdatePayload = StationBasePayload
+
+export type StationDetail = {
+  id: number
+  stationCode: string
+  stationName: string
+  platformItemId: number | null
+  platformName: string | null
+  platformStationCode: string | null
+  address: string | null
+  contactName: string | null
+  contactPhone: string | null
+  stationStatusItemId: number | null
+  stationStatusName: string | null
 }
 
 export async function getStations(
@@ -44,5 +62,15 @@ export async function getStations(
 
 export async function createStation(payload: StationCreatePayload) {
   const response = await request.post<ApiResponse<number>>('/api/stations', payload)
+  return response.data.data
+}
+
+export async function getStationDetail(id: number) {
+  const response = await request.get<ApiResponse<StationDetail>>(`/api/stations/${id}`)
+  return response.data.data
+}
+
+export async function updateStation(id: number, payload: StationUpdatePayload) {
+  const response = await request.put<ApiResponse<number>>(`/api/stations/${id}`, payload)
   return response.data.data
 }

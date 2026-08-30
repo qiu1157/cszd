@@ -12,4 +12,9 @@ describe('router source', () => {
     expect(source).toContain("path: STATION_CREATE_PATH")
     expect(source).toContain("name: 'StationCreate'")
   })
+
+  it('应提供编辑充电站页面路由', () => {
+    expect(source).toContain('path: STATION_EDIT_PATH')
+    expect(source).toContain("name: 'StationEdit'")
+  })
 })

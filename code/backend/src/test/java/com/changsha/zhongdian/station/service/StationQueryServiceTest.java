@@ -1,13 +1,16 @@
 package com.changsha.zhongdian.station.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.changsha.zhongdian.station.dto.StationDetailResponse;
 import com.changsha.zhongdian.station.dto.StationListItemResponse;
+import com.changsha.zhongdian.station.repository.StationDetailProjection;
 import com.changsha.zhongdian.station.repository.StationListItemProjection;
 import com.changsha.zhongdian.station.repository.StationRepository;
 import org.junit.jupiter.api.Test;
@@ -19,6 +22,7 @@ class StationQueryServiceTest {
         StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
         when(stationRepository.findAllListItemsOrderByUpdatedAtDesc()).thenReturn(List.of(
                 new TestStationListItemProjection(
+                        1001L,
                         "ST-202608-0018",
                         "星城南服务区超级站",
                         "星络平台",
@@ -35,6 +39,7 @@ class StationQueryServiceTest {
         List<StationListItemResponse> response = stationQueryService.listStations();
 
         assertEquals(1, response.size());
+        assertEquals(1001L, response.get(0).id());
         assertEquals("ST-202608-0018", response.get(0).stationCode());
         assertEquals("星络平台", response.get(0).platformName());
         assertEquals("运营中", response.get(0).stationStatusName());
@@ -56,6 +61,7 @@ class StationQueryServiceTest {
         StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
         when(stationRepository.findAllListItemsByStationNameContainingOrderByUpdatedAtDesc("雨花")).thenReturn(List.of(
                 new TestStationListItemProjection(
+                        1001L,
                         "ST-202608-0001",
                         "雨花城际快充港",
                         "手工验收平台",
@@ -80,6 +86,7 @@ class StationQueryServiceTest {
         StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
         when(stationRepository.findAllListItemsByPlatformItemIdOrderByUpdatedAtDesc(11L)).thenReturn(List.of(
                 new TestStationListItemProjection(
+                        1002L,
                         "ST-202608-0002",
                         "望城综合能源站",
                         "手工验收平台",
@@ -104,6 +111,7 @@ class StationQueryServiceTest {
         StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
         when(stationRepository.findAllListItemsByStationStatusItemIdOrderByUpdatedAtDesc(21L)).thenReturn(List.of(
                 new TestStationListItemProjection(
+                        1003L,
                         "ST-202608-0003",
                         "河西智慧充电站",
                         "手工验收平台",
@@ -123,8 +131,38 @@ class StationQueryServiceTest {
         assertEquals("河西智慧充电站", response.get(0).stationName());
     }
 
+    @Test
+    void getStationDetailShouldMapRepositoryProjectionToResponse() {
+        StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
+        when(stationRepository.findDetailById(1001L)).thenReturn(java.util.Optional.of(
+                new TestStationDetailProjection(
+                        1001L,
+                        "ST-202608-0001",
+                        "雨花城际快充港",
+                        11L,
+                        "星络平台",
+                        "XL-4301-889",
+                        "长沙市雨花区城际大道南段",
+                        "张海峰",
+                        "13800138000",
+                        21L,
+                        "签合同"
+                )
+        ));
+
+        StationQueryService stationQueryService = new StationQueryService(stationRepository);
+
+        StationDetailResponse response = stationQueryService.getStationDetail(1001L);
+
+        assertNotNull(response);
+        assertEquals(1001L, response.id());
+        assertEquals("ST-202608-0001", response.stationCode());
+        assertEquals("签合同", response.stationStatusName());
+    }
+
     private static final class TestStationListItemProjection implements StationListItemProjection {
 
+        private final Long id;
         private final String stationCode;
         private final String stationName;
         private final String platformName;
@@ -135,6 +173,7 @@ class StationQueryServiceTest {
         private final LocalDateTime updatedAt;
 
         private TestStationListItemProjection(
+                Long id,
                 String stationCode,
                 String stationName,
                 String platformName,
@@ -144,6 +183,7 @@ class StationQueryServiceTest {
                 String stationStatusName,
                 LocalDateTime updatedAt
         ) {
+            this.id = id;
             this.stationCode = stationCode;
             this.stationName = stationName;
             this.platformName = platformName;
@@ -152,6 +192,11 @@ class StationQueryServiceTest {
             this.contactPhone = contactPhone;
             this.stationStatusName = stationStatusName;
             this.updatedAt = updatedAt;
+        }
+
+        @Override
+        public Long getId() {
+            return id;
         }
 
         @Override
@@ -192,6 +237,102 @@ class StationQueryServiceTest {
         @Override
         public LocalDateTime getUpdatedAt() {
             return updatedAt;
+        }
+    }
+
+    private static final class TestStationDetailProjection implements StationDetailProjection {
+
+        private final Long id;
+        private final String stationCode;
+        private final String stationName;
+        private final Long platformItemId;
+        private final String platformName;
+        private final String platformStationCode;
+        private final String address;
+        private final String contactName;
+        private final String contactPhone;
+        private final Long stationStatusItemId;
+        private final String stationStatusName;
+
+        private TestStationDetailProjection(
+                Long id,
+                String stationCode,
+                String stationName,
+                Long platformItemId,
+                String platformName,
+                String platformStationCode,
+                String address,
+                String contactName,
+                String contactPhone,
+                Long stationStatusItemId,
+                String stationStatusName
+        ) {
+            this.id = id;
+            this.stationCode = stationCode;
+            this.stationName = stationName;
+            this.platformItemId = platformItemId;
+            this.platformName = platformName;
+            this.platformStationCode = platformStationCode;
+            this.address = address;
+            this.contactName = contactName;
+            this.contactPhone = contactPhone;
+            this.stationStatusItemId = stationStatusItemId;
+            this.stationStatusName = stationStatusName;
+        }
+
+        @Override
+        public Long getId() {
+            return id;
+        }
+
+        @Override
+        public String getStationCode() {
+            return stationCode;
+        }
+
+        @Override
+        public String getStationName() {
+            return stationName;
+        }
+
+        @Override
+        public Long getPlatformItemId() {
+            return platformItemId;
+        }
+
+        @Override
+        public String getPlatformName() {
+            return platformName;
+        }
+
+        @Override
+        public String getPlatformStationCode() {
+            return platformStationCode;
+        }
+
+        @Override
+        public String getAddress() {
+            return address;
+        }
+
+        @Override
+        public String getContactName() {
+            return contactName;
+        }
+
+        @Override
+        public String getContactPhone() {
+            return contactPhone;
+        }
+
+        @Override
+        public Long getStationStatusItemId() {
+            return stationStatusItemId;
+        }
+
+        @Override
+        public String getStationStatusName() {
+            return stationStatusName;
         }
     }
 }
