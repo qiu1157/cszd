@@ -17,4 +17,9 @@ describe('router source', () => {
     expect(source).toContain('path: STATION_EDIT_PATH')
     expect(source).toContain("name: 'StationEdit'")
   })
+
+  it('应提供充电站详情页面路由', () => {
+    expect(source).toContain('path: STATION_DETAIL_PATH')
+    expect(source).toContain("name: 'StationDetail'")
+  })
 })

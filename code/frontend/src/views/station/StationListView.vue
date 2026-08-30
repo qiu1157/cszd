@@ -63,7 +63,7 @@
           <template #default="{ row }">
             <div class="action-group">
               <el-button class="action-button action-button--muted" @click="goToEdit(row.id)">编辑</el-button>
-              <el-button class="action-button action-button--muted" :disabled="true">查看详情</el-button>
+              <el-button class="action-button action-button--muted" @click="goToDetail(row.id)">查看详情</el-button>
             </div>
           </template>
         </el-table-column>
@@ -85,7 +85,7 @@ import {
   type StationPlatformOption,
   type StationStatusOption,
 } from '@/api/station/form-options'
-import { buildStationEditPath, STATION_CREATE_PATH } from '@/router/navigation'
+import { buildStationDetailPath, buildStationEditPath, STATION_CREATE_PATH } from '@/router/navigation'
 
 import { mapStationToTableRow } from './adapters'
 
@@ -139,6 +139,10 @@ function goToCreate() {
 
 function goToEdit(id: number) {
   void router.push(buildStationEditPath(id))
+}
+
+function goToDetail(id: number) {
+  void router.push(buildStationDetailPath(id))
 }
 
 function handleSearch() {
