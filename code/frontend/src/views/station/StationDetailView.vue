@@ -69,7 +69,7 @@
           <div class="detail-section__head">
             <h4>基础信息分区</h4>
             <div class="action-group">
-              <el-button class="action-button action-button--muted" :disabled="true">修改状态</el-button>
+              <el-button class="action-button action-button--muted" @click="openStatusDialog">修改状态</el-button>
               <el-button class="action-button" type="primary" @click="goToEdit">编辑基础信息</el-button>
             </div>
           </div>
@@ -149,6 +149,61 @@
         </section>
       </div>
     </el-card>
+
+    <el-dialog
+      v-model="statusDialogVisible"
+      width="520px"
+      class="station-status-dialog"
+      :show-close="false"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+      destroy-on-close
+      align-center
+    >
+      <template #header>
+        <div class="dialog-head">
+          <div>
+            <h3>修改站点状态</h3>
+            <p>当前状态：{{ detail.stationStatusName || '--' }}</p>
+          </div>
+          <el-button text @click="closeStatusDialog">关闭</el-button>
+        </div>
+      </template>
+
+      <div class="dialog-body">
+        <div class="form-field">
+          <label>新状态</label>
+          <el-select v-model="statusForm.targetStatusItemId" placeholder="请选择新状态">
+            <el-option
+              v-for="option in statusOptions"
+              :key="option.itemId"
+              :label="option.itemName"
+              :value="option.itemId"
+            />
+          </el-select>
+          <p v-if="statusFormError" class="field-error">{{ statusFormError }}</p>
+        </div>
+
+        <div class="form-field">
+          <label>备注（可选）</label>
+          <el-input
+            v-model="statusForm.remark"
+            type="textarea"
+            :rows="3"
+            maxlength="500"
+            show-word-limit
+            placeholder="请输入备注，最多500字符"
+          />
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="dialog-actions">
+          <el-button @click="closeStatusDialog">取消</el-button>
+          <el-button type="primary" :loading="statusSaving" @click="submitStatusForm">保存状态</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </section>
 </template>
 
@@ -158,7 +213,8 @@ import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { getStationDetail, type StationDetail } from '@/api/station'
+import { getStationDetail, updateStationStatus, type StationDetail } from '@/api/station'
+import { getStationStatusOptions, type StationStatusOption } from '@/api/station/form-options'
 import { buildStationEditPath, STATION_LIST_PATH } from '@/router/navigation'
 
 const route = useRoute()
@@ -176,6 +232,15 @@ const detail = reactive<StationDetail>({
   contactPhone: '',
   stationStatusItemId: null,
   stationStatusName: '',
+})
+
+const statusDialogVisible = ref(false)
+const statusSaving = ref(false)
+const statusOptions = ref<StationStatusOption[]>([])
+const statusFormError = ref('')
+const statusForm = reactive({
+  targetStatusItemId: null as number | null,
+  remark: '',
 })
 
 function resolveStationId() {
@@ -213,6 +278,58 @@ function goToEdit() {
 function handleAnchorClick(sectionId: string) {
   const element = document.getElementById(sectionId)
   element?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+async function openStatusDialog() {
+  statusForm.targetStatusItemId = detail.stationStatusItemId
+  statusForm.remark = ''
+  statusFormError.value = ''
+  statusDialogVisible.value = true
+
+  if (statusOptions.value.length > 0) {
+    return
+  }
+
+  try {
+    statusOptions.value = await getStationStatusOptions()
+  } catch (error) {
+    statusDialogVisible.value = false
+    ElMessage.error(resolveApiErrorMessage(error, '状态选项加载失败，请稍后重试'))
+  }
+}
+
+function closeStatusDialog() {
+  if (statusSaving.value) {
+    return
+  }
+  statusDialogVisible.value = false
+}
+
+async function submitStatusForm() {
+  if (!statusForm.targetStatusItemId) {
+    statusFormError.value = '请选择新状态'
+    return
+  }
+
+  const stationId = resolveStationId()
+  if (!stationId) {
+    return
+  }
+
+  statusSaving.value = true
+  try {
+    await updateStationStatus(stationId, {
+      stationStatusItemId: statusForm.targetStatusItemId,
+      remark: statusForm.remark.trim(),
+    })
+    ElMessage.success('状态切换成功')
+    statusDialogVisible.value = false
+    applyDetail(await getStationDetail(stationId))
+  } catch (error) {
+    ElMessage.error(resolveApiErrorMessage(error, '状态切换失败，请稍后重试'))
+  } finally {
+    statusSaving.value = false
+  }
 }
 
 function resolvePlatformSummary() {
@@ -409,6 +526,51 @@ onMounted(() => {
   color: rgba(206, 216, 230, 0.58);
   background: rgba(148, 163, 184, 0.06);
   box-shadow: none;
+}
+
+.dialog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dialog-head h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.dialog-head p {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+}
+
+.dialog-body {
+  display: grid;
+  gap: 16px;
+}
+
+.form-field {
+  display: grid;
+  gap: 8px;
+}
+
+.form-field label {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.field-error {
+  margin: 0;
+  color: #ff8f8f;
+  font-size: 13px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
 }
 
 @media (max-width: 768px) {

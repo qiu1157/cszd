@@ -2,6 +2,8 @@ package com.changsha.zhongdian.station.controller;
 
 import java.util.List;
 
+import com.changsha.zhongdian.auth.model.LoginUser;
+import com.changsha.zhongdian.auth.service.AuthService;
 import com.changsha.zhongdian.common.api.ApiResponse;
 import com.changsha.zhongdian.station.dto.StationCreateRequest;
 import com.changsha.zhongdian.station.dto.StationDetailResponse;
@@ -9,11 +11,13 @@ import com.changsha.zhongdian.station.dto.StationListItemResponse;
 import com.changsha.zhongdian.station.dto.StationNextCodeResponse;
 import com.changsha.zhongdian.station.dto.StationPlatformOptionResponse;
 import com.changsha.zhongdian.station.dto.StationStatusOptionResponse;
+import com.changsha.zhongdian.station.dto.StationStatusUpdateRequest;
 import com.changsha.zhongdian.station.dto.StationUpdateRequest;
 import com.changsha.zhongdian.station.service.StationCodeGenerator;
 import com.changsha.zhongdian.station.service.StationCommandService;
 import com.changsha.zhongdian.station.service.StationFormOptionQueryService;
 import com.changsha.zhongdian.station.service.StationQueryService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -32,17 +36,20 @@ public class StationController {
     private final StationQueryService stationQueryService;
     private final StationFormOptionQueryService stationFormOptionQueryService;
     private final StationCommandService stationCommandService;
+    private final AuthService authService;
 
     public StationController(
             StationCodeGenerator stationCodeGenerator,
             StationQueryService stationQueryService,
             StationFormOptionQueryService stationFormOptionQueryService,
-            StationCommandService stationCommandService
+            StationCommandService stationCommandService,
+            AuthService authService
     ) {
         this.stationCodeGenerator = stationCodeGenerator;
         this.stationQueryService = stationQueryService;
         this.stationFormOptionQueryService = stationFormOptionQueryService;
         this.stationCommandService = stationCommandService;
+        this.authService = authService;
     }
 
     @GetMapping
@@ -73,6 +80,19 @@ public class StationController {
             @Valid @RequestBody StationUpdateRequest request
     ) {
         return ApiResponse.success("更新充电站成功", stationCommandService.updateStation(stationId, request));
+    }
+
+    @PutMapping("/{stationId}/status")
+    public ApiResponse<Long> updateStationStatus(
+            @PathVariable("stationId") Long stationId,
+            @Valid @RequestBody StationStatusUpdateRequest request,
+            HttpServletRequest httpServletRequest
+    ) {
+        LoginUser currentUser = authService.getCurrentUser(httpServletRequest);
+        return ApiResponse.success(
+                "状态切换成功",
+                stationCommandService.updateStationStatus(stationId, request, currentUser.account())
+        );
     }
 
     @GetMapping("/platform-options")

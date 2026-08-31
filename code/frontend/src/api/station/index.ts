@@ -31,6 +31,11 @@ export type StationBasePayload = {
 export type StationCreatePayload = StationBasePayload
 export type StationUpdatePayload = StationBasePayload
 
+export type StationStatusUpdatePayload = {
+  stationStatusItemId: number | null
+  remark: string
+}
+
 export type StationDetail = {
   id: number
   stationCode: string
@@ -72,5 +77,10 @@ export async function getStationDetail(id: number) {
 
 export async function updateStation(id: number, payload: StationUpdatePayload) {
   const response = await request.put<ApiResponse<number>>(`/api/stations/${id}`, payload)
+  return response.data.data
+}
+
+export async function updateStationStatus(id: number, payload: StationStatusUpdatePayload) {
+  const response = await request.put<ApiResponse<number>>(`/api/stations/${id}/status`, payload)
   return response.data.data
 }

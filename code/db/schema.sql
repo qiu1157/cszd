@@ -94,5 +94,24 @@ CREATE TABLE IF NOT EXISTS biz_station (
   CONSTRAINT fk_biz_station_station_status_item_id FOREIGN KEY (station_status_item_id) REFERENCES sys_dict_item (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='充电站表';
 
--- TODO: 里程碑 C 后续任务继续补齐：station_code 生成逻辑、站点列表/详情、状态切换；
--- TODO: 里程碑 D 起补齐：pile/shareholder/equity/log ... 等业务表。
+-- 为什么：状态变更备注需要落库，且后续历史变化时间线与日志审计都依赖每次变更的完整记录，
+-- 因此独立建状态变更日志表，而不是在 biz_station 上只保留最近一次备注。
+-- 当前任务只负责写入（状态切换时记录原状态/新状态/备注/操作人账号），查询展示在后续时间线任务落地。
+CREATE TABLE IF NOT EXISTS biz_station_status_log (
+  id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  station_id BIGINT NOT NULL COMMENT '充电站ID；关联 biz_station.id',
+  from_status_item_id BIGINT NOT NULL COMMENT '变更前状态字典项ID',
+  to_status_item_id BIGINT NOT NULL COMMENT '变更后状态字典项ID',
+  remark VARCHAR(500) DEFAULT NULL COMMENT '状态变更备注；可选，最多500字符',
+  operator_account VARCHAR(32) DEFAULT NULL COMMENT '操作人登录账号',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  KEY idx_biz_station_status_log_station_id (station_id),
+  KEY idx_biz_station_status_log_created_at (created_at),
+  CONSTRAINT fk_biz_station_status_log_station_id FOREIGN KEY (station_id) REFERENCES biz_station (id),
+  CONSTRAINT fk_biz_station_status_log_from_status_item_id FOREIGN KEY (from_status_item_id) REFERENCES sys_dict_item (id),
+  CONSTRAINT fk_biz_station_status_log_to_status_item_id FOREIGN KEY (to_status_item_id) REFERENCES sys_dict_item (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='充电站状态变更日志表';
+
+-- TODO: 里程碑 D 起补齐：pile/shareholder/equity ... 等业务表。

@@ -6,11 +6,15 @@ import com.changsha.zhongdian.dictionary.entity.DictionaryTypeCode;
 import com.changsha.zhongdian.dictionary.entity.SystemDictItem;
 import com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository;
 import com.changsha.zhongdian.station.dto.StationCreateRequest;
+import com.changsha.zhongdian.station.dto.StationStatusUpdateRequest;
 import com.changsha.zhongdian.station.dto.StationUpdateRequest;
 import com.changsha.zhongdian.station.entity.Station;
+import com.changsha.zhongdian.station.entity.StationStatusLog;
 import com.changsha.zhongdian.station.repository.StationRepository;
+import com.changsha.zhongdian.station.repository.StationStatusLogRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class StationCommandService {
@@ -20,15 +24,18 @@ public class StationCommandService {
     private final StationRepository stationRepository;
     private final StationCodeGenerator stationCodeGenerator;
     private final SystemDictItemRepository dictItemRepository;
+    private final StationStatusLogRepository stationStatusLogRepository;
 
     public StationCommandService(
             StationRepository stationRepository,
             StationCodeGenerator stationCodeGenerator,
-            SystemDictItemRepository dictItemRepository
+            SystemDictItemRepository dictItemRepository,
+            StationStatusLogRepository stationStatusLogRepository
     ) {
         this.stationRepository = stationRepository;
         this.stationCodeGenerator = stationCodeGenerator;
         this.dictItemRepository = dictItemRepository;
+        this.stationStatusLogRepository = stationStatusLogRepository;
     }
 
     public Long createStation(StationCreateRequest request) {
@@ -84,6 +91,35 @@ public class StationCommandService {
         station.setContactPhone(trimToNull(request.contactPhone()));
 
         return stationRepository.save(station).getId();
+    }
+
+    @Transactional
+    public Long updateStationStatus(Long stationId, StationStatusUpdateRequest request, String operatorAccount) {
+        if (stationId == null || stationId <= 0L) {
+            throw new BusinessException("VALIDATION_ERROR", "充电站不存在", HttpStatus.BAD_REQUEST);
+        }
+
+        Station station = stationRepository.findById(stationId)
+                .orElseThrow(() -> new BusinessException("STATION_NOT_FOUND", "充电站不存在", HttpStatus.NOT_FOUND));
+
+        Long targetStatusItemId = requirePositiveId(request.stationStatusItemId(), "请选择新状态");
+        SystemDictItem targetStatus = dictItemRepository
+                .findByIdAndTypeTypeCodeAndItemStatus(targetStatusItemId, DictionaryTypeCode.STATION_STATUS, DictionaryStatus.ENABLED)
+                .orElseThrow(() -> new BusinessException("STATION_STATUS_NOT_FOUND", "目标状态不存在或已停用", HttpStatus.BAD_REQUEST));
+
+        Long fromStatusItemId = station.getStationStatusItemId();
+        station.setStationStatusItemId(targetStatus.getId());
+        stationRepository.save(station);
+
+        StationStatusLog statusLog = new StationStatusLog();
+        statusLog.setStationId(station.getId());
+        statusLog.setFromStatusItemId(fromStatusItemId);
+        statusLog.setToStatusItemId(targetStatus.getId());
+        statusLog.setRemark(trimToNull(request.remark()));
+        statusLog.setOperatorAccount(trimToNull(operatorAccount));
+        stationStatusLogRepository.save(statusLog);
+
+        return station.getId();
     }
 
     private SystemDictItem resolveEnabledPlatform(Long platformItemId) {

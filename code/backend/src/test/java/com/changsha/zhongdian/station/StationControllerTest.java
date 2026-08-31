@@ -280,6 +280,65 @@ class StationControllerTest {
                 .andExpect(jsonPath("$.data").value(1001L));
     }
 
+    @Test
+    void updateStationStatusShouldReturnSuccessForAuthenticatedUser() throws Exception {
+        when(stationCommandService.updateStationStatus(
+                org.mockito.ArgumentMatchers.eq(1001L),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.eq("13800000001")
+        )).thenReturn(1001L);
+        String token = loginAsBusinessAdmin();
+
+        mockMvc.perform(put("/api/stations/1001/status")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "stationStatusItemId": 22,
+                                  "remark": "设备检修完成，恢复运营"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").value(1001L));
+
+        verify(stationCommandService).updateStationStatus(
+                org.mockito.ArgumentMatchers.eq(1001L),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.eq("13800000001")
+        );
+    }
+
+    @Test
+    void updateStationStatusShouldRejectAnonymousRequest() throws Exception {
+        mockMvc.perform(put("/api/stations/1001/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "stationStatusItemId": 22,
+                                  "remark": "设备检修完成，恢复运营"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    void updateStationStatusShouldRejectRemarkOverLimit() throws Exception {
+        String token = loginAsBusinessAdmin();
+
+        mockMvc.perform(put("/api/stations/1001/status")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "stationStatusItemId": 22,
+                                  "remark": "%s"
+                                }
+                                """.formatted("超".repeat(501))))
+                .andExpect(status().isBadRequest());
+    }
+
     private String loginAsBusinessAdmin() throws Exception {
         MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

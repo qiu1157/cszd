@@ -22,4 +22,27 @@ describe('StationDetailView source', () => {
     expect(source).toContain('getStationDetail')
     expect(source).toContain('后续任务实现')
   })
+
+  it('应提供可点击的修改状态入口，且弹窗禁止遮罩与ESC关闭', () => {
+    expect(source).not.toContain(':disabled="true">修改状态')
+    expect(source).toContain('openStatusDialog')
+    expect(source).toContain('statusDialogVisible')
+    expect(source).toContain('修改站点状态')
+    expect(source).toContain(':show-close="false"')
+    expect(source).toContain(':close-on-click-modal="false"')
+    expect(source).toContain(':close-on-press-escape="false"')
+    expect(source).toContain('取消')
+    expect(source).toContain('保存状态')
+  })
+
+  it('应在新状态选择与备注输入上约束数据，并在保存后刷新详情', () => {
+    expect(source).toContain('statusForm.targetStatusItemId')
+    expect(source).toContain('statusForm.remark')
+    expect(source).toContain('maxlength="500"')
+    expect(source).toContain('show-word-limit')
+    expect(source).toContain('getStationStatusOptions')
+    expect(source).toContain('updateStationStatus')
+    expect(source).toContain('submitStatusForm')
+    expect(source).toContain('状态切换成功')
+  })
 })

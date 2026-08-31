@@ -17,9 +17,11 @@ import com.changsha.zhongdian.dictionary.entity.SystemDictItem;
 import com.changsha.zhongdian.dictionary.entity.SystemDictType;
 import com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository;
 import com.changsha.zhongdian.station.dto.StationCreateRequest;
+import com.changsha.zhongdian.station.dto.StationStatusUpdateRequest;
 import com.changsha.zhongdian.station.dto.StationUpdateRequest;
 import com.changsha.zhongdian.station.entity.Station;
 import com.changsha.zhongdian.station.repository.StationRepository;
+import com.changsha.zhongdian.station.repository.StationStatusLogRepository;
 import org.junit.jupiter.api.Test;
 
 class StationCommandServiceTest {
@@ -29,10 +31,12 @@ class StationCommandServiceTest {
         StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
         StationCodeGenerator stationCodeGenerator = org.mockito.Mockito.mock(StationCodeGenerator.class);
         SystemDictItemRepository dictItemRepository = org.mockito.Mockito.mock(SystemDictItemRepository.class);
+        StationStatusLogRepository stationStatusLogRepository = org.mockito.Mockito.mock(StationStatusLogRepository.class);
         StationCommandService commandService = new StationCommandService(
                 stationRepository,
                 stationCodeGenerator,
-                dictItemRepository
+                dictItemRepository,
+                stationStatusLogRepository
         );
 
         SystemDictItem platformItem = createDictItem(11L, DictionaryTypeCode.PLATFORM, "星络平台");
@@ -77,10 +81,12 @@ class StationCommandServiceTest {
         StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
         StationCodeGenerator stationCodeGenerator = org.mockito.Mockito.mock(StationCodeGenerator.class);
         SystemDictItemRepository dictItemRepository = org.mockito.Mockito.mock(SystemDictItemRepository.class);
+        StationStatusLogRepository stationStatusLogRepository = org.mockito.Mockito.mock(StationStatusLogRepository.class);
         StationCommandService commandService = new StationCommandService(
                 stationRepository,
                 stationCodeGenerator,
-                dictItemRepository
+                dictItemRepository,
+                stationStatusLogRepository
         );
 
         SystemDictItem platformItem = createDictItem(11L, DictionaryTypeCode.PLATFORM, "星络平台");
@@ -114,10 +120,12 @@ class StationCommandServiceTest {
         StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
         StationCodeGenerator stationCodeGenerator = org.mockito.Mockito.mock(StationCodeGenerator.class);
         SystemDictItemRepository dictItemRepository = org.mockito.Mockito.mock(SystemDictItemRepository.class);
+        StationStatusLogRepository stationStatusLogRepository = org.mockito.Mockito.mock(StationStatusLogRepository.class);
         StationCommandService commandService = new StationCommandService(
                 stationRepository,
                 stationCodeGenerator,
-                dictItemRepository
+                dictItemRepository,
+                stationStatusLogRepository
         );
 
         Station existingStation = new Station();
@@ -164,10 +172,12 @@ class StationCommandServiceTest {
         StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
         StationCodeGenerator stationCodeGenerator = org.mockito.Mockito.mock(StationCodeGenerator.class);
         SystemDictItemRepository dictItemRepository = org.mockito.Mockito.mock(SystemDictItemRepository.class);
+        StationStatusLogRepository stationStatusLogRepository = org.mockito.Mockito.mock(StationStatusLogRepository.class);
         StationCommandService commandService = new StationCommandService(
                 stationRepository,
                 stationCodeGenerator,
-                dictItemRepository
+                dictItemRepository,
+                stationStatusLogRepository
         );
 
         Station existingStation = new Station();
@@ -198,6 +208,107 @@ class StationCommandServiceTest {
 
         assertEquals("STATION_PLATFORM_CODE_DUPLICATED", exception.getCode());
         assertEquals("同一平台下的平台站点编号不能重复", exception.getMessage());
+    }
+
+    @Test
+    void updateStationStatusShouldSwitchStatusAndWriteLog() {
+        StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
+        StationCodeGenerator stationCodeGenerator = org.mockito.Mockito.mock(StationCodeGenerator.class);
+        SystemDictItemRepository dictItemRepository = org.mockito.Mockito.mock(SystemDictItemRepository.class);
+        StationStatusLogRepository stationStatusLogRepository = org.mockito.Mockito.mock(StationStatusLogRepository.class);
+        StationCommandService commandService = new StationCommandService(
+                stationRepository,
+                stationCodeGenerator,
+                dictItemRepository,
+                stationStatusLogRepository
+        );
+
+        Station existingStation = new Station();
+        existingStation.setStationCode("ST-202608-0001");
+        existingStation.setStationName("雨花城际快充港");
+        existingStation.setStationStatusItemId(21L);
+        setStationId(existingStation, 1001L);
+
+        SystemDictItem targetStatus = createDictItem(22L, DictionaryTypeCode.STATION_STATUS, "运营中");
+
+        when(stationRepository.findById(1001L)).thenReturn(Optional.of(existingStation));
+        when(dictItemRepository.findByIdAndTypeTypeCodeAndItemStatus(22L, DictionaryTypeCode.STATION_STATUS, DictionaryStatus.ENABLED))
+                .thenReturn(Optional.of(targetStatus));
+        when(stationRepository.save(any(Station.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Long updatedId = commandService.updateStationStatus(
+                1001L,
+                new StationStatusUpdateRequest(22L, " 设备检修完成，恢复运营 "),
+                "13800000001"
+        );
+
+        assertEquals(1001L, updatedId);
+        verify(stationRepository).save(argThat(station ->
+                Long.valueOf(1001L).equals(station.getId())
+                        && Long.valueOf(22L).equals(station.getStationStatusItemId())
+        ));
+        verify(stationStatusLogRepository).save(argThat(log ->
+                Long.valueOf(1001L).equals(log.getStationId())
+                        && Long.valueOf(21L).equals(log.getFromStatusItemId())
+                        && Long.valueOf(22L).equals(log.getToStatusItemId())
+                        && "设备检修完成，恢复运营".equals(log.getRemark())
+                        && "13800000001".equals(log.getOperatorAccount())
+        ));
+    }
+
+    @Test
+    void updateStationStatusShouldRejectMissingStation() {
+        StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
+        StationCodeGenerator stationCodeGenerator = org.mockito.Mockito.mock(StationCodeGenerator.class);
+        SystemDictItemRepository dictItemRepository = org.mockito.Mockito.mock(SystemDictItemRepository.class);
+        StationStatusLogRepository stationStatusLogRepository = org.mockito.Mockito.mock(StationStatusLogRepository.class);
+        StationCommandService commandService = new StationCommandService(
+                stationRepository,
+                stationCodeGenerator,
+                dictItemRepository,
+                stationStatusLogRepository
+        );
+
+        when(stationRepository.findById(9999L)).thenReturn(Optional.empty());
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> commandService.updateStationStatus(9999L, new StationStatusUpdateRequest(22L, null), "13800000001")
+        );
+
+        assertEquals("STATION_NOT_FOUND", exception.getCode());
+        assertEquals("充电站不存在", exception.getMessage());
+    }
+
+    @Test
+    void updateStationStatusShouldRejectInvalidTargetStatus() {
+        StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
+        StationCodeGenerator stationCodeGenerator = org.mockito.Mockito.mock(StationCodeGenerator.class);
+        SystemDictItemRepository dictItemRepository = org.mockito.Mockito.mock(SystemDictItemRepository.class);
+        StationStatusLogRepository stationStatusLogRepository = org.mockito.Mockito.mock(StationStatusLogRepository.class);
+        StationCommandService commandService = new StationCommandService(
+                stationRepository,
+                stationCodeGenerator,
+                dictItemRepository,
+                stationStatusLogRepository
+        );
+
+        Station existingStation = new Station();
+        existingStation.setStationCode("ST-202608-0001");
+        existingStation.setStationStatusItemId(21L);
+        setStationId(existingStation, 1001L);
+
+        when(stationRepository.findById(1001L)).thenReturn(Optional.of(existingStation));
+        when(dictItemRepository.findByIdAndTypeTypeCodeAndItemStatus(99L, DictionaryTypeCode.STATION_STATUS, DictionaryStatus.ENABLED))
+                .thenReturn(Optional.empty());
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> commandService.updateStationStatus(1001L, new StationStatusUpdateRequest(99L, null), "13800000001")
+        );
+
+        assertEquals("STATION_STATUS_NOT_FOUND", exception.getCode());
+        assertEquals("目标状态不存在或已停用", exception.getMessage());
     }
 
     private void setStationId(Station station, Long id) {
