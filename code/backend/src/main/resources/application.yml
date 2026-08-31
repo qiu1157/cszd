@@ -14,6 +14,11 @@ spring:
       # 为什么：默认连接超时 30s，会导致启动卡顿且不易定位错误；这里缩短以便快速反馈 DB 授权/网络问题。
       connection-timeout: 5000
       validation-timeout: 3000
+      # 为什么：开发库在公网，中间网络设备会静默断开空闲 TCP（服务端 wait_timeout 为 8h，不会主动断）。
+      # 空闲连接变成“僵尸连接”后被借出会直接查询失败，且认证层会把该异常降级为 401 账号密码错误。
+      # 每 30s 对池内空闲连接保活，避免连接被中间设备回收；10 分钟强制重建一次连接，绕过各类空闲截断。
+      keepalive-time: 30000
+      max-lifetime: 600000
       # 为什么：第一期骨架阶段，允许后端在 DB 不可用时也能启动（至少 `/api/health` 可用），
       # 方便前后端并行开发；当后续进入需要真实读写 DB 的 task 时，再收紧为 fail-fast。
       initialization-fail-timeout: -1
