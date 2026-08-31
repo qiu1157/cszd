@@ -17,9 +17,79 @@
       <div v-if="loading" class="loading-state">加载中...</div>
 
       <div v-else class="detail-layout">
+        <section class="detail-section station-summary">
+          <div class="detail-section__head">
+            <h4>概览</h4>
+          </div>
+          <p class="summary-text">
+            {{ detail.stationName || '--' }} · {{ detail.stationStatusName || '--' }} ·
+            {{ resolvePlatformSummary() }}
+          </p>
+          <div class="info-grid info-grid--summary">
+            <div class="info-card">
+              <small>系统ID</small>
+              <strong>{{ detail.stationCode || '--' }}</strong>
+            </div>
+            <div class="info-card">
+              <small>平台</small>
+              <strong>{{ resolvePlatformSummary() }}</strong>
+            </div>
+            <div class="info-card">
+              <small>联系人</small>
+              <strong>{{ resolveContactSummary() }}</strong>
+            </div>
+            <div class="info-card">
+              <small>地址</small>
+              <strong>{{ detail.address || '--' }}</strong>
+            </div>
+            <div class="info-card">
+              <small>充电桩</small>
+              <strong>后续任务实现</strong>
+            </div>
+            <div class="info-card">
+              <small>持股股东</small>
+              <strong>后续任务实现</strong>
+            </div>
+          </div>
+        </section>
+
         <section class="detail-section">
           <div class="detail-section__head">
-            <h4>基础信息</h4>
+            <h4>分区导航</h4>
+          </div>
+          <div class="section-anchor">
+            <el-button class="anchor-button" @click="handleAnchorClick('section-basic-info')">基础信息</el-button>
+            <el-button class="anchor-button" @click="handleAnchorClick('section-piles')">充电桩管理</el-button>
+            <el-button class="anchor-button" @click="handleAnchorClick('section-shareholders')">股东信息</el-button>
+            <el-button class="anchor-button" @click="handleAnchorClick('section-timeline')">历史变化</el-button>
+          </div>
+        </section>
+
+        <section id="section-basic-info" class="detail-section">
+          <div class="detail-section__head">
+            <h4>基础信息分区</h4>
+            <div class="action-group">
+              <el-button class="action-button action-button--muted" :disabled="true">修改状态</el-button>
+              <el-button class="action-button" type="primary" @click="goToEdit">编辑基础信息</el-button>
+            </div>
+          </div>
+          <div class="kpi-strip">
+            <div class="kpi-item">
+              <span>生命周期</span>
+              <strong>{{ detail.stationStatusName || '--' }}</strong>
+            </div>
+            <div class="kpi-item">
+              <span>平台归属</span>
+              <strong>{{ detail.platformName || '--' }}</strong>
+            </div>
+            <div class="kpi-item">
+              <span>平台站点编号</span>
+              <strong>{{ detail.platformStationCode || '--' }}</strong>
+            </div>
+            <div class="kpi-item">
+              <span>页面形态</span>
+              <strong>单页分区</strong>
+            </div>
           </div>
           <div class="info-grid">
             <div class="info-card">
@@ -57,21 +127,21 @@
           </div>
         </section>
 
-        <section class="detail-section">
+        <section id="section-piles" class="detail-section">
           <div class="detail-section__head">
             <h4>充电桩管理</h4>
           </div>
           <div class="placeholder-card">后续任务实现：在此分区维护充电桩列表与新增入口。</div>
         </section>
 
-        <section class="detail-section">
+        <section id="section-shareholders" class="detail-section">
           <div class="detail-section__head">
             <h4>股东信息</h4>
           </div>
           <div class="placeholder-card">后续任务实现：在此分区维护股东关系与占比信息。</div>
         </section>
 
-        <section class="detail-section">
+        <section id="section-timeline" class="detail-section">
           <div class="detail-section__head">
             <h4>历史变化时间线</h4>
           </div>
@@ -138,6 +208,23 @@ function goToEdit() {
     return
   }
   void router.push(buildStationEditPath(stationId))
+}
+
+function handleAnchorClick(sectionId: string) {
+  const element = document.getElementById(sectionId)
+  element?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+function resolvePlatformSummary() {
+  const platformName = detail.platformName?.trim() || '--'
+  const platformStationCode = detail.platformStationCode?.trim()
+  return platformStationCode ? `${platformName} / ${platformStationCode}` : platformName
+}
+
+function resolveContactSummary() {
+  const contactName = detail.contactName?.trim() || '--'
+  const contactPhone = detail.contactPhone?.trim()
+  return contactPhone ? `${contactName} / ${contactPhone}` : contactName
 }
 
 function resolveApiErrorMessage(error: unknown, fallbackMessage: string) {
@@ -221,6 +308,12 @@ onMounted(() => {
   gap: 12px;
 }
 
+.summary-text {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
 .detail-section__head {
   display: flex;
   align-items: center;
@@ -231,6 +324,10 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.info-grid--summary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .info-card,
@@ -263,6 +360,36 @@ onMounted(() => {
   color: var(--text-secondary);
 }
 
+.section-anchor {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.anchor-button {
+  border-radius: 999px;
+}
+
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.kpi-item {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(150, 206, 255, 0.12);
+  background: rgba(8, 15, 30, 0.32);
+}
+
+.kpi-item span {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
 .action-group {
   display: flex;
   gap: 8px;
@@ -290,6 +417,13 @@ onMounted(() => {
     align-items: stretch;
   }
 
+  .detail-section__head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .info-grid--summary,
+  .kpi-strip,
   .info-grid {
     grid-template-columns: 1fr;
   }
