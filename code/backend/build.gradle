@@ -27,7 +27,11 @@ java {
 tasks.named('test') {
     useJUnitPlatform()
     // 为什么：里程碑 A 进入真实开发后，需要用自动化测试锁定登录与鉴权行为，避免后续权限链路回归。
-    jvmArgs '-Dfile.encoding=UTF-8', '-Dsun.jnu.encoding=UTF-8'
+    // 注意：-Dsun.jnu.encoding 通过 jvmArgs 设置并不生效（该属性在 JVM 启动早期已固化），已移除。
+    // 另：本仓库位于含中文的同步盘路径，Gradle 以 UTF-8 写测试 worker 的 @argfile，
+    // 而中文 Windows 的 JVM 启动器按系统代码页（GBK）读取，中文项目路径会乱码，
+    // 导致所有测试类 ClassNotFound；规避方式见 doc/DEV_WORKFLOW.md「本机构建环境注意事项」。
+    jvmArgs '-Dfile.encoding=UTF-8'
 }
 
 repositories {

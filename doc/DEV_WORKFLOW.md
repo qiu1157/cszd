@@ -169,6 +169,33 @@
 
 ---
 
+## 本机构建环境注意事项（Windows + 中文路径）
+
+本仓库实际位于 `D:\百度云同步盘\工作同步盘\Projects\长沙众电`，路径含中文。
+当前 Gradle（8.10.2）在 Windows 上以 UTF-8 编写测试 worker 的 `@argfile`，
+而中文 Windows 的 JVM 启动器按系统代码页（GBK）读取 `@argfile`，
+classpath 中的中文项目路径会乱码，导致所有测试类报 `ClassNotFoundException`
+（直接用 `java -cp` 加载同一 class 文件可正常，说明类本身没问题）。
+
+规避方式（本机已配置）：通过纯 ASCII 目录联接运行构建。
+
+```powershell
+# 一次性创建目录联接（Junction 不需要管理员权限）
+New-Item -ItemType Junction -Path D:\cszd -Target "D:\百度云同步盘\工作同步盘\Projects\长沙众电"
+```
+
+之后所有 Gradle / 测试命令统一在联接路径下执行：
+
+```powershell
+cd D:\cszd\code\backend
+.\gradlew.bat test
+```
+
+文件物理上仍保存在同步盘目录中，git 仓库与云同步均不受影响。
+若删除了 `D:\cszd` 联接，重新执行上面的 `New-Item` 命令即可恢复。
+
+---
+
 ## 提交规范建议（conventional commits）
 
 - `chore:` 工程/脚手架/依赖调整
