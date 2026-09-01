@@ -23,6 +23,15 @@ describe('StationDetailView source', () => {
     expect(source).toContain('后续任务实现')
   })
 
+  it('应接入充电桩分区组件，并在概览卡展示桩/枪规模统计', () => {
+    expect(source).toContain('StationPileSection')
+    expect(source).toContain(':station-id="resolvedStationId"')
+    expect(source).toContain('@loaded="applyPileSummary"')
+    expect(source).toContain('pileSummaryText')
+    expect(source).toContain('根 / ')
+    expect(source).toContain('把枪')
+  })
+
   it('应提供可点击的修改状态入口，且弹窗禁止遮罩与ESC关闭', () => {
     expect(source).not.toContain(':disabled="true">修改状态')
     expect(source).toContain('openStatusDialog')

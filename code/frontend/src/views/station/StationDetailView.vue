@@ -44,7 +44,7 @@
             </div>
             <div class="info-card">
               <small>充电桩</small>
-              <strong>后续任务实现</strong>
+              <strong>{{ pileSummaryText }}</strong>
             </div>
             <div class="info-card">
               <small>持股股东</small>
@@ -127,11 +127,16 @@
           </div>
         </section>
 
-        <section id="section-piles" class="detail-section">
+        <StationPileSection
+          v-if="resolvedStationId"
+          :station-id="resolvedStationId"
+          @loaded="applyPileSummary"
+        />
+        <section v-else id="section-piles" class="detail-section">
           <div class="detail-section__head">
             <h4>充电桩管理</h4>
           </div>
-          <div class="placeholder-card">后续任务实现：在此分区维护充电桩列表与新增入口。</div>
+          <div class="placeholder-card">充电站不存在，无法维护充电桩。</div>
         </section>
 
         <section id="section-shareholders" class="detail-section">
@@ -210,16 +215,18 @@
 <script setup lang="ts">
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { getStationDetail, updateStationStatus, type StationDetail } from '@/api/station'
 import { getStationStatusOptions, type StationStatusOption } from '@/api/station/form-options'
+import StationPileSection from '@/components/business/StationPileSection.vue'
 import { buildStationEditPath, STATION_LIST_PATH } from '@/router/navigation'
 
 const route = useRoute()
 const router = useRouter()
 const loading = ref(true)
+const resolvedStationId = resolveStationIdAtSetup()
 const detail = reactive<StationDetail>({
   id: 0,
   stationCode: '',
@@ -246,6 +253,23 @@ const statusForm = reactive({
 function resolveStationId() {
   const rawId = Number(route.params.id)
   return Number.isInteger(rawId) && rawId > 0 ? rawId : null
+}
+
+function resolveStationIdAtSetup() {
+  return resolveStationId()
+}
+
+const pileSummary = ref<{ pileCount: number; gunCount: number } | null>(null)
+
+const pileSummaryText = computed(() => {
+  if (!pileSummary.value) {
+    return '--'
+  }
+  return `${pileSummary.value.pileCount} 根 / ${pileSummary.value.gunCount} 把枪`
+})
+
+function applyPileSummary(summary: { pileCount: number; gunCount: number }) {
+  pileSummary.value = summary
 }
 
 function applyDetail(data: StationDetail) {
