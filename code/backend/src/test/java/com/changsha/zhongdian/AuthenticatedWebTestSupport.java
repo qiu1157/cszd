@@ -11,6 +11,7 @@ import java.util.Optional;
 
 import com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository;
 import com.changsha.zhongdian.dictionary.repository.SystemDictTypeRepository;
+import com.changsha.zhongdian.pile.repository.PileRepository;
 import com.changsha.zhongdian.station.repository.StationRepository;
 import com.changsha.zhongdian.station.repository.StationStatusLogRepository;
 import com.changsha.zhongdian.user.entity.SystemUser;
@@ -61,6 +62,9 @@ public abstract class AuthenticatedWebTestSupport {
 
     @MockBean
     protected StationStatusLogRepository stationStatusLogRepository;
+
+    @MockBean
+    protected PileRepository pileRepository;
 
     protected String loginAsBusinessAdmin() throws Exception {
         return loginAs("13800000001", "dev-biz-password", UserRole.BUSINESS_ADMIN, "业务管理员");
