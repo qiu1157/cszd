@@ -98,6 +98,11 @@ class SystemDictionaryCommandServiceTest {
         SystemDictItemRepository itemRepository = org.mockito.Mockito.mock(SystemDictItemRepository.class);
         SystemDictionaryCommandService commandService = new SystemDictionaryCommandService(typeRepository, itemRepository);
 
+        // 为什么：createItem 先校验字典类型存在、再校验状态值，
+        // 不 stub 类型查询会在状态校验前以 DICT_TYPE_NOT_FOUND 中断，走不到目标分支。
+        SystemDictType platformType = createType(DictionaryTypeCode.PLATFORM);
+        when(typeRepository.findByTypeCode(DictionaryTypeCode.PLATFORM)).thenReturn(Optional.of(platformType));
+
         BusinessException exception = assertThrows(
                 BusinessException.class,
                 () -> commandService.createItem("PLATFORM", "STATE_GRID", "国网", "ACTIVE", 10)

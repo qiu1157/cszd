@@ -257,6 +257,54 @@ class StationCommandServiceTest {
     }
 
     @Test
+    void updateStationStatusShouldAllowSwitchingToDisabledStatus() {
+        // 为什么：第一期不提供充电站物理删除，"停用"是站点唯一的下线手段（spec 8.2），
+        // 此处防回归确保任意状态均可切换到停用，且停用动作完整落入状态变更日志。
+        StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
+        StationCodeGenerator stationCodeGenerator = org.mockito.Mockito.mock(StationCodeGenerator.class);
+        SystemDictItemRepository dictItemRepository = org.mockito.Mockito.mock(SystemDictItemRepository.class);
+        StationStatusLogRepository stationStatusLogRepository = org.mockito.Mockito.mock(StationStatusLogRepository.class);
+        StationCommandService commandService = new StationCommandService(
+                stationRepository,
+                stationCodeGenerator,
+                dictItemRepository,
+                stationStatusLogRepository
+        );
+
+        Station existingStation = new Station();
+        existingStation.setStationCode("ST-202608-0001");
+        existingStation.setStationName("雨花城际快充港");
+        existingStation.setStationStatusItemId(22L);
+        setStationId(existingStation, 1001L);
+
+        SystemDictItem disabledStatus = createDictItem(25L, DictionaryTypeCode.STATION_STATUS, "停用");
+
+        when(stationRepository.findById(1001L)).thenReturn(Optional.of(existingStation));
+        when(dictItemRepository.findByIdAndTypeTypeCodeAndItemStatus(25L, DictionaryTypeCode.STATION_STATUS, DictionaryStatus.ENABLED))
+                .thenReturn(Optional.of(disabledStatus));
+        when(stationRepository.save(any(Station.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Long updatedId = commandService.updateStationStatus(
+                1001L,
+                new StationStatusUpdateRequest(25L, null),
+                "13800000001"
+        );
+
+        assertEquals(1001L, updatedId);
+        verify(stationRepository).save(argThat(station ->
+                Long.valueOf(1001L).equals(station.getId())
+                        && Long.valueOf(25L).equals(station.getStationStatusItemId())
+        ));
+        verify(stationStatusLogRepository).save(argThat(log ->
+                Long.valueOf(1001L).equals(log.getStationId())
+                        && Long.valueOf(22L).equals(log.getFromStatusItemId())
+                        && Long.valueOf(25L).equals(log.getToStatusItemId())
+                        && log.getRemark() == null
+                        && "13800000001".equals(log.getOperatorAccount())
+        ));
+    }
+
+    @Test
     void updateStationStatusShouldRejectMissingStation() {
         StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
         StationCodeGenerator stationCodeGenerator = org.mockito.Mockito.mock(StationCodeGenerator.class);

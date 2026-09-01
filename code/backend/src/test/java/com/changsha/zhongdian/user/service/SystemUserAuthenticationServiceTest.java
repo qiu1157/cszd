@@ -38,6 +38,9 @@ class SystemUserAuthenticationServiceTest {
         when(repositoryProvider.getIfAvailable()).thenReturn(userRepository);
         when(userRepository.findByAccount("admin")).thenReturn(Optional.of(systemUser));
         when(passwordHasher.matches("Init@123456", "hashed-password")).thenReturn(true);
+        // 为什么：authenticate 的 map 链直接以 repository.save 的返回值为下一环，
+        // mock 默认返回 null 会让 Optional.map 产出 empty，必须 stub 成"返回入参"模拟 JPA 行为。
+        when(userRepository.save(any(SystemUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         SystemUserAuthenticationService authenticationService = new SystemUserAuthenticationService(
                 repositoryProvider,
