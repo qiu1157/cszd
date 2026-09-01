@@ -5,27 +5,18 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.changsha.zhongdian.AuthenticatedWebTestSupport;
+import com.changsha.zhongdian.user.entity.UserRole;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-@SpringBootTest(properties = {
-        "spring.autoconfigure.exclude=" +
-                "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration," +
-                "org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration"
-})
-@AutoConfigureMockMvc
-class AuthControllerTest {
-
-    @Autowired
-    private MockMvc mockMvc;
+class AuthControllerTest extends AuthenticatedWebTestSupport {
 
     @Test
     void loginShouldReturnTokenAndCurrentUserProfile() throws Exception {
+        stubDatabaseUser("13800000001", "dev-biz-password", UserRole.BUSINESS_ADMIN, "业务管理员");
+
         MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -44,8 +35,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.data.user.role").value("BUSINESS_ADMIN"))
                 .andReturn();
 
-        String responseBody = loginResult.getResponse().getContentAsString();
-        String token = responseBody.replaceAll(".*\"token\":\"([^\"]+)\".*", "$1");
+        String token = extractToken(loginResult);
 
         mockMvc.perform(get("/api/auth/me")
                         .header("Authorization", "Bearer " + token))

@@ -6,24 +6,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.changsha.zhongdian.AuthenticatedWebTestSupport;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 
-@SpringBootTest(properties = {
-        "spring.autoconfigure.exclude=" +
-                "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration," +
-                "org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration"
-})
-@AutoConfigureMockMvc
-class SystemDictionaryControllerAuthorizationTest {
-
-    @Autowired
-    private MockMvc mockMvc;
+// 为什么：继承无数据库测试基类统一提供登录与 Repository mock，本类聚焦系统字典接口的角色鉴权
+class SystemDictionaryControllerAuthorizationTest extends AuthenticatedWebTestSupport {
 
     @Test
     void businessAdminShouldNotAccessSystemDictionaryTypes() throws Exception {
@@ -91,21 +79,5 @@ class SystemDictionaryControllerAuthorizationTest {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"));
-    }
-
-    private String loginAsBusinessAdmin() throws Exception {
-        MvcResult loginResult = mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "account": "13800000001",
-                                  "password": "dev-biz-password"
-                                }
-                                """))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        String responseBody = loginResult.getResponse().getContentAsString();
-        return responseBody.replaceAll(".*\"token\":\"([^\"]+)\".*", "$1");
     }
 }

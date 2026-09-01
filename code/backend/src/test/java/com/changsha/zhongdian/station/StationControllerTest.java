@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.changsha.zhongdian.AuthenticatedWebTestSupport;
 import com.changsha.zhongdian.station.dto.StationDetailResponse;
 import com.changsha.zhongdian.station.dto.StationListItemResponse;
 import com.changsha.zhongdian.station.dto.StationPlatformOptionResponse;
@@ -20,24 +21,11 @@ import com.changsha.zhongdian.station.service.StationCommandService;
 import com.changsha.zhongdian.station.service.StationFormOptionQueryService;
 import com.changsha.zhongdian.station.service.StationQueryService;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 
-@SpringBootTest(properties = {
-        "spring.autoconfigure.exclude=" +
-                "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration," +
-                "org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration"
-})
-@AutoConfigureMockMvc
-class StationControllerTest {
-
-    @Autowired
-    private MockMvc mockMvc;
+// 为什么：继承无数据库测试基类统一提供登录与 Repository mock，本类只额外 mock 站点服务以聚焦 Web 层行为
+class StationControllerTest extends AuthenticatedWebTestSupport {
 
     @MockBean
     private StationCodeGenerator stationCodeGenerator;
@@ -72,7 +60,8 @@ class StationControllerTest {
 
     @Test
     void listStationsShouldReturnStationRowsForAuthenticatedUser() throws Exception {
-        when(stationQueryService.listStations()).thenReturn(List.of(
+        // Controller 无筛选时统一走双参查询，stub 与 verify 需与其调用形态对齐
+        when(stationQueryService.listStations(null, null)).thenReturn(List.of(
                 new StationListItemResponse(
                         1001L,
                         "ST-202608-0018",
@@ -99,7 +88,7 @@ class StationControllerTest {
 
     @Test
     void listStationsShouldPassStationNameKeywordToQueryService() throws Exception {
-        when(stationQueryService.listStations("雨花")).thenReturn(List.of(
+        when(stationQueryService.listStations("雨花", null)).thenReturn(List.of(
                 new StationListItemResponse(
                         1001L,
                         "ST-202608-0001",
@@ -121,7 +110,7 @@ class StationControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].stationName").value("雨花城际快充港"));
 
-        verify(stationQueryService).listStations("雨花");
+        verify(stationQueryService).listStations("雨花", null);
     }
 
     @Test
@@ -337,21 +326,5 @@ class StationControllerTest {
                                 }
                                 """.formatted("超".repeat(501))))
                 .andExpect(status().isBadRequest());
-    }
-
-    private String loginAsBusinessAdmin() throws Exception {
-        MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "account": "13800000001",
-                                  "password": "dev-biz-password"
-                                }
-                                """))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        String responseBody = loginResult.getResponse().getContentAsString();
-        return responseBody.replaceAll(".*\"token\":\"([^\"]+)\".*", "$1");
     }
 }
