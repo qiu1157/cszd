@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -15,6 +16,7 @@ import com.changsha.zhongdian.AuthenticatedWebTestSupport;
 import com.changsha.zhongdian.common.exception.BusinessException;
 import com.changsha.zhongdian.pile.dto.PileCreateRequest;
 import com.changsha.zhongdian.pile.dto.PileListItemResponse;
+import com.changsha.zhongdian.pile.dto.PileUpdateRequest;
 import com.changsha.zhongdian.pile.service.PileCommandService;
 import com.changsha.zhongdian.pile.service.PileQueryService;
 import org.junit.jupiter.api.Test;
@@ -37,6 +39,7 @@ class PileControllerTest extends AuthenticatedWebTestSupport {
                 new PileListItemResponse(
                         21L,
                         "PL-202609-0001",
+                        "FAST",
                         "快充",
                         2,
                         "运营中",
@@ -50,6 +53,7 @@ class PileControllerTest extends AuthenticatedWebTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].pileCode").value("PL-202609-0001"))
+                .andExpect(jsonPath("$.data[0].chargeType").value("FAST"))
                 .andExpect(jsonPath("$.data[0].chargeTypeName").value("快充"))
                 .andExpect(jsonPath("$.data[0].gunCount").value(2))
                 .andExpect(jsonPath("$.data[0].pileStatusName").value("运营中"));
@@ -133,5 +137,58 @@ class PileControllerTest extends AuthenticatedWebTestSupport {
                                 }
                                 """))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updatePileShouldReturnSuccessForAuthenticatedUser() throws Exception {
+        when(pileCommandService.updatePile(eq(1001L), eq(21L), any(PileUpdateRequest.class)))
+                .thenReturn(21L);
+        String token = loginAsBusinessAdmin();
+
+        mockMvc.perform(put("/api/stations/1001/piles/21")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "chargeType": "SLOW",
+                                  "gunCount": 1
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").value(21L));
+    }
+
+    @Test
+    void updatePileShouldRejectAnonymousRequest() throws Exception {
+        mockMvc.perform(put("/api/stations/1001/piles/21")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "chargeType": "SLOW",
+                                  "gunCount": 1
+                                }
+                                """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    void updatePileShouldReturnNotFoundWhenPileMissing() throws Exception {
+        when(pileCommandService.updatePile(eq(1001L), eq(99L), any(PileUpdateRequest.class)))
+                .thenThrow(new BusinessException("PILE_NOT_FOUND", "充电桩不存在", HttpStatus.NOT_FOUND));
+        String token = loginAsBusinessAdmin();
+
+        mockMvc.perform(put("/api/stations/1001/piles/99")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "chargeType": "SLOW",
+                                  "gunCount": 1
+                                }
+                                """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PILE_NOT_FOUND"));
     }
 }

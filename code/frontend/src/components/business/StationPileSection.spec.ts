@@ -38,6 +38,24 @@ describe('StationPileSection source', () => {
     expect(source).toContain('dialogSaving')
   })
 
+  it('桩列表应提供编辑入口，弹窗支持新增/编辑双模式', () => {
+    expect(source).toContain('openEditDialog(pile)')
+    expect(source).toContain('link type="primary"')
+    expect(source).toContain("dialogMode === 'create' ? '新增充电桩' : '编辑充电桩'")
+    expect(source).toContain('editingPile')
+    expect(source).toContain('closePileDialog')
+  })
+
+  it('编辑保存应更新类型与枪数且不改状态，成功后刷新列表', () => {
+    expect(source).toContain('updateStationPile')
+    expect(source).toContain('更新充电桩成功')
+    expect(source).toContain('桩状态不在编辑中修改')
+    expect(source).toContain('dialogMode.value === \'create\'')
+    expect(source).toContain('pile.chargeType')
+    expect(source).toContain('pile.gunCount')
+    expect(source).toContain('pile.pileCode')
+  })
+
   it('应具备加载、错误、空态与列表四种展示形态', () => {
     expect(source).toContain('el-skeleton')
     expect(source).toContain('errorMessage')

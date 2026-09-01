@@ -6,12 +6,14 @@ import com.changsha.zhongdian.common.api.ApiResponse;
 import com.changsha.zhongdian.pile.dto.PileCreateRequest;
 import com.changsha.zhongdian.pile.dto.PileListItemResponse;
 import com.changsha.zhongdian.pile.dto.PileNextCodeResponse;
+import com.changsha.zhongdian.pile.dto.PileUpdateRequest;
 import com.changsha.zhongdian.pile.service.PileCommandService;
 import com.changsha.zhongdian.pile.service.PileQueryService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -46,5 +48,14 @@ public class PileController {
             @Valid @RequestBody PileCreateRequest request
     ) {
         return ApiResponse.success("新增充电桩成功", pileCommandService.createPile(stationId, request));
+    }
+
+    @PutMapping("/{stationId}/piles/{pileId}")
+    public ApiResponse<Long> updatePile(
+            @PathVariable("stationId") Long stationId,
+            @PathVariable("pileId") Long pileId,
+            @Valid @RequestBody PileUpdateRequest request
+    ) {
+        return ApiResponse.success("更新充电桩成功", pileCommandService.updatePile(stationId, pileId, request));
     }
 }

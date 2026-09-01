@@ -10,6 +10,7 @@ type ApiResponse<T> = {
 export type PileListItem = {
   id: number
   pileCode: string
+  chargeType: string
   chargeTypeName: string
   gunCount: number
   pileStatusName: string | null
@@ -26,6 +27,8 @@ export type PileCreatePayload = {
   gunCount: number
 }
 
+export type PileUpdatePayload = PileCreatePayload
+
 export async function getStationPiles(stationId: number) {
   const response = await request.get<ApiResponse<PileListItem[]>>(`/api/stations/${stationId}/piles`)
   return response.data.data
@@ -40,6 +43,14 @@ export async function getStationNextPileCode(stationId: number) {
 
 export async function createStationPile(stationId: number, payload: PileCreatePayload) {
   const response = await request.post<ApiResponse<number>>(`/api/stations/${stationId}/piles`, payload)
+  return response.data.data
+}
+
+export async function updateStationPile(stationId: number, pileId: number, payload: PileUpdatePayload) {
+  const response = await request.put<ApiResponse<number>>(
+    `/api/stations/${stationId}/piles/${pileId}`,
+    payload,
+  )
   return response.data.data
 }
 

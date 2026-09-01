@@ -26,6 +26,7 @@
           <el-tag :type="resolvePileStatusType(pile.pileStatusName)" effect="dark" round>
             {{ pile.pileStatusName || '--' }}
           </el-tag>
+          <el-button link type="primary" @click="openEditDialog(pile)">编辑</el-button>
         </div>
       </div>
     </div>
@@ -43,10 +44,10 @@
       <template #header>
         <div class="dialog-head">
           <div>
-            <h3>新增充电桩</h3>
+            <h3>{{ dialogMode === 'create' ? '新增充电桩' : '编辑充电桩' }}</h3>
             <p>所属站点ID：{{ stationId }}</p>
           </div>
-          <el-button text @click="closeCreateDialog">关闭</el-button>
+          <el-button text @click="closePileDialog">关闭</el-button>
         </div>
       </template>
 
@@ -80,13 +81,15 @@
             step-strictly
             controls-position="right"
           />
-          <p class="field-hint">新增后默认状态为运营中。</p>
+          <p class="field-hint">
+            {{ dialogMode === 'create' ? '新增后默认状态为运营中。' : '桩状态不在编辑中修改，请使用状态切换操作。' }}
+          </p>
         </div>
       </div>
 
       <template #footer>
         <div class="dialog-actions">
-          <el-button class="action-button action-button--secondary" @click="closeCreateDialog">取消</el-button>
+          <el-button class="action-button action-button--secondary" @click="closePileDialog">取消</el-button>
           <el-button class="action-button" type="primary" :loading="dialogSaving" @click="submitPileForm">
             保存
           </el-button>
@@ -101,7 +104,14 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
 
-import { createStationPile, getStationNextPileCode, getStationPiles, summarizePiles, type PileListItem } from '@/api/pile'
+import {
+  createStationPile,
+  getStationNextPileCode,
+  getStationPiles,
+  summarizePiles,
+  updateStationPile,
+  type PileListItem,
+} from '@/api/pile'
 import { CHARGE_TYPE_OPTIONS } from '@/constants/enums/charge-type'
 
 const props = defineProps<{ stationId: number }>()
@@ -114,6 +124,8 @@ const piles = ref<PileListItem[]>([])
 
 const dialogVisible = ref(false)
 const dialogSaving = ref(false)
+const dialogMode = ref<'create' | 'edit'>('create')
+const editingPile = ref<PileListItem | null>(null)
 const nextPileCode = ref('--')
 const pileFormError = ref('')
 const pileForm = reactive({
@@ -137,6 +149,8 @@ async function refresh() {
 }
 
 async function openCreateDialog() {
+  dialogMode.value = 'create'
+  editingPile.value = null
   pileForm.chargeType = 'FAST'
   pileForm.gunCount = 2
   pileFormError.value = ''
@@ -151,7 +165,17 @@ async function openCreateDialog() {
   }
 }
 
-function closeCreateDialog() {
+function openEditDialog(pile: PileListItem) {
+  dialogMode.value = 'edit'
+  editingPile.value = pile
+  pileForm.chargeType = pile.chargeType
+  pileForm.gunCount = pile.gunCount
+  pileFormError.value = ''
+  nextPileCode.value = pile.pileCode
+  dialogVisible.value = true
+}
+
+function closePileDialog() {
   if (dialogSaving.value) {
     return
   }
@@ -170,15 +194,23 @@ async function submitPileForm() {
 
   dialogSaving.value = true
   try {
-    await createStationPile(props.stationId, {
-      chargeType: pileForm.chargeType,
-      gunCount: pileForm.gunCount,
-    })
-    ElMessage.success('新增充电桩成功')
+    if (dialogMode.value === 'create') {
+      await createStationPile(props.stationId, {
+        chargeType: pileForm.chargeType,
+        gunCount: pileForm.gunCount,
+      })
+      ElMessage.success('新增充电桩成功')
+    } else if (editingPile.value) {
+      await updateStationPile(props.stationId, editingPile.value.id, {
+        chargeType: pileForm.chargeType,
+        gunCount: pileForm.gunCount,
+      })
+      ElMessage.success('更新充电桩成功')
+    }
     dialogVisible.value = false
     await refresh()
   } catch (error) {
-    ElMessage.error(resolveApiErrorMessage(error, '新增充电桩失败，请稍后重试'))
+    ElMessage.error(resolveApiErrorMessage(error, dialogMode.value === 'create' ? '新增充电桩失败，请稍后重试' : '更新充电桩失败，请稍后重试'))
   } finally {
     dialogSaving.value = false
   }

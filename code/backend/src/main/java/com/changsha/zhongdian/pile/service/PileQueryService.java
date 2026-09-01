@@ -58,6 +58,7 @@ public class PileQueryService {
         return new PileListItemResponse(
                 projection.getId(),
                 projection.getPileCode(),
+                projection.getChargeType(),
                 toChargeTypeName(projection.getChargeType()),
                 projection.getGunCount(),
                 projection.getPileStatusName(),

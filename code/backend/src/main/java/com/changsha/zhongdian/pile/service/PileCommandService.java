@@ -6,6 +6,7 @@ import com.changsha.zhongdian.dictionary.entity.DictionaryTypeCode;
 import com.changsha.zhongdian.dictionary.entity.SystemDictItem;
 import com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository;
 import com.changsha.zhongdian.pile.dto.PileCreateRequest;
+import com.changsha.zhongdian.pile.dto.PileUpdateRequest;
 import com.changsha.zhongdian.pile.entity.ChargeType;
 import com.changsha.zhongdian.pile.entity.Pile;
 import com.changsha.zhongdian.pile.repository.PileRepository;
@@ -55,6 +56,26 @@ public class PileCommandService {
         pile.setChargeType(chargeType);
         pile.setGunCount(gunCount);
         pile.setPileStatusItemId(defaultStatusItemId);
+
+        return pileRepository.save(pile).getId();
+    }
+
+    public Long updatePile(Long stationId, Long pileId, PileUpdateRequest request) {
+        if (stationId == null || stationId <= 0L) {
+            throw new BusinessException("VALIDATION_ERROR", "充电站不存在", HttpStatus.BAD_REQUEST);
+        }
+
+        ChargeType chargeType = resolveChargeType(request.chargeType());
+        Integer gunCount = requireValidGunCount(request.gunCount());
+
+        Pile pile = pileRepository.findById(pileId == null ? -1L : pileId)
+                .filter(existingPile -> existingPile.getStationId().equals(stationId))
+                .orElseThrow(() -> new BusinessException("PILE_NOT_FOUND", "充电桩不存在", HttpStatus.NOT_FOUND));
+
+        // 为什么：编辑表单不提供状态控件，桩状态变更必须走状态切换接口并记录日志，
+        // 与站点“编辑与状态变更分离”的口径一致
+        pile.setChargeType(chargeType);
+        pile.setGunCount(gunCount);
 
         return pileRepository.save(pile).getId();
     }
