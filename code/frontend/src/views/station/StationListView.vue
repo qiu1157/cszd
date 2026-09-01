@@ -62,8 +62,8 @@
         <el-table-column label="操作" min-width="180" fixed="right">
           <template #default="{ row }">
             <div class="action-group">
-              <el-button class="action-button action-button--muted" @click="goToEdit(row.id)">编辑</el-button>
-              <el-button class="action-button action-button--muted" @click="goToDetail(row.id)">查看详情</el-button>
+              <el-button link type="primary" @click="goToEdit(row.id)">编辑</el-button>
+              <el-button link type="primary" @click="goToDetail(row.id)">查看详情</el-button>
             </div>
           </template>
         </el-table-column>
@@ -228,34 +228,6 @@ onMounted(() => {
   display: flex;
   gap: 8px;
   align-items: center;
-}
-
-.action-button {
-  min-width: 88px;
-  margin: 0;
-  border-radius: 999px;
-  padding: 8px 14px;
-  font-weight: 600;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease,
-    background-color 0.2s ease,
-    color 0.2s ease;
-}
-
-.action-button--muted {
-  border-color: rgba(148, 163, 184, 0.18);
-  color: rgba(206, 216, 230, 0.58);
-  background: rgba(148, 163, 184, 0.06);
-  box-shadow: none;
-}
-
-.action-button--muted.is-disabled,
-.action-button--muted[disabled] {
-  border-color: rgba(148, 163, 184, 0.14);
-  color: rgba(206, 216, 230, 0.42);
-  background: rgba(148, 163, 184, 0.04);
 }
 
 @media (max-width: 768px) {

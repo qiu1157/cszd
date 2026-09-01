@@ -23,7 +23,7 @@ export function mapDictItemToTableRow(item: SystemDictItemListItem) {
     canEdit: true,
     canEnable: !isEnabled,
     canDisable: isEnabled,
-    enableActionTone: isEnabled ? 'muted' : 'primary',
-    disableActionTone: isEnabled ? 'primary' : 'muted',
+    enableActionTone: isEnabled ? 'secondary' : 'primary',
+    disableActionTone: isEnabled ? 'primary' : 'secondary',
   }
 }

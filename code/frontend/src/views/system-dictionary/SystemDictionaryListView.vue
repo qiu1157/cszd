@@ -405,70 +405,10 @@ onMounted(async () => {
   align-items: center;
 }
 
-.action-button {
+/* 为什么：本页操作列一行 3 个按钮、列宽有限，仅做最小宽度的布局微调；
+   按钮视觉样式（三级体系与禁用态三重差异）以 global.scss 为全局唯一来源（规范 7.3） */
+.action-group .action-button {
   min-width: 68px;
-  margin: 0;
-  border-radius: 12px;
-  padding: 8px 14px;
-  font-weight: 600;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease,
-    background-color 0.2s ease,
-    color 0.2s ease;
-}
-
-.action-button:not(.is-disabled):hover {
-  transform: translateY(-1px);
-}
-
-.action-button--primary {
-  border-color: rgba(57, 200, 255, 0.45);
-  color: #06131d;
-  background: linear-gradient(135deg, #39c8ff, #7be7ff);
-  box-shadow: 0 10px 24px rgba(57, 200, 255, 0.22);
-}
-
-.action-button--primary:not(.is-disabled):hover {
-  border-color: rgba(123, 231, 255, 0.85);
-  box-shadow: 0 14px 28px rgba(57, 200, 255, 0.28);
-}
-
-.action-button--secondary {
-  border-color: rgba(57, 200, 255, 0.24);
-  color: #dff9ff;
-  background: rgba(57, 200, 255, 0.1);
-  box-shadow: 0 8px 20px rgba(57, 200, 255, 0.1);
-}
-
-.action-button--secondary:not(.is-disabled):hover {
-  border-color: rgba(123, 231, 255, 0.4);
-  background: rgba(57, 200, 255, 0.14);
-  box-shadow: 0 10px 24px rgba(57, 200, 255, 0.14);
-}
-
-.action-button--muted {
-  border-color: rgba(148, 163, 184, 0.18);
-  color: rgba(206, 216, 230, 0.58);
-  background: rgba(148, 163, 184, 0.06);
-  box-shadow: none;
-}
-
-.action-button--muted.is-disabled,
-.action-button--muted[disabled] {
-  border-color: rgba(148, 163, 184, 0.14);
-  color: rgba(206, 216, 230, 0.42);
-  background: rgba(148, 163, 184, 0.04);
-}
-
-.action-button.is-disabled.action-button--primary,
-.action-button--primary.is-disabled,
-.action-button--primary[disabled] {
-  border-color: rgba(148, 163, 184, 0.14);
-  color: rgba(206, 216, 230, 0.42);
-  background: rgba(148, 163, 184, 0.04);
-  box-shadow: none;
 }
 
 .dialog-head {

@@ -39,7 +39,7 @@ describe('system dictionary adapters', () => {
       canEnable: true,
       canDisable: false,
       enableActionTone: 'primary',
-      disableActionTone: 'muted',
+      disableActionTone: 'secondary',
     })
   })
 
@@ -62,7 +62,7 @@ describe('system dictionary adapters', () => {
       canEdit: true,
       canEnable: false,
       canDisable: true,
-      enableActionTone: 'muted',
+      enableActionTone: 'secondary',
       disableActionTone: 'primary',
     })
   })

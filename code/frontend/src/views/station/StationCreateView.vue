@@ -5,7 +5,7 @@
         <div class="section-head">
           <h3>新增充电站</h3>
           <div class="action-group">
-            <el-button class="action-button action-button--muted" @click="goBack">取消</el-button>
+            <el-button class="action-button action-button--secondary" @click="goBack">取消</el-button>
             <el-button class="action-button" type="primary" :loading="saving" @click="handleSubmit">保存并返回列表</el-button>
           </div>
         </div>
@@ -156,21 +156,6 @@ onMounted(() => {
   display: flex;
   gap: 8px;
   align-items: center;
-}
-
-.action-button {
-  min-width: 110px;
-  margin: 0;
-  border-radius: 999px;
-  padding: 8px 14px;
-  font-weight: 600;
-}
-
-.action-button--muted {
-  border-color: rgba(148, 163, 184, 0.18);
-  color: rgba(206, 216, 230, 0.58);
-  background: rgba(148, 163, 184, 0.06);
-  box-shadow: none;
 }
 
 .full-width {

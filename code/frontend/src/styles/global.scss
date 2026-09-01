@@ -65,3 +65,75 @@ body {
     color: var(--text-primary);
   }
 }
+
+// 为什么：按钮为三级体系（主/次/行内文字），禁用态以"色相+线型+明度"三重差异与正常态区分，
+// 避免历史上 muted 灰字与禁用态仅差透明度、肉眼无法区分的问题。
+// 此处是按钮样式的全局唯一定义，视图 scoped 只允许做布局微调（规范见 doc/前端开发规范和要求.md 7.3）。
+.el-button.action-button {
+  min-width: 88px;
+  margin: 0;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 600;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.el-button.action-button:not(.is-disabled):hover {
+  transform: translateY(-1px);
+}
+
+// 主按钮（品牌渐变）：表格行内可用的主操作等需要强视觉的场合
+.el-button.action-button--primary {
+  border-color: rgba(57, 200, 255, 0.45);
+  color: #06131d;
+  background: linear-gradient(135deg, #39c8ff, #7be7ff);
+  box-shadow: 0 10px 24px rgba(57, 200, 255, 0.22);
+}
+
+.el-button.action-button--primary:not(.is-disabled):hover {
+  border-color: rgba(123, 231, 255, 0.85);
+  box-shadow: 0 14px 28px rgba(57, 200, 255, 0.28);
+}
+
+// 次按钮：透明底 + 品牌青描边，用于修改状态、返回列表、取消等非提交动作
+.el-button.action-button--secondary {
+  border-color: rgba(57, 200, 255, 0.45);
+  color: var(--text-primary);
+  background: transparent;
+  box-shadow: none;
+}
+
+.el-button.action-button--secondary:not(.is-disabled):hover {
+  border-color: var(--brand-primary);
+  color: var(--brand-primary);
+  background: rgba(57, 200, 255, 0.08);
+  box-shadow: 0 0 12px rgba(57, 200, 255, 0.25);
+}
+
+// 禁用态三重差异：纯灰（色相）+ 虚线描边（线型）+ 文字压暗（明度），且悬停零反馈
+.el-button.action-button.is-disabled,
+.el-button.action-button[disabled] {
+  border-style: dashed;
+  border-color: rgba(148, 163, 184, 0.35);
+  color: rgba(159, 182, 201, 0.45);
+  background: transparent;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+// 行内文字按钮：悬停以下划线强化可点感；禁用态降为纯灰
+.el-button.is-link:not(.is-disabled):hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.el-button.is-link.is-disabled,
+.el-button.is-link[disabled] {
+  color: rgba(159, 182, 201, 0.45);
+  cursor: not-allowed;
+}

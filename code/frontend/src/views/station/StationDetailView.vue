@@ -8,8 +8,8 @@
             <p class="section-desc">基础信息、充电桩、股东与时间线采用单页纵向展示。</p>
           </div>
           <div class="action-group">
-            <el-button class="action-button action-button--muted" @click="goBack">返回列表</el-button>
-            <el-button class="action-button" type="primary" @click="goToEdit">编辑基础信息</el-button>
+            <el-button class="action-button action-button--secondary" @click="goBack">返回列表</el-button>
+            <el-button class="action-button action-button--secondary" @click="goToEdit">编辑基础信息</el-button>
           </div>
         </div>
       </template>
@@ -69,8 +69,8 @@
           <div class="detail-section__head">
             <h4>基础信息分区</h4>
             <div class="action-group">
-              <el-button class="action-button action-button--muted" @click="openStatusDialog">修改状态</el-button>
-              <el-button class="action-button" type="primary" @click="goToEdit">编辑基础信息</el-button>
+              <el-button class="action-button action-button--secondary" @click="openStatusDialog">修改状态</el-button>
+              <el-button class="action-button action-button--secondary" @click="goToEdit">编辑基础信息</el-button>
             </div>
           </div>
           <div class="kpi-strip">
@@ -199,8 +199,8 @@
 
       <template #footer>
         <div class="dialog-actions">
-          <el-button @click="closeStatusDialog">取消</el-button>
-          <el-button type="primary" :loading="statusSaving" @click="submitStatusForm">保存状态</el-button>
+          <el-button class="action-button action-button--secondary" @click="closeStatusDialog">取消</el-button>
+          <el-button class="action-button" type="primary" :loading="statusSaving" @click="submitStatusForm">保存状态</el-button>
         </div>
       </template>
     </el-dialog>
@@ -511,21 +511,6 @@ onMounted(() => {
   display: flex;
   gap: 8px;
   align-items: center;
-}
-
-.action-button {
-  min-width: 110px;
-  margin: 0;
-  border-radius: 999px;
-  padding: 8px 14px;
-  font-weight: 600;
-}
-
-.action-button--muted {
-  border-color: rgba(148, 163, 184, 0.18);
-  color: rgba(206, 216, 230, 0.58);
-  background: rgba(148, 163, 184, 0.06);
-  box-shadow: none;
 }
 
 .dialog-head {

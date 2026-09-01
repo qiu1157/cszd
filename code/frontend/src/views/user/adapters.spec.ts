@@ -16,7 +16,7 @@ describe('mapBusinessAdminToTableRow', () => {
       statusLabel: '启用',
       canEnable: false,
       canDisable: true,
-      enableActionTone: 'muted',
+      enableActionTone: 'secondary',
       disableActionTone: 'primary',
     })
   })
@@ -35,7 +35,7 @@ describe('mapBusinessAdminToTableRow', () => {
       canEnable: true,
       canDisable: false,
       enableActionTone: 'primary',
-      disableActionTone: 'muted',
+      disableActionTone: 'secondary',
     })
   })
 })

@@ -27,6 +27,9 @@ export default [
       // 项目偏好：可读性优先，避免隐式 any 与杂乱的 console
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-empty-object-type': 'off',
+      // 为什么：构建已由 tsc 做真实的未定义符号检查，js.configs.recommended 的 no-undef
+      // 对 .vue 不会识别浏览器全局变量（document 等）而产生误报，故按 typescript-eslint 官方建议关闭
+      'no-undef': 'off',
       'no-console': ['warn', { allow: ['warn', 'error'] }],
     },
   },
