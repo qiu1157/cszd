@@ -16,13 +16,33 @@ public class PileQueryService {
 
     private final PileRepository pileRepository;
     private final StationRepository stationRepository;
+    private final PileCodeGenerator pileCodeGenerator;
 
-    public PileQueryService(PileRepository pileRepository, StationRepository stationRepository) {
+    public PileQueryService(
+            PileRepository pileRepository,
+            StationRepository stationRepository,
+            PileCodeGenerator pileCodeGenerator
+    ) {
         this.pileRepository = pileRepository;
         this.stationRepository = stationRepository;
+        this.pileCodeGenerator = pileCodeGenerator;
     }
 
     public List<PileListItemResponse> listPilesByStationId(Long stationId) {
+        requireExistingStation(stationId);
+
+        return pileRepository.findAllListItemsByStationIdOrderByUpdatedAtDesc(stationId).stream()
+                .map(this::toListItemResponse)
+                .toList();
+    }
+
+    public String nextPileCode(Long stationId) {
+        requireExistingStation(stationId);
+        // 预览编号仅用于表单展示，实际编号以保存时生成为准
+        return pileCodeGenerator.generateNextCode();
+    }
+
+    private void requireExistingStation(Long stationId) {
         if (stationId == null || stationId <= 0L) {
             throw new BusinessException("VALIDATION_ERROR", "充电站不存在", HttpStatus.BAD_REQUEST);
         }
@@ -32,10 +52,6 @@ public class PileQueryService {
         if (!stationRepository.existsById(stationId)) {
             throw new BusinessException("STATION_NOT_FOUND", "充电站不存在", HttpStatus.NOT_FOUND);
         }
-
-        return pileRepository.findAllListItemsByStationIdOrderByUpdatedAtDesc(stationId).stream()
-                .map(this::toListItemResponse)
-                .toList();
     }
 
     private PileListItemResponse toListItemResponse(PileListItemProjection projection) {

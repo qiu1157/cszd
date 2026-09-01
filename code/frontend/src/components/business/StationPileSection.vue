@@ -2,7 +2,7 @@
   <section id="section-piles" class="detail-section pile-section">
     <div class="detail-section__head">
       <h4>充电桩管理</h4>
-      <el-button class="action-button" type="primary" @click="handleCreateClick">新增充电桩</el-button>
+      <el-button class="action-button" type="primary" @click="openCreateDialog">新增充电桩</el-button>
     </div>
 
     <el-skeleton v-if="loading" :rows="3" animated />
@@ -29,15 +29,80 @@
         </div>
       </div>
     </div>
+
+    <el-dialog
+      v-model="dialogVisible"
+      width="520px"
+      class="pile-create-dialog"
+      :show-close="false"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+      destroy-on-close
+      align-center
+    >
+      <template #header>
+        <div class="dialog-head">
+          <div>
+            <h3>新增充电桩</h3>
+            <p>所属站点ID：{{ stationId }}</p>
+          </div>
+          <el-button text @click="closeCreateDialog">关闭</el-button>
+        </div>
+      </template>
+
+      <div class="dialog-body">
+        <div class="form-field">
+          <label>桩编号</label>
+          <el-input :model-value="nextPileCode" disabled />
+          <p class="field-hint">桩编号由系统自动生成，保存后以实际编号为准。</p>
+        </div>
+
+        <div class="form-field">
+          <label>充电类型</label>
+          <el-select v-model="pileForm.chargeType" placeholder="请选择充电类型">
+            <el-option
+              v-for="option in chargeTypeOptions"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
+          </el-select>
+          <p v-if="pileFormError" class="field-error">{{ pileFormError }}</p>
+        </div>
+
+        <div class="form-field">
+          <label>充电枪数量</label>
+          <el-input-number
+            v-model="pileForm.gunCount"
+            :min="1"
+            :max="64"
+            :step="1"
+            step-strictly
+            controls-position="right"
+          />
+          <p class="field-hint">新增后默认状态为运营中。</p>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="dialog-actions">
+          <el-button class="action-button action-button--secondary" @click="closeCreateDialog">取消</el-button>
+          <el-button class="action-button" type="primary" :loading="dialogSaving" @click="submitPileForm">
+            保存
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </section>
 </template>
 
 <script setup lang="ts">
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
-import { onMounted, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 
-import { getStationPiles, summarizePiles, type PileListItem } from '@/api/pile'
+import { createStationPile, getStationNextPileCode, getStationPiles, summarizePiles, type PileListItem } from '@/api/pile'
+import { CHARGE_TYPE_OPTIONS } from '@/constants/enums/charge-type'
 
 const props = defineProps<{ stationId: number }>()
 
@@ -46,6 +111,16 @@ const emit = defineEmits<{ loaded: [summary: { pileCount: number; gunCount: numb
 const loading = ref(true)
 const errorMessage = ref('')
 const piles = ref<PileListItem[]>([])
+
+const dialogVisible = ref(false)
+const dialogSaving = ref(false)
+const nextPileCode = ref('--')
+const pileFormError = ref('')
+const pileForm = reactive({
+  chargeType: 'FAST' as string,
+  gunCount: 2 as number | null,
+})
+const chargeTypeOptions = CHARGE_TYPE_OPTIONS
 
 async function refresh() {
   loading.value = true
@@ -61,9 +136,52 @@ async function refresh() {
   }
 }
 
-function handleCreateClick() {
-  // 新增弹窗在下一个任务交付，先给出明确引导避免死按钮
-  ElMessage.info('新增充电桩功能将在下一个任务交付')
+async function openCreateDialog() {
+  pileForm.chargeType = 'FAST'
+  pileForm.gunCount = 2
+  pileFormError.value = ''
+  nextPileCode.value = '--'
+  dialogVisible.value = true
+
+  // 预览编号仅作展示引导，加载失败不阻塞录入，实际编号以保存时生成为准
+  try {
+    nextPileCode.value = await getStationNextPileCode(props.stationId)
+  } catch (error) {
+    ElMessage.error(resolveApiErrorMessage(error, '桩编号预览加载失败，不影响保存'))
+  }
+}
+
+function closeCreateDialog() {
+  if (dialogSaving.value) {
+    return
+  }
+  dialogVisible.value = false
+}
+
+async function submitPileForm() {
+  if (!pileForm.chargeType) {
+    pileFormError.value = '请选择充电类型'
+    return
+  }
+  if (pileForm.gunCount == null || pileForm.gunCount < 1) {
+    pileFormError.value = '充电枪数量至少为1'
+    return
+  }
+
+  dialogSaving.value = true
+  try {
+    await createStationPile(props.stationId, {
+      chargeType: pileForm.chargeType,
+      gunCount: pileForm.gunCount,
+    })
+    ElMessage.success('新增充电桩成功')
+    dialogVisible.value = false
+    await refresh()
+  } catch (error) {
+    ElMessage.error(resolveApiErrorMessage(error, '新增充电桩失败，请稍后重试'))
+  } finally {
+    dialogSaving.value = false
+  }
 }
 
 function resolvePileStatusType(statusName: string | null) {
@@ -158,6 +276,57 @@ defineExpose({ refresh })
 .pile-error p {
   margin: 0;
   color: var(--text-secondary);
+}
+
+.dialog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dialog-head h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.dialog-head p {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+}
+
+.dialog-body {
+  display: grid;
+  gap: 16px;
+}
+
+.form-field {
+  display: grid;
+  gap: 8px;
+}
+
+.form-field label {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.field-hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.field-error {
+  margin: 0;
+  color: #ff8f8f;
+  font-size: 13px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
 }
 
 @media (max-width: 768px) {

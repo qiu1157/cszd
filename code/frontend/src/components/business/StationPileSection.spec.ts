@@ -3,11 +3,39 @@ import { describe, expect, it } from 'vitest'
 import source from './StationPileSection.vue?raw'
 
 describe('StationPileSection source', () => {
-  it('应渲染分区标题与新增入口，新增弹窗未交付前给出明确引导', () => {
+  it('应渲染分区标题与新增入口，新增弹窗可打开', () => {
     expect(source).toContain('充电桩管理')
     expect(source).toContain('新增充电桩')
-    expect(source).toContain('handleCreateClick')
-    expect(source).toContain('ElMessage.info')
+    expect(source).toContain('openCreateDialog')
+    expect(source).toContain('dialogVisible')
+  })
+
+  it('新增弹窗应包含只读桩编号、充电类型与枪数字段，且禁止遮罩与ESC关闭', () => {
+    expect(source).toContain('桩编号')
+    expect(source).toContain('nextPileCode')
+    expect(source).toContain('disabled')
+    expect(source).toContain('桩编号由系统自动生成')
+    expect(source).toContain('充电类型')
+    expect(source).toContain('CHARGE_TYPE_OPTIONS')
+    expect(source).toContain('充电枪数量')
+    expect(source).toContain(':min="1"')
+    expect(source).toContain('新增后默认状态为运营中')
+    expect(source).toContain(':show-close="false"')
+    expect(source).toContain(':close-on-click-modal="false"')
+    expect(source).toContain(':close-on-press-escape="false"')
+    expect(source).toContain('取消')
+    expect(source).toContain('保存')
+  })
+
+  it('保存前应校验类型与枪数，成功后关闭弹窗并刷新列表', () => {
+    expect(source).toContain('submitPileForm')
+    expect(source).toContain('请选择充电类型')
+    expect(source).toContain('充电枪数量至少为1')
+    expect(source).toContain('createStationPile')
+    expect(source).toContain('getStationNextPileCode')
+    expect(source).toContain('新增充电桩成功')
+    expect(source).toContain('await refresh()')
+    expect(source).toContain('dialogSaving')
   })
 
   it('应具备加载、错误、空态与列表四种展示形态', () => {

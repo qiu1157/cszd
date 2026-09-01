@@ -18,7 +18,34 @@ class PileQueryServiceTest {
 
     private final PileRepository pileRepository = org.mockito.Mockito.mock(PileRepository.class);
     private final StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
-    private final PileQueryService pileQueryService = new PileQueryService(pileRepository, stationRepository);
+    private final PileCodeGenerator pileCodeGenerator = org.mockito.Mockito.mock(PileCodeGenerator.class);
+    private final PileQueryService pileQueryService = new PileQueryService(
+            pileRepository,
+            stationRepository,
+            pileCodeGenerator
+    );
+
+    @Test
+    void nextPileCodeShouldRequireExistingStation() {
+        when(stationRepository.existsById(999L)).thenReturn(false);
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> pileQueryService.nextPileCode(999L)
+        );
+
+        assertEquals("STATION_NOT_FOUND", exception.getCode());
+    }
+
+    @Test
+    void nextPileCodeShouldReturnGeneratedCodeForExistingStation() {
+        when(stationRepository.existsById(1001L)).thenReturn(true);
+        when(pileCodeGenerator.generateNextCode()).thenReturn("PL-202609-0001");
+
+        String pileCode = pileQueryService.nextPileCode(1001L);
+
+        assertEquals("PL-202609-0001", pileCode);
+    }
 
     @Test
     void listPilesShouldRejectInvalidStationId() {
