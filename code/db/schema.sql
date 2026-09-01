@@ -139,4 +139,23 @@ CREATE TABLE IF NOT EXISTS biz_pile (
   CONSTRAINT fk_biz_pile_pile_status_item_id FOREIGN KEY (pile_status_item_id) REFERENCES sys_dict_item (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='充电桩表';
 
+-- 为什么：充电桩状态切换与站点一样需要落完整的变更记录，
+-- 供后续历史变化时间线与日志审计使用，而不是在 biz_pile 上只保留最近一次备注。
+CREATE TABLE IF NOT EXISTS biz_pile_status_log (
+  id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  pile_id BIGINT NOT NULL COMMENT '充电桩ID；关联 biz_pile.id',
+  from_status_item_id BIGINT NOT NULL COMMENT '变更前状态字典项ID',
+  to_status_item_id BIGINT NOT NULL COMMENT '变更后状态字典项ID',
+  remark VARCHAR(500) DEFAULT NULL COMMENT '状态变更备注；可选，最多500字符',
+  operator_account VARCHAR(32) DEFAULT NULL COMMENT '操作人登录账号',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  KEY idx_biz_pile_status_log_pile_id (pile_id),
+  KEY idx_biz_pile_status_log_created_at (created_at),
+  CONSTRAINT fk_biz_pile_status_log_pile_id FOREIGN KEY (pile_id) REFERENCES biz_pile (id),
+  CONSTRAINT fk_biz_pile_status_log_from_status_item_id FOREIGN KEY (from_status_item_id) REFERENCES sys_dict_item (id),
+  CONSTRAINT fk_biz_pile_status_log_to_status_item_id FOREIGN KEY (to_status_item_id) REFERENCES sys_dict_item (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='充电桩状态变更日志表';
+
 -- TODO: 里程碑 E 起补齐：shareholder/equity ... 等业务表。

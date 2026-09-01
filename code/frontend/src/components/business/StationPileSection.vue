@@ -27,6 +27,7 @@
             {{ pile.pileStatusName || '--' }}
           </el-tag>
           <el-button link type="primary" @click="openEditDialog(pile)">编辑</el-button>
+          <el-button link type="primary" @click="openStatusDialog(pile)">改状态</el-button>
         </div>
       </div>
     </div>
@@ -96,6 +97,63 @@
         </div>
       </template>
     </el-dialog>
+
+    <el-dialog
+      v-model="statusDialogVisible"
+      width="520px"
+      class="pile-status-dialog"
+      :show-close="false"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+      destroy-on-close
+      align-center
+    >
+      <template #header>
+        <div class="dialog-head">
+          <div>
+            <h3>修改充电桩状态</h3>
+            <p>{{ statusTargetPile?.pileCode }} · 当前状态：{{ statusTargetPile?.pileStatusName || '--' }}</p>
+          </div>
+          <el-button text @click="closeStatusDialog">关闭</el-button>
+        </div>
+      </template>
+
+      <div class="dialog-body">
+        <div class="form-field">
+          <label>新状态</label>
+          <el-select v-model="statusForm.pileStatusItemId" placeholder="请选择新状态">
+            <el-option
+              v-for="option in statusOptions"
+              :key="option.itemId"
+              :label="option.itemName"
+              :value="option.itemId"
+            />
+          </el-select>
+          <p v-if="statusFormError" class="field-error">{{ statusFormError }}</p>
+        </div>
+
+        <div class="form-field">
+          <label>备注（可选）</label>
+          <el-input
+            v-model="statusForm.remark"
+            type="textarea"
+            :rows="3"
+            maxlength="500"
+            show-word-limit
+            placeholder="请输入状态变更备注，最多500字符"
+          />
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="dialog-actions">
+          <el-button class="action-button action-button--secondary" @click="closeStatusDialog">取消</el-button>
+          <el-button class="action-button" type="primary" :loading="statusSaving" @click="submitStatusForm">
+            保存状态
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </section>
 </template>
 
@@ -107,10 +165,13 @@ import { onMounted, reactive, ref } from 'vue'
 import {
   createStationPile,
   getStationNextPileCode,
+  getStationPileStatusOptions,
   getStationPiles,
   summarizePiles,
   updateStationPile,
+  updateStationPileStatus,
   type PileListItem,
+  type PileStatusOption,
 } from '@/api/pile'
 import { CHARGE_TYPE_OPTIONS } from '@/constants/enums/charge-type'
 
@@ -133,6 +194,16 @@ const pileForm = reactive({
   gunCount: 2 as number | null,
 })
 const chargeTypeOptions = CHARGE_TYPE_OPTIONS
+
+const statusDialogVisible = ref(false)
+const statusSaving = ref(false)
+const statusOptions = ref<PileStatusOption[]>([])
+const statusTargetPile = ref<PileListItem | null>(null)
+const statusFormError = ref('')
+const statusForm = reactive({
+  pileStatusItemId: null as number | null,
+  remark: '',
+})
 
 async function refresh() {
   loading.value = true
@@ -213,6 +284,59 @@ async function submitPileForm() {
     ElMessage.error(resolveApiErrorMessage(error, dialogMode.value === 'create' ? '新增充电桩失败，请稍后重试' : '更新充电桩失败，请稍后重试'))
   } finally {
     dialogSaving.value = false
+  }
+}
+
+async function openStatusDialog(pile: PileListItem) {
+  statusTargetPile.value = pile
+  statusFormError.value = ''
+  statusForm.remark = ''
+  // 默认预选当前状态：列表行只有状态名称，按名称匹配选项，匹配不到则留空由用户选择
+  statusForm.pileStatusItemId =
+    statusOptions.value.find(option => option.itemName === pile.pileStatusName)?.itemId ?? null
+  statusDialogVisible.value = true
+
+  if (statusOptions.value.length > 0) {
+    return
+  }
+  try {
+    statusOptions.value = await getStationPileStatusOptions(props.stationId)
+  } catch (error) {
+    // 选项加载失败时表单不可用，参照站点状态弹窗口径直接关闭并提示
+    statusDialogVisible.value = false
+    ElMessage.error(resolveApiErrorMessage(error, '状态选项加载失败，请稍后重试'))
+  }
+}
+
+function closeStatusDialog() {
+  if (statusSaving.value) {
+    return
+  }
+  statusDialogVisible.value = false
+}
+
+async function submitStatusForm() {
+  if (!statusForm.pileStatusItemId) {
+    statusFormError.value = '请选择新状态'
+    return
+  }
+  if (!statusTargetPile.value) {
+    return
+  }
+
+  statusSaving.value = true
+  try {
+    await updateStationPileStatus(props.stationId, statusTargetPile.value.id, {
+      pileStatusItemId: statusForm.pileStatusItemId,
+      remark: statusForm.remark.trim(),
+    })
+    ElMessage.success('充电桩状态切换成功')
+    statusDialogVisible.value = false
+    await refresh()
+  } catch (error) {
+    ElMessage.error(resolveApiErrorMessage(error, '充电桩状态切换失败，请稍后重试'))
+  } finally {
+    statusSaving.value = false
   }
 }
 

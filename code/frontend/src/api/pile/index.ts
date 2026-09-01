@@ -29,6 +29,17 @@ export type PileCreatePayload = {
 
 export type PileUpdatePayload = PileCreatePayload
 
+export type PileStatusOption = {
+  itemId: number
+  itemCode: string
+  itemName: string
+}
+
+export type PileStatusUpdatePayload = {
+  pileStatusItemId: number
+  remark?: string
+}
+
 export async function getStationPiles(stationId: number) {
   const response = await request.get<ApiResponse<PileListItem[]>>(`/api/stations/${stationId}/piles`)
   return response.data.data
@@ -49,6 +60,25 @@ export async function createStationPile(stationId: number, payload: PileCreatePa
 export async function updateStationPile(stationId: number, pileId: number, payload: PileUpdatePayload) {
   const response = await request.put<ApiResponse<number>>(
     `/api/stations/${stationId}/piles/${pileId}`,
+    payload,
+  )
+  return response.data.data
+}
+
+export async function getStationPileStatusOptions(stationId: number) {
+  const response = await request.get<ApiResponse<PileStatusOption[]>>(
+    `/api/stations/${stationId}/piles/status-options`,
+  )
+  return response.data.data
+}
+
+export async function updateStationPileStatus(
+  stationId: number,
+  pileId: number,
+  payload: PileStatusUpdatePayload,
+) {
+  const response = await request.put<ApiResponse<number>>(
+    `/api/stations/${stationId}/piles/${pileId}/status`,
     payload,
   )
   return response.data.data

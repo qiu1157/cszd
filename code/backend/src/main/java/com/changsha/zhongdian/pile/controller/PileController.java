@@ -2,13 +2,19 @@ package com.changsha.zhongdian.pile.controller;
 
 import java.util.List;
 
+import com.changsha.zhongdian.auth.model.LoginUser;
+import com.changsha.zhongdian.auth.service.AuthService;
 import com.changsha.zhongdian.common.api.ApiResponse;
 import com.changsha.zhongdian.pile.dto.PileCreateRequest;
 import com.changsha.zhongdian.pile.dto.PileListItemResponse;
 import com.changsha.zhongdian.pile.dto.PileNextCodeResponse;
+import com.changsha.zhongdian.pile.dto.PileStatusOptionResponse;
+import com.changsha.zhongdian.pile.dto.PileStatusUpdateRequest;
 import com.changsha.zhongdian.pile.dto.PileUpdateRequest;
 import com.changsha.zhongdian.pile.service.PileCommandService;
+import com.changsha.zhongdian.pile.service.PileFormOptionQueryService;
 import com.changsha.zhongdian.pile.service.PileQueryService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,10 +32,19 @@ public class PileController {
 
     private final PileQueryService pileQueryService;
     private final PileCommandService pileCommandService;
+    private final PileFormOptionQueryService pileFormOptionQueryService;
+    private final AuthService authService;
 
-    public PileController(PileQueryService pileQueryService, PileCommandService pileCommandService) {
+    public PileController(
+            PileQueryService pileQueryService,
+            PileCommandService pileCommandService,
+            PileFormOptionQueryService pileFormOptionQueryService,
+            AuthService authService
+    ) {
         this.pileQueryService = pileQueryService;
         this.pileCommandService = pileCommandService;
+        this.pileFormOptionQueryService = pileFormOptionQueryService;
+        this.authService = authService;
     }
 
     @GetMapping("/{stationId}/piles")
@@ -57,5 +72,24 @@ public class PileController {
             @Valid @RequestBody PileUpdateRequest request
     ) {
         return ApiResponse.success("更新充电桩成功", pileCommandService.updatePile(stationId, pileId, request));
+    }
+
+    @GetMapping("/{stationId}/piles/status-options")
+    public ApiResponse<List<PileStatusOptionResponse>> listPileStatusOptions(@PathVariable("stationId") Long stationId) {
+        return ApiResponse.success(pileFormOptionQueryService.listStatusOptions());
+    }
+
+    @PutMapping("/{stationId}/piles/{pileId}/status")
+    public ApiResponse<Long> updatePileStatus(
+            @PathVariable("stationId") Long stationId,
+            @PathVariable("pileId") Long pileId,
+            @Valid @RequestBody PileStatusUpdateRequest request,
+            HttpServletRequest httpServletRequest
+    ) {
+        LoginUser currentUser = authService.getCurrentUser(httpServletRequest);
+        return ApiResponse.success(
+                "充电桩状态切换成功",
+                pileCommandService.updatePileStatus(stationId, pileId, request, currentUser.account())
+        );
     }
 }

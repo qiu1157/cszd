@@ -1,6 +1,7 @@
 package com.changsha.zhongdian.pile.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -15,10 +16,13 @@ import com.changsha.zhongdian.dictionary.entity.SystemDictItem;
 import com.changsha.zhongdian.dictionary.entity.SystemDictType;
 import com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository;
 import com.changsha.zhongdian.pile.dto.PileCreateRequest;
+import com.changsha.zhongdian.pile.dto.PileStatusUpdateRequest;
 import com.changsha.zhongdian.pile.dto.PileUpdateRequest;
 import com.changsha.zhongdian.pile.entity.ChargeType;
 import com.changsha.zhongdian.pile.entity.Pile;
+import com.changsha.zhongdian.pile.entity.PileStatusLog;
 import com.changsha.zhongdian.pile.repository.PileRepository;
+import com.changsha.zhongdian.pile.repository.PileStatusLogRepository;
 import com.changsha.zhongdian.station.repository.StationRepository;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -29,12 +33,14 @@ class PileCommandServiceTest {
     private final PileCodeGenerator pileCodeGenerator = org.mockito.Mockito.mock(PileCodeGenerator.class);
     private final StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
     private final SystemDictItemRepository dictItemRepository = org.mockito.Mockito.mock(SystemDictItemRepository.class);
+    private final PileStatusLogRepository pileStatusLogRepository = org.mockito.Mockito.mock(PileStatusLogRepository.class);
 
     private final PileCommandService pileCommandService = new PileCommandService(
             pileRepository,
             pileCodeGenerator,
             stationRepository,
-            dictItemRepository
+            dictItemRepository,
+            pileStatusLogRepository
     );
 
     @Test
@@ -219,6 +225,135 @@ class PileCommandServiceTest {
         );
 
         assertEquals("PILE_NOT_FOUND", exception.getCode());
+    }
+
+    @Test
+    void updatePileStatusShouldSwitchStatusAndWriteLog() throws ReflectiveOperationException {
+        Pile existingPile = newPileWithId(21L, 1001L, 31L);
+        when(pileRepository.findById(21L)).thenReturn(Optional.of(existingPile));
+        when(pileRepository.save(any(Pile.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(dictItemRepository.findByIdAndTypeTypeCodeAndItemStatus(
+                33L, DictionaryTypeCode.PILE_STATUS, DictionaryStatus.ENABLED
+        )).thenReturn(Optional.of(createDictItem(33L, DictionaryTypeCode.PILE_STATUS, "停用")));
+
+        Long pileId = pileCommandService.updatePileStatus(
+                1001L, 21L, new PileStatusUpdateRequest(33L, "设备检修停用"), "13800000001"
+        );
+
+        assertEquals(21L, pileId);
+        ArgumentCaptor<Pile> pileCaptor = ArgumentCaptor.forClass(Pile.class);
+        verify(pileRepository).save(pileCaptor.capture());
+        assertEquals(33L, pileCaptor.getValue().getPileStatusItemId());
+
+        // 为什么单独捕获日志：状态切换的核心诉求是留痕，必须断言原状态/新状态/备注/操作人完整落库
+        ArgumentCaptor<PileStatusLog> logCaptor = ArgumentCaptor.forClass(PileStatusLog.class);
+        verify(pileStatusLogRepository).save(logCaptor.capture());
+        PileStatusLog savedLog = logCaptor.getValue();
+        assertEquals(21L, savedLog.getPileId());
+        assertEquals(31L, savedLog.getFromStatusItemId());
+        assertEquals(33L, savedLog.getToStatusItemId());
+        assertEquals("设备检修停用", savedLog.getRemark());
+        assertEquals("13800000001", savedLog.getOperatorAccount());
+    }
+
+    @Test
+    void updatePileStatusShouldTrimBlankRemarkToNull() throws ReflectiveOperationException {
+        when(pileRepository.findById(21L)).thenReturn(Optional.of(newPileWithId(21L, 1001L, 31L)));
+        when(pileRepository.save(any(Pile.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(dictItemRepository.findByIdAndTypeTypeCodeAndItemStatus(
+                32L, DictionaryTypeCode.PILE_STATUS, DictionaryStatus.ENABLED
+        )).thenReturn(Optional.of(createDictItem(32L, DictionaryTypeCode.PILE_STATUS, "运营异常")));
+
+        pileCommandService.updatePileStatus(1001L, 21L, new PileStatusUpdateRequest(32L, "   "), "13800000001");
+
+        ArgumentCaptor<PileStatusLog> logCaptor = ArgumentCaptor.forClass(PileStatusLog.class);
+        verify(pileStatusLogRepository).save(logCaptor.capture());
+        assertNull(logCaptor.getValue().getRemark());
+    }
+
+    @Test
+    void updatePileStatusShouldRejectInvalidStationId() {
+        BusinessException nullIdException = assertThrows(
+                BusinessException.class,
+                () -> pileCommandService.updatePileStatus(null, 21L, new PileStatusUpdateRequest(33L, null), "13800000001")
+        );
+        assertEquals("VALIDATION_ERROR", nullIdException.getCode());
+
+        BusinessException zeroIdException = assertThrows(
+                BusinessException.class,
+                () -> pileCommandService.updatePileStatus(0L, 21L, new PileStatusUpdateRequest(33L, null), "13800000001")
+        );
+        assertEquals("VALIDATION_ERROR", zeroIdException.getCode());
+    }
+
+    @Test
+    void updatePileStatusShouldRejectWhenPileMissing() {
+        when(pileRepository.findById(99L)).thenReturn(Optional.empty());
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> pileCommandService.updatePileStatus(1001L, 99L, new PileStatusUpdateRequest(33L, null), "13800000001")
+        );
+
+        assertEquals("PILE_NOT_FOUND", exception.getCode());
+    }
+
+    @Test
+    void updatePileStatusShouldRejectWhenPileBelongsToOtherStation() throws ReflectiveOperationException {
+        when(pileRepository.findById(21L)).thenReturn(Optional.of(newPileWithId(21L, 2002L, 31L)));
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> pileCommandService.updatePileStatus(1001L, 21L, new PileStatusUpdateRequest(33L, null), "13800000001")
+        );
+
+        assertEquals("PILE_NOT_FOUND", exception.getCode());
+    }
+
+    @Test
+    void updatePileStatusShouldRejectInvalidStatusItemId() throws ReflectiveOperationException {
+        when(pileRepository.findById(21L)).thenReturn(Optional.of(newPileWithId(21L, 1001L, 31L)));
+
+        BusinessException nullStatusException = assertThrows(
+                BusinessException.class,
+                () -> pileCommandService.updatePileStatus(1001L, 21L, new PileStatusUpdateRequest(null, null), "13800000001")
+        );
+        assertEquals("VALIDATION_ERROR", nullStatusException.getCode());
+
+        BusinessException zeroStatusException = assertThrows(
+                BusinessException.class,
+                () -> pileCommandService.updatePileStatus(1001L, 21L, new PileStatusUpdateRequest(0L, null), "13800000001")
+        );
+        assertEquals("VALIDATION_ERROR", zeroStatusException.getCode());
+    }
+
+    @Test
+    void updatePileStatusShouldRejectWhenTargetStatusMissingOrDisabled() throws ReflectiveOperationException {
+        when(pileRepository.findById(21L)).thenReturn(Optional.of(newPileWithId(21L, 1001L, 31L)));
+        when(dictItemRepository.findByIdAndTypeTypeCodeAndItemStatus(
+                99L, DictionaryTypeCode.PILE_STATUS, DictionaryStatus.ENABLED
+        )).thenReturn(Optional.empty());
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> pileCommandService.updatePileStatus(1001L, 21L, new PileStatusUpdateRequest(99L, null), "13800000001")
+        );
+
+        assertEquals("PILE_STATUS_NOT_FOUND", exception.getCode());
+    }
+
+    private Pile newPileWithId(Long id, Long stationId, Long statusItemId) throws ReflectiveOperationException {
+        Pile pile = new Pile();
+        // 为什么用反射：JPA 实体主键由数据库生成无 setter，测试按 findById 的真实语义补齐主键
+        java.lang.reflect.Field idField = Pile.class.getDeclaredField("id");
+        idField.setAccessible(true);
+        idField.set(pile, id);
+        pile.setPileCode("PL-202609-0001");
+        pile.setStationId(stationId);
+        pile.setChargeType(ChargeType.FAST);
+        pile.setGunCount(2);
+        pile.setPileStatusItemId(statusItemId);
+        return pile;
     }
 
     private SystemDictItem createDictItem(Long id, DictionaryTypeCode typeCode, String itemName) {

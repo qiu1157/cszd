@@ -56,6 +56,30 @@ describe('StationPileSection source', () => {
     expect(source).toContain('pile.pileCode')
   })
 
+  it('桩列表应提供改状态入口，状态弹窗含当前状态、新状态下拉与可选备注', () => {
+    expect(source).toContain('openStatusDialog(pile)')
+    expect(source).toContain('>改状态</el-button>')
+    expect(source).toContain('修改充电桩状态')
+    expect(source).toContain('当前状态：')
+    expect(source).toContain('statusOptions')
+    expect(source).toContain('请选择新状态')
+    expect(source).toContain('备注（可选）')
+    expect(source).toContain('maxlength="500"')
+    expect(source).toContain('show-word-limit')
+    expect(source).toContain('保存状态')
+  })
+
+  it('状态切换应校验新状态并调用状态接口，成功后关闭弹窗并刷新列表', () => {
+    expect(source).toContain('submitStatusForm')
+    expect(source).toContain('getStationPileStatusOptions')
+    expect(source).toContain('updateStationPileStatus')
+    expect(source).toContain('充电桩状态切换成功')
+    expect(source).toContain('await refresh()')
+    expect(source).toContain('statusSaving')
+    expect(source).toContain('closeStatusDialog')
+    expect(source).toContain('状态选项加载失败')
+  })
+
   it('应具备加载、错误、空态与列表四种展示形态', () => {
     expect(source).toContain('el-skeleton')
     expect(source).toContain('errorMessage')

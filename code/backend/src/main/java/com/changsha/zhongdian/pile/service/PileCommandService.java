@@ -6,13 +6,17 @@ import com.changsha.zhongdian.dictionary.entity.DictionaryTypeCode;
 import com.changsha.zhongdian.dictionary.entity.SystemDictItem;
 import com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository;
 import com.changsha.zhongdian.pile.dto.PileCreateRequest;
+import com.changsha.zhongdian.pile.dto.PileStatusUpdateRequest;
 import com.changsha.zhongdian.pile.dto.PileUpdateRequest;
 import com.changsha.zhongdian.pile.entity.ChargeType;
 import com.changsha.zhongdian.pile.entity.Pile;
+import com.changsha.zhongdian.pile.entity.PileStatusLog;
 import com.changsha.zhongdian.pile.repository.PileRepository;
+import com.changsha.zhongdian.pile.repository.PileStatusLogRepository;
 import com.changsha.zhongdian.station.repository.StationRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PileCommandService {
@@ -23,17 +27,20 @@ public class PileCommandService {
     private final PileCodeGenerator pileCodeGenerator;
     private final StationRepository stationRepository;
     private final SystemDictItemRepository dictItemRepository;
+    private final PileStatusLogRepository pileStatusLogRepository;
 
     public PileCommandService(
             PileRepository pileRepository,
             PileCodeGenerator pileCodeGenerator,
             StationRepository stationRepository,
-            SystemDictItemRepository dictItemRepository
+            SystemDictItemRepository dictItemRepository,
+            PileStatusLogRepository pileStatusLogRepository
     ) {
         this.pileRepository = pileRepository;
         this.pileCodeGenerator = pileCodeGenerator;
         this.stationRepository = stationRepository;
         this.dictItemRepository = dictItemRepository;
+        this.pileStatusLogRepository = pileStatusLogRepository;
     }
 
     public Long createPile(Long stationId, PileCreateRequest request) {
@@ -78,6 +85,53 @@ public class PileCommandService {
         pile.setGunCount(gunCount);
 
         return pileRepository.save(pile).getId();
+    }
+
+    @Transactional
+    public Long updatePileStatus(Long stationId, Long pileId, PileStatusUpdateRequest request, String operatorAccount) {
+        if (stationId == null || stationId <= 0L) {
+            throw new BusinessException("VALIDATION_ERROR", "充电站不存在", HttpStatus.BAD_REQUEST);
+        }
+
+        Pile pile = pileRepository.findById(pileId == null ? -1L : pileId)
+                .filter(existingPile -> existingPile.getStationId().equals(stationId))
+                .orElseThrow(() -> new BusinessException("PILE_NOT_FOUND", "充电桩不存在", HttpStatus.NOT_FOUND));
+
+        Long targetStatusItemId = requirePositiveId(request.pileStatusItemId(), "请选择新状态");
+        SystemDictItem targetStatus = dictItemRepository
+                .findByIdAndTypeTypeCodeAndItemStatus(targetStatusItemId, DictionaryTypeCode.PILE_STATUS, DictionaryStatus.ENABLED)
+                .orElseThrow(() -> new BusinessException("PILE_STATUS_NOT_FOUND", "目标状态不存在或已停用", HttpStatus.BAD_REQUEST));
+
+        // 为什么：状态允许任意切换，但每次切换必须完整记录原状态/新状态/备注/操作人，
+        // 供后续时间线与审计使用，因此状态更新与日志写入放在同一事务
+        Long fromStatusItemId = pile.getPileStatusItemId();
+        pile.setPileStatusItemId(targetStatus.getId());
+        pileRepository.save(pile);
+
+        PileStatusLog statusLog = new PileStatusLog();
+        statusLog.setPileId(pile.getId());
+        statusLog.setFromStatusItemId(fromStatusItemId);
+        statusLog.setToStatusItemId(targetStatus.getId());
+        statusLog.setRemark(trimToNull(request.remark()));
+        statusLog.setOperatorAccount(trimToNull(operatorAccount));
+        pileStatusLogRepository.save(statusLog);
+
+        return pile.getId();
+    }
+
+    private Long requirePositiveId(Long value, String message) {
+        if (value == null || value <= 0L) {
+            throw new BusinessException("VALIDATION_ERROR", message, HttpStatus.BAD_REQUEST);
+        }
+        return value;
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalizedValue = value.trim();
+        return normalizedValue.isEmpty() ? null : normalizedValue;
     }
 
     private ChargeType resolveChargeType(String chargeType) {
