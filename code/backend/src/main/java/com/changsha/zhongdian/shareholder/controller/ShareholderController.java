@@ -5,6 +5,7 @@ import java.util.List;
 import com.changsha.zhongdian.common.api.ApiResponse;
 import com.changsha.zhongdian.common.exception.BusinessException;
 import com.changsha.zhongdian.shareholder.dto.ShareholderCreateRequest;
+import com.changsha.zhongdian.shareholder.dto.ShareholderDetailResponse;
 import com.changsha.zhongdian.shareholder.dto.ShareholderListItemResponse;
 import com.changsha.zhongdian.shareholder.dto.ShareholderUpdateRequest;
 import com.changsha.zhongdian.shareholder.service.ShareholderCommandService;
@@ -39,6 +40,11 @@ public class ShareholderController {
             @RequestParam(name = "shareholderStatus", required = false) String shareholderStatus
     ) {
         return ApiResponse.success(shareholderQueryService.listShareholders(shareholderName, shareholderStatus));
+    }
+
+    @GetMapping("/{shareholderId}")
+    public ApiResponse<ShareholderDetailResponse> getShareholderDetail(@PathVariable Long shareholderId) {
+        return ApiResponse.success(shareholderQueryService.getShareholderDetail(shareholderId));
     }
 
     @PostMapping

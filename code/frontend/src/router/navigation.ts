@@ -5,6 +5,8 @@ export const STATION_LIST_PATH = '/stations'
 export const STATION_CREATE_PATH = '/stations/create'
 export const STATION_DETAIL_PATH = '/stations/:id'
 export const STATION_EDIT_PATH = '/stations/:id/edit'
+export const SHAREHOLDER_LIST_PATH = '/shareholders'
+export const SHAREHOLDER_DETAIL_PATH = '/shareholders/:id'
 export const SYSTEM_DICTIONARY_PATH = '/system-dictionaries'
 export const LEGACY_PLATFORMS_PATH = '/platforms'
 
@@ -14,6 +16,10 @@ export function buildStationDetailPath(id: number | string) {
 
 export function buildStationEditPath(id: number | string) {
   return `/stations/${id}/edit`
+}
+
+export function buildShareholderDetailPath(id: number | string) {
+  return `/shareholders/${id}`
 }
 
 export function getDefaultRouteByRole(role: UserRole) {

@@ -8,6 +8,8 @@ import {
   getDefaultRouteByRole,
   getForbiddenFallbackRouteByRole,
   LEGACY_PLATFORMS_PATH,
+  SHAREHOLDER_DETAIL_PATH,
+  SHAREHOLDER_LIST_PATH,
   STATION_CREATE_PATH,
   STATION_DETAIL_PATH,
   STATION_EDIT_PATH,
@@ -65,10 +67,16 @@ const routes: Array<RouteRecordRaw & { meta: AppRouteMeta }> = [
         meta: { title: '编辑充电站', requiresAuth: true, roles: [USER_ROLES.SYSTEM_ADMIN, USER_ROLES.BUSINESS_ADMIN] },
       },
       {
-        path: '/shareholders',
+        path: SHAREHOLDER_LIST_PATH,
         name: 'ShareholderList',
         component: () => import('@/views/shareholder/ShareholderListView.vue'),
         meta: { title: '股东管理', requiresAuth: true, roles: [USER_ROLES.SYSTEM_ADMIN, USER_ROLES.BUSINESS_ADMIN] },
+      },
+      {
+        path: SHAREHOLDER_DETAIL_PATH,
+        name: 'ShareholderDetail',
+        component: () => import('@/views/shareholder/ShareholderDetailView.vue'),
+        meta: { title: '股东详情', requiresAuth: true, roles: [USER_ROLES.SYSTEM_ADMIN, USER_ROLES.BUSINESS_ADMIN] },
       },
       {
         path: '/system-dictionaries',

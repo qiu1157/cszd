@@ -26,6 +26,21 @@ export async function getShareholders(shareholderName?: string, shareholderStatu
   return response.data.data
 }
 
+export type ShareholderDetail = {
+  id: number
+  shareholderName: string
+  contactName: string | null
+  contactPhone: string | null
+  shareholderStatus: string
+  createdAt: string
+  updatedAt: string
+}
+
+export async function getShareholderDetail(shareholderId: number) {
+  const response = await request.get<ApiResponse<ShareholderDetail>>(`/api/shareholders/${shareholderId}`)
+  return response.data.data
+}
+
 export type ShareholderCreatePayload = {
   shareholderName: string
   contactName: string

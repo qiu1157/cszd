@@ -22,4 +22,9 @@ describe('router source', () => {
     expect(source).toContain('path: STATION_DETAIL_PATH')
     expect(source).toContain("name: 'StationDetail'")
   })
+
+  it('应提供股东详情页面路由', () => {
+    expect(source).toContain('path: SHAREHOLDER_DETAIL_PATH')
+    expect(source).toContain("name: 'ShareholderDetail'")
+  })
 })

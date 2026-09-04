@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.changsha.zhongdian.AuthenticatedWebTestSupport;
+import com.changsha.zhongdian.shareholder.dto.ShareholderDetailResponse;
 import com.changsha.zhongdian.shareholder.dto.ShareholderListItemResponse;
 import com.changsha.zhongdian.shareholder.service.ShareholderCommandService;
 import com.changsha.zhongdian.shareholder.service.ShareholderQueryService;
@@ -175,5 +176,39 @@ class ShareholderControllerTest extends AuthenticatedWebTestSupport {
 
         verify(shareholderCommandService, org.mockito.Mockito.never())
                 .updateShareholderStatus(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyString());
+    }
+
+    @Test
+    void getShareholderDetailShouldReturnDetailForAuthenticatedUser() throws Exception {
+        when(shareholderQueryService.getShareholderDetail(2001L)).thenReturn(new ShareholderDetailResponse(
+                2001L,
+                "长沙城新投资有限公司",
+                "刘可",
+                "13977882211",
+                "ENABLED",
+                LocalDateTime.of(2026, 9, 1, 9, 0),
+                LocalDateTime.of(2026, 9, 4, 9, 40)
+        ));
+        String token = loginAsBusinessAdmin();
+
+        mockMvc.perform(get("/api/shareholders/2001")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.shareholderName").value("长沙城新投资有限公司"))
+                .andExpect(jsonPath("$.data.contactName").value("刘可"))
+                .andExpect(jsonPath("$.data.contactPhone").value("13977882211"))
+                .andExpect(jsonPath("$.data.shareholderStatus").value("ENABLED"))
+                .andExpect(jsonPath("$.data.createdAt").exists())
+                .andExpect(jsonPath("$.data.updatedAt").exists());
+
+        verify(shareholderQueryService).getShareholderDetail(2001L);
+    }
+
+    @Test
+    void getShareholderDetailShouldRejectAnonymousRequest() throws Exception {
+        mockMvc.perform(get("/api/shareholders/2001"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }
 }

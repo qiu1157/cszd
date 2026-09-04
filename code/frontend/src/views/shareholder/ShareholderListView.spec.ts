@@ -29,8 +29,10 @@ describe('ShareholderListView source', () => {
     expect(source).toContain('handleSearch')
   })
 
-  it('应提供操作列与编辑弹窗，编辑时隐藏状态字段且从原始列表回填数据', () => {
+  it('应提供详情入口与操作列，编辑弹窗编辑时隐藏状态字段且从原始列表回填数据', () => {
     expect(source).toContain('label="操作"')
+    expect(source).toContain('@click="goToShareholderDetail(row.id)"')
+    expect(source).toContain('buildShareholderDetailPath')
     expect(source).toContain('@click="openEditDialog(row)"')
     expect(source).toContain('dialogMode')
     expect(source).toContain('editingShareholderId')
@@ -77,6 +79,5 @@ describe('ShareholderListView source', () => {
   it('不应渲染原型中未要求或后续任务实现的入口', () => {
     expect(source).not.toContain('导出列表')
     expect(source).not.toContain('排序')
-    expect(source).not.toContain('查看详情')
   })
 })

@@ -57,9 +57,16 @@
           </template>
         </el-table-column>
         <el-table-column prop="updatedAtText" label="最近变化" min-width="180" />
-        <el-table-column label="操作" min-width="220">
+        <el-table-column label="操作" min-width="260">
           <template #default="{ row }">
             <div class="action-group">
+              <el-button
+                class="action-button action-button--secondary"
+                :disabled="saving || statusSubmitting"
+                @click="goToShareholderDetail(row.id)"
+              >
+                详情
+              </el-button>
               <el-button
                 class="action-button action-button--secondary"
                 :disabled="saving || statusSubmitting"
@@ -188,6 +195,7 @@
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 import {
   createShareholder,
@@ -201,6 +209,7 @@ import {
   SHAREHOLDER_STATUS_OPTIONS,
   type ShareholderStatus,
 } from '@/constants/enums/shareholder-status'
+import { buildShareholderDetailPath } from '@/router/navigation'
 
 import { mapShareholderToTableRow, type ShareholderTableRow } from './adapters'
 import {
@@ -257,6 +266,13 @@ const stationDialogTitle = computed(() =>
 function handleShowStationDetail(row: ShareholderTableRow) {
   activeShareholder.value = row
   stationDialogVisible.value = true
+}
+
+const router = useRouter()
+
+// 股东详情承载基础信息与后续分区，列表行通过该入口进入独立路由页
+function goToShareholderDetail(shareholderId: number) {
+  void router.push(buildShareholderDetailPath(shareholderId))
 }
 
 const statusSubmitting = ref(false)
