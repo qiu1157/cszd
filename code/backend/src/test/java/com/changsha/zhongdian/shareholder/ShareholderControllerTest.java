@@ -16,6 +16,7 @@ import com.changsha.zhongdian.AuthenticatedWebTestSupport;
 import com.changsha.zhongdian.shareholding.dto.ShareholderStationListItemResponse;
 import com.changsha.zhongdian.shareholding.service.ShareholdingQueryService;
 import com.changsha.zhongdian.shareholder.dto.ShareholderDetailResponse;
+import com.changsha.zhongdian.shareholder.dto.ShareholderLinkOptionResponse;
 import com.changsha.zhongdian.shareholder.dto.ShareholderListItemResponse;
 import com.changsha.zhongdian.shareholder.service.ShareholderCommandService;
 import com.changsha.zhongdian.shareholder.service.ShareholderQueryService;
@@ -78,6 +79,36 @@ class ShareholderControllerTest extends AuthenticatedWebTestSupport {
     @Test
     void listShareholdersShouldRejectAnonymousRequest() throws Exception {
         mockMvc.perform(get("/api/shareholders"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    void listLinkableShareholderOptionsShouldReturnEnabledShareholdersForAuthenticatedUser() throws Exception {
+        when(shareholderQueryService.listLinkableShareholderOptions()).thenReturn(List.of(
+                new ShareholderLinkOptionResponse(
+                        2001L,
+                        "长沙城新投资有限公司",
+                        "刘可",
+                        "13977882211"
+                )
+        ));
+        String token = loginAsBusinessAdmin();
+
+        mockMvc.perform(get("/api/shareholders/link-options")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].shareholderName").value("长沙城新投资有限公司"))
+                .andExpect(jsonPath("$.data[0].contactName").value("刘可"))
+                .andExpect(jsonPath("$.data[0].contactPhone").value("13977882211"));
+
+        verify(shareholderQueryService).listLinkableShareholderOptions();
+    }
+
+    @Test
+    void listLinkableShareholderOptionsShouldRejectAnonymousRequest() throws Exception {
+        mockMvc.perform(get("/api/shareholders/link-options"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }

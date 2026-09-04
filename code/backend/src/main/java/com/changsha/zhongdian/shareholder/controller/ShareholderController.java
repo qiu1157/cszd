@@ -8,6 +8,7 @@ import com.changsha.zhongdian.shareholding.dto.ShareholderStationListItemRespons
 import com.changsha.zhongdian.shareholding.service.ShareholdingQueryService;
 import com.changsha.zhongdian.shareholder.dto.ShareholderCreateRequest;
 import com.changsha.zhongdian.shareholder.dto.ShareholderDetailResponse;
+import com.changsha.zhongdian.shareholder.dto.ShareholderLinkOptionResponse;
 import com.changsha.zhongdian.shareholder.dto.ShareholderListItemResponse;
 import com.changsha.zhongdian.shareholder.dto.ShareholderUpdateRequest;
 import com.changsha.zhongdian.shareholder.service.ShareholderCommandService;
@@ -45,6 +46,13 @@ public class ShareholderController {
             @RequestParam(name = "shareholderStatus", required = false) String shareholderStatus
     ) {
         return ApiResponse.success(shareholderQueryService.listShareholders(shareholderName, shareholderStatus));
+    }
+
+    // E-8 停用股东不可新建持股关联的候选接口：固定只返回启用主档；
+    // 字面路径优先于 /{shareholderId} 变量路径，不会被详情路由吞掉
+    @GetMapping("/link-options")
+    public ApiResponse<List<ShareholderLinkOptionResponse>> listLinkableShareholderOptions() {
+        return ApiResponse.success(shareholderQueryService.listLinkableShareholderOptions());
     }
 
     @GetMapping("/{shareholderId}")

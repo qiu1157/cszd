@@ -18,4 +18,7 @@ public interface ShareholderRepository extends JpaRepository<Shareholder, Long> 
             String shareholderName,
             ShareholderStatus shareholderStatus
     );
+
+    // 关联股东候选列表按名称升序：选择场景按名称查找股东，不按更新时间排序
+    List<Shareholder> findAllByShareholderStatusOrderByShareholderNameAsc(ShareholderStatus shareholderStatus);
 }

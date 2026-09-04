@@ -9,6 +9,7 @@ import com.changsha.zhongdian.shareholding.entity.HoldingStatus;
 import com.changsha.zhongdian.shareholding.repository.ShareholderStationCountProjection;
 import com.changsha.zhongdian.shareholding.repository.ShareholdingRepository;
 import com.changsha.zhongdian.shareholder.dto.ShareholderDetailResponse;
+import com.changsha.zhongdian.shareholder.dto.ShareholderLinkOptionResponse;
 import com.changsha.zhongdian.shareholder.dto.ShareholderListItemResponse;
 import com.changsha.zhongdian.shareholder.entity.Shareholder;
 import com.changsha.zhongdian.shareholder.entity.ShareholderStatus;
@@ -37,6 +38,20 @@ public class ShareholderQueryService {
 
         return resolveShareholders(normalizedKeyword, normalizedStatus).stream()
                 .map(shareholder -> toListItemResponse(shareholder, activeStationCountByShareholderId))
+                .toList();
+    }
+
+    // E-8 停用股东不可新建持股关联的查询侧落点：候选选项固定只取启用主档，
+    // 停用股东不会进入关联流程；完整的关联交互由里程碑 F 消费本方法补齐
+    public List<ShareholderLinkOptionResponse> listLinkableShareholderOptions() {
+        return shareholderRepository.findAllByShareholderStatusOrderByShareholderNameAsc(ShareholderStatus.ENABLED)
+                .stream()
+                .map(shareholder -> new ShareholderLinkOptionResponse(
+                        shareholder.getId(),
+                        shareholder.getShareholderName(),
+                        shareholder.getContactName(),
+                        shareholder.getContactPhone()
+                ))
                 .toList();
     }
 

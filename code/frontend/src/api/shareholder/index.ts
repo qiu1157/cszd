@@ -87,3 +87,16 @@ export async function getShareholderStations(shareholderId: number) {
   )
   return response.data.data
 }
+
+export type ShareholderLinkOption = {
+  id: number
+  shareholderName: string
+  contactName: string | null
+  contactPhone: string | null
+}
+
+// 停用股东不可被新建持股关联（E-8）：候选列表只返回启用主档，供关联股东场景选择
+export async function getShareholderLinkOptions() {
+  const response = await request.get<ApiResponse<ShareholderLinkOption[]>>('/api/shareholders/link-options')
+  return response.data.data
+}

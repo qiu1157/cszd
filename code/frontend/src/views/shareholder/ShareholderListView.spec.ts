@@ -53,6 +53,7 @@ describe('ShareholderListView source', () => {
     expect(source).toContain('row.canEnable')
     expect(source).toContain('row.canDisable')
     expect(source).toContain('row.enableActionTone')
+    expect(source).toContain('停用后该股东不能再新建持股关系')
     expect(source).toContain('row.disableActionTone')
     expect(source).toContain('股东已')
   })

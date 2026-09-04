@@ -3,6 +3,8 @@ package com.changsha.zhongdian.shareholder.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
@@ -14,6 +16,7 @@ import com.changsha.zhongdian.shareholding.entity.HoldingStatus;
 import com.changsha.zhongdian.shareholding.repository.ShareholderStationCountProjection;
 import com.changsha.zhongdian.shareholding.repository.ShareholdingRepository;
 import com.changsha.zhongdian.shareholder.dto.ShareholderDetailResponse;
+import com.changsha.zhongdian.shareholder.dto.ShareholderLinkOptionResponse;
 import com.changsha.zhongdian.shareholder.dto.ShareholderListItemResponse;
 import com.changsha.zhongdian.shareholder.entity.Shareholder;
 import com.changsha.zhongdian.shareholder.entity.ShareholderStatus;
@@ -124,6 +127,45 @@ class ShareholderQueryServiceTest {
 
         assertEquals(1, responses.size());
         assertEquals(0L, responses.get(0).stationCount());
+    }
+
+    @Test
+    void listLinkableShareholderOptionsShouldOnlyQueryEnabledShareholders() {
+        ShareholderRepository shareholderRepository = org.mockito.Mockito.mock(ShareholderRepository.class);
+        Shareholder shareholder = mockShareholder();
+        when(shareholderRepository.findAllByShareholderStatusOrderByShareholderNameAsc(ShareholderStatus.ENABLED))
+                .thenReturn(List.of(shareholder));
+
+        ShareholderQueryService shareholderQueryService = new ShareholderQueryService(
+                shareholderRepository,
+                org.mockito.Mockito.mock(ShareholdingRepository.class)
+        );
+
+        List<ShareholderLinkOptionResponse> responses = shareholderQueryService.listLinkableShareholderOptions();
+
+        assertEquals(1, responses.size());
+        assertEquals(3001L, responses.get(0).id());
+        assertEquals("长沙城新投资有限公司", responses.get(0).shareholderName());
+        assertEquals("刘可", responses.get(0).contactName());
+        assertEquals("13977882211", responses.get(0).contactPhone());
+        // 固定以 ENABLED 查询是 E-8 停用限制的核心：停用股东不会出现在关联候选列表
+        verify(shareholderRepository).findAllByShareholderStatusOrderByShareholderNameAsc(ShareholderStatus.ENABLED);
+    }
+
+    @Test
+    void listLinkableShareholderOptionsShouldReturnEmptyWhenNoEnabledShareholders() {
+        ShareholderRepository shareholderRepository = org.mockito.Mockito.mock(ShareholderRepository.class);
+        when(shareholderRepository.findAllByShareholderStatusOrderByShareholderNameAsc(ShareholderStatus.ENABLED))
+                .thenReturn(List.of());
+
+        ShareholderQueryService shareholderQueryService = new ShareholderQueryService(
+                shareholderRepository,
+                org.mockito.Mockito.mock(ShareholdingRepository.class)
+        );
+
+        List<ShareholderLinkOptionResponse> responses = shareholderQueryService.listLinkableShareholderOptions();
+
+        assertTrue(responses.isEmpty());
     }
 
     // 主键与时间戳由 JPA 自动维护且无 setter，详情读路径通过 mock stub 提供

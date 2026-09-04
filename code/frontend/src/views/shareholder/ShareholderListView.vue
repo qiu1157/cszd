@@ -250,12 +250,14 @@ const statusSubmitting = ref(false)
 const statusSubmittingId = ref<number | null>(null)
 const statusSubmittingAction = ref<'' | ShareholderStatusAction>('')
 
-// 为什么二次确认：状态切换影响后续持股关系的可用性（E-8 叠加限制），误触需有明确的拦截
+// 为什么二次确认：状态切换影响后续持股关系的可用性（E-8），误触需有明确的拦截；
+// 停用动作附加影响提示，让运营在确认前明确停用后不能再新建持股关系
 async function submitShareholderStatus(row: ShareholderTableRow, action: ShareholderStatusAction) {
   const actionText = action === 'enable' ? '启用' : '停用'
+  const impactHint = action === 'disable' ? '停用后该股东不能再新建持股关系。' : ''
 
   try {
-    await ElMessageBox.confirm(`确认${actionText}股东 ${row.shareholderName} 吗？`, `${actionText}股东`, {
+    await ElMessageBox.confirm(`确认${actionText}股东 ${row.shareholderName} 吗？${impactHint}`, `${actionText}股东`, {
       confirmButtonText: actionText,
       cancelButtonText: '取消',
       type: 'warning',
