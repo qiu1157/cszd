@@ -1,4 +1,4 @@
-import type { ShareholderCreatePayload } from '@/api/shareholder'
+import type { ShareholderCreatePayload, ShareholderUpdatePayload } from '@/api/shareholder'
 import type { ShareholderStatus } from '@/constants/enums/shareholder-status'
 
 export type ShareholderForm = {
@@ -10,7 +10,11 @@ export type ShareholderForm = {
 
 export type ShareholderFormErrors = Partial<Record<keyof ShareholderForm, string>>
 
-export function validateShareholderForm(form: ShareholderForm): ShareholderFormErrors {
+// 编辑弹窗仅维护基础资料：股东状态的调整属于启用/停用能力，不进入编辑范围
+export type ShareholderEditForm = Pick<ShareholderForm, 'shareholderName' | 'contactName' | 'contactPhone'>
+
+// 新增与编辑共用同一套基础资料规则，保证两条入口的校验口径一致
+function validateShareholderProfile(form: ShareholderEditForm): ShareholderFormErrors {
   const errors: ShareholderFormErrors = {}
 
   if (!form.shareholderName.trim()) {
@@ -27,11 +31,19 @@ export function validateShareholderForm(form: ShareholderForm): ShareholderFormE
     errors.contactPhone = '联系电话不能超过20个字符'
   }
 
+  return errors
+}
+
+export function validateShareholderForm(form: ShareholderForm): ShareholderFormErrors {
+  const errors = validateShareholderProfile(form)
   if (!form.shareholderStatus) {
     errors.shareholderStatus = '请选择股东状态'
   }
-
   return errors
+}
+
+export function validateShareholderEditForm(form: ShareholderEditForm): ShareholderFormErrors {
+  return validateShareholderProfile(form)
 }
 
 export function buildShareholderCreatePayload(form: ShareholderForm): ShareholderCreatePayload {
@@ -40,5 +52,13 @@ export function buildShareholderCreatePayload(form: ShareholderForm): Shareholde
     contactName: form.contactName.trim(),
     contactPhone: form.contactPhone.trim(),
     shareholderStatus: form.shareholderStatus,
+  }
+}
+
+export function buildShareholderUpdatePayload(form: ShareholderEditForm): ShareholderUpdatePayload {
+  return {
+    shareholderName: form.shareholderName.trim(),
+    contactName: form.contactName.trim(),
+    contactPhone: form.contactPhone.trim(),
   }
 }

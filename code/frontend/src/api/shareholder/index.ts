@@ -37,3 +37,14 @@ export async function createShareholder(payload: ShareholderCreatePayload) {
   const response = await request.post<ApiResponse<number>>('/api/shareholders', payload)
   return response.data.data
 }
+
+export type ShareholderUpdatePayload = {
+  shareholderName: string
+  contactName: string
+  contactPhone: string
+}
+
+export async function updateShareholder(shareholderId: number, payload: ShareholderUpdatePayload) {
+  const response = await request.put<ApiResponse<number>>(`/api/shareholders/${shareholderId}`, payload)
+  return response.data.data
+}

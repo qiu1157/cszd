@@ -57,6 +57,11 @@
           </template>
         </el-table-column>
         <el-table-column prop="updatedAtText" label="最近变化" min-width="180" />
+        <el-table-column label="操作" min-width="90">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="openEditDialog(row)">编辑</el-button>
+          </template>
+        </el-table-column>
       </el-table>
     </el-card>
 
@@ -74,8 +79,8 @@
     </el-dialog>
 
     <el-dialog
-      v-model="createDialogVisible"
-      class="shareholder-create-dialog"
+      v-model="dialogVisible"
+      class="shareholder-form-dialog"
       width="520px"
       :show-close="false"
       :close-on-click-modal="false"
@@ -85,8 +90,9 @@
     >
       <template #header>
         <div class="dialog-head">
-          <h3>新增股东</h3>
-          <el-button text @click="closeCreateDialog">关闭</el-button>
+          <h3 v-if="dialogMode === 'create'">新增股东</h3>
+          <h3 v-else>编辑股东</h3>
+          <el-button text @click="closeDialog">关闭</el-button>
         </div>
       </template>
 
@@ -94,42 +100,42 @@
         <div class="form-field">
           <label>股东名称</label>
           <el-input
-            v-model="createForm.shareholderName"
+            v-model="form.shareholderName"
             maxlength="128"
             placeholder="请输入股东名称"
-            @blur="validateCreateField('shareholderName')"
+            @blur="validateField('shareholderName')"
           />
-          <p v-if="createErrors.shareholderName" class="field-error">{{ createErrors.shareholderName }}</p>
+          <p v-if="formErrors.shareholderName" class="field-error">{{ formErrors.shareholderName }}</p>
         </div>
 
         <div class="form-field">
           <label>联系人</label>
           <el-input
-            v-model="createForm.contactName"
+            v-model="form.contactName"
             maxlength="64"
             placeholder="请输入联系人（选填）"
-            @blur="validateCreateField('contactName')"
+            @blur="validateField('contactName')"
           />
-          <p v-if="createErrors.contactName" class="field-error">{{ createErrors.contactName }}</p>
+          <p v-if="formErrors.contactName" class="field-error">{{ formErrors.contactName }}</p>
         </div>
 
         <div class="form-field">
           <label>联系电话</label>
           <el-input
-            v-model="createForm.contactPhone"
+            v-model="form.contactPhone"
             maxlength="20"
             placeholder="请输入联系电话（选填）"
-            @blur="validateCreateField('contactPhone')"
+            @blur="validateField('contactPhone')"
           />
-          <p v-if="createErrors.contactPhone" class="field-error">{{ createErrors.contactPhone }}</p>
+          <p v-if="formErrors.contactPhone" class="field-error">{{ formErrors.contactPhone }}</p>
         </div>
 
-        <div class="form-field">
+        <div v-if="dialogMode === 'create'" class="form-field">
           <label>股东状态</label>
           <el-select
-            v-model="createForm.shareholderStatus"
+            v-model="form.shareholderStatus"
             placeholder="请选择股东状态"
-            @change="validateCreateField('shareholderStatus')"
+            @change="validateField('shareholderStatus')"
           >
             <el-option
               v-for="item in statusOptions"
@@ -138,14 +144,14 @@
               :value="item.value"
             />
           </el-select>
-          <p v-if="createErrors.shareholderStatus" class="field-error">{{ createErrors.shareholderStatus }}</p>
+          <p v-if="formErrors.shareholderStatus" class="field-error">{{ formErrors.shareholderStatus }}</p>
         </div>
       </div>
 
       <template #footer>
         <div class="dialog-actions">
-          <el-button @click="closeCreateDialog">取消</el-button>
-          <el-button type="primary" :loading="creating" @click="submitCreateForm">保存</el-button>
+          <el-button @click="closeDialog">取消</el-button>
+          <el-button type="primary" :loading="saving" @click="submitShareholderForm">保存</el-button>
         </div>
       </template>
     </el-dialog>
@@ -157,7 +163,12 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 
-import { createShareholder, getShareholders, type ShareholderListItem } from '@/api/shareholder'
+import {
+  createShareholder,
+  getShareholders,
+  updateShareholder,
+  type ShareholderListItem,
+} from '@/api/shareholder'
 import {
   SHAREHOLDER_STATUS_OPTIONS,
   type ShareholderStatus,
@@ -166,6 +177,8 @@ import {
 import { mapShareholderToTableRow, type ShareholderTableRow } from './adapters'
 import {
   buildShareholderCreatePayload,
+  buildShareholderUpdatePayload,
+  validateShareholderEditForm,
   validateShareholderForm,
   type ShareholderForm,
   type ShareholderFormErrors,
@@ -218,10 +231,12 @@ function handleShowStationDetail(row: ShareholderTableRow) {
   stationDialogVisible.value = true
 }
 
-const createDialogVisible = ref(false)
-const creating = ref(false)
-const createForm = ref<ShareholderForm>(createInitialForm())
-const createErrors = ref<ShareholderFormErrors>({})
+const dialogVisible = ref(false)
+const dialogMode = ref<'create' | 'edit'>('create')
+const editingShareholderId = ref<number | null>(null)
+const saving = ref(false)
+const form = ref<ShareholderForm>(createInitialForm())
+const formErrors = ref<ShareholderFormErrors>({})
 
 function createInitialForm(): ShareholderForm {
   return {
@@ -233,44 +248,81 @@ function createInitialForm(): ShareholderForm {
 }
 
 function openCreateDialog() {
-  createForm.value = createInitialForm()
-  createErrors.value = {}
-  createDialogVisible.value = true
+  dialogMode.value = 'create'
+  editingShareholderId.value = null
+  form.value = createInitialForm()
+  formErrors.value = {}
+  dialogVisible.value = true
+}
+
+// 表格行上的联系人是名称与电话的合并文案，编辑需要原始字段，因此从原始列表取数
+function openEditDialog(row: ShareholderTableRow) {
+  const item = shareholders.value.find(shareholder => shareholder.id === row.id)
+  if (!item) {
+    return
+  }
+  dialogMode.value = 'edit'
+  editingShareholderId.value = item.id
+  form.value = {
+    shareholderName: item.shareholderName,
+    contactName: item.contactName ?? '',
+    contactPhone: item.contactPhone ?? '',
+    shareholderStatus: '',
+  }
+  formErrors.value = {}
+  dialogVisible.value = true
 }
 
 // 保存请求进行中禁止关闭，避免半途提交造成数据不一致
-function closeCreateDialog() {
-  if (creating.value) {
+function closeDialog() {
+  if (saving.value) {
     return
   }
-  createDialogVisible.value = false
+  dialogVisible.value = false
 }
 
-function validateCreateField(field: keyof ShareholderForm) {
-  const nextErrors = validateShareholderForm(createForm.value)
-  createErrors.value = {
-    ...createErrors.value,
+function validateField(field: keyof ShareholderForm) {
+  const nextErrors = dialogMode.value === 'create'
+    ? validateShareholderForm(form.value)
+    : validateShareholderEditForm(form.value)
+  formErrors.value = {
+    ...formErrors.value,
     [field]: nextErrors[field],
   }
 }
 
-async function submitCreateForm() {
-  createErrors.value = validateShareholderForm(createForm.value)
-  if (Object.values(createErrors.value).some(Boolean)) {
+async function submitShareholderForm() {
+  formErrors.value = dialogMode.value === 'create'
+    ? validateShareholderForm(form.value)
+    : validateShareholderEditForm(form.value)
+  if (Object.values(formErrors.value).some(Boolean)) {
     return
   }
 
-  creating.value = true
+  saving.value = true
   try {
-    await createShareholder(buildShareholderCreatePayload(createForm.value))
-    ElMessage.success('股东新增成功')
-    createDialogVisible.value = false
-    createForm.value = createInitialForm()
+    if (dialogMode.value === 'create') {
+      await createShareholder(buildShareholderCreatePayload(form.value))
+      ElMessage.success('股东新增成功')
+    } else {
+      const shareholderId = editingShareholderId.value
+      if (shareholderId === null) {
+        return
+      }
+      await updateShareholder(shareholderId, buildShareholderUpdatePayload(form.value))
+      ElMessage.success('股东更新成功')
+    }
+    dialogVisible.value = false
+    form.value = createInitialForm()
     await loadShareholders()
   } catch (error) {
-    ElMessage.error(resolveApiErrorMessage(error, '股东新增失败，请稍后重试'))
+    ElMessage.error(
+      dialogMode.value === 'create'
+        ? resolveApiErrorMessage(error, '股东新增失败，请稍后重试')
+        : resolveApiErrorMessage(error, '股东更新失败，请稍后重试'),
+    )
   } finally {
-    creating.value = false
+    saving.value = false
   }
 }
 

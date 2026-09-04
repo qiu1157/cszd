@@ -4,6 +4,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -102,6 +103,41 @@ class ShareholderControllerTest extends AuthenticatedWebTestSupport {
                                 {
                                   "shareholderName": "长沙城新能源合伙企业",
                                   "shareholderStatus": "ENABLED"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    void updateShareholderShouldReturnIdForAuthenticatedUser() throws Exception {
+        when(shareholderCommandService.updateShareholder(org.mockito.ArgumentMatchers.eq(2001L), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(2001L);
+        String token = loginAsBusinessAdmin();
+
+        mockMvc.perform(put("/api/shareholders/2001")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "shareholderName": "长沙城新能源合伙企业（更新）",
+                                  "contactName": "刘可",
+                                  "contactPhone": "13977882211"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").value(2001))
+                .andExpect(jsonPath("$.message").value("更新股东成功"));
+    }
+
+    @Test
+    void updateShareholderShouldRejectAnonymousRequest() throws Exception {
+        mockMvc.perform(put("/api/shareholders/2001")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "shareholderName": "长沙城新能源合伙企业（更新）"
                                 }
                                 """))
                 .andExpect(status().isUnauthorized())

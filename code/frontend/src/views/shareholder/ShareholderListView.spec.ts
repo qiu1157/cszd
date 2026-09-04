@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import source from './ShareholderListView.vue?raw'
 
 describe('ShareholderListView source', () => {
-  it('应渲染股东列表结构，并提供新增入口', () => {
+  it('应渲染股东列表结构，并提供新增与编辑入口', () => {
     expect(source).toContain('股东列表页')
     expect(source).toContain('新增股东')
     expect(source).toContain('@click="openCreateDialog"')
@@ -29,26 +29,37 @@ describe('ShareholderListView source', () => {
     expect(source).toContain('handleSearch')
   })
 
-  it('应包含新增股东弹窗，禁用遮罩与ESC关闭，保存中防重复提交', () => {
-    expect(source).toContain('createDialogVisible')
+  it('应提供操作列与编辑弹窗，编辑时隐藏状态字段且从原始列表回填数据', () => {
+    expect(source).toContain('label="操作"')
+    expect(source).toContain('@click="openEditDialog(row)"')
+    expect(source).toContain('dialogMode')
+    expect(source).toContain('editingShareholderId')
+    expect(source).toContain('updateShareholder')
+    expect(source).toContain('validateShareholderEditForm')
+    expect(source).toContain('buildShareholderUpdatePayload')
+    expect(source).toContain("v-if=\"dialogMode === 'create'\"")
+    expect(source).toContain('股东更新成功')
+  })
+
+  it('应包含新增/编辑共用弹窗，禁用遮罩与ESC关闭，保存中防重复提交', () => {
+    expect(source).toContain('dialogVisible')
     expect(source).toContain(':show-close="false"')
     expect(source).toContain(':close-on-press-escape="false"')
     expect(source).toContain('destroy-on-close')
     expect(source).toContain('openCreateDialog')
-    expect(source).toContain('closeCreateDialog')
+    expect(source).toContain('closeDialog')
     expect(source).toContain('validateShareholderForm')
     expect(source).toContain('buildShareholderCreatePayload')
     expect(source).toContain('createShareholder')
-    expect(source).toContain('submitCreateForm')
-    expect(source).toContain(':loading="creating"')
+    expect(source).toContain('submitShareholderForm')
+    expect(source).toContain(':loading="saving"')
     expect(source).toContain('股东新增成功')
-    expect(source).toContain('validateCreateField')
+    expect(source).toContain('validateField')
   })
 
   it('不应渲染原型中未要求或后续任务实现的入口', () => {
     expect(source).not.toContain('导出列表')
     expect(source).not.toContain('排序')
     expect(source).not.toContain('查看详情')
-    expect(source).not.toContain('label="操作"')
   })
 })

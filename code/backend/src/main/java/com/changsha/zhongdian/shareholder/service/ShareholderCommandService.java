@@ -2,6 +2,7 @@ package com.changsha.zhongdian.shareholder.service;
 
 import com.changsha.zhongdian.common.exception.BusinessException;
 import com.changsha.zhongdian.shareholder.dto.ShareholderCreateRequest;
+import com.changsha.zhongdian.shareholder.dto.ShareholderUpdateRequest;
 import com.changsha.zhongdian.shareholder.entity.Shareholder;
 import com.changsha.zhongdian.shareholder.entity.ShareholderStatus;
 import com.changsha.zhongdian.shareholder.repository.ShareholderRepository;
@@ -28,6 +29,23 @@ public class ShareholderCommandService {
         shareholder.setContactName(trimToNull(request.contactName()));
         shareholder.setContactPhone(trimToNull(request.contactPhone()));
         shareholder.setShareholderStatus(shareholderStatus);
+
+        return shareholderRepository.save(shareholder).getId();
+    }
+
+    // 为什么编辑不触碰状态：状态的调整属于启用/停用能力（含 E-8 的停用限制），编辑接口只维护名称与联系方式
+    @Transactional
+    public Long updateShareholder(Long shareholderId, ShareholderUpdateRequest request) {
+        if (shareholderId == null || shareholderId <= 0L) {
+            throw new BusinessException("VALIDATION_ERROR", "股东不存在", HttpStatus.BAD_REQUEST);
+        }
+
+        Shareholder shareholder = shareholderRepository.findById(shareholderId)
+                .orElseThrow(() -> new BusinessException("SHAREHOLDER_NOT_FOUND", "股东不存在", HttpStatus.NOT_FOUND));
+
+        shareholder.setShareholderName(requireNonBlank(request.shareholderName(), "请输入股东名称"));
+        shareholder.setContactName(trimToNull(request.contactName()));
+        shareholder.setContactPhone(trimToNull(request.contactPhone()));
 
         return shareholderRepository.save(shareholder).getId();
     }
