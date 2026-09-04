@@ -11,9 +11,12 @@ import java.util.List;
 
 import com.changsha.zhongdian.common.exception.BusinessException;
 import com.changsha.zhongdian.shareholding.dto.ShareholderStationListItemResponse;
+import com.changsha.zhongdian.shareholding.dto.StationShareholdingListItemResponse;
 import com.changsha.zhongdian.shareholding.repository.ShareholderStationListItemProjection;
 import com.changsha.zhongdian.shareholding.repository.ShareholdingRepository;
+import com.changsha.zhongdian.shareholding.repository.StationShareholderListItemProjection;
 import com.changsha.zhongdian.shareholder.repository.ShareholderRepository;
+import com.changsha.zhongdian.station.repository.StationRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
@@ -23,6 +26,7 @@ class ShareholdingQueryServiceTest {
     void getShareholderStationsShouldReturnActiveStations() {
         ShareholdingRepository shareholdingRepository = org.mockito.Mockito.mock(ShareholdingRepository.class);
         ShareholderRepository shareholderRepository = org.mockito.Mockito.mock(ShareholderRepository.class);
+        StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
         // 先完成投影 stub 再注册 repository stub：Mockito 不允许在一次 stubbing 完成前嵌套另一个 stubbing
         ShareholderStationListItemProjection first = mockStationItem(
                 1001L,
@@ -45,7 +49,7 @@ class ShareholdingQueryServiceTest {
                 .thenReturn(List.of(first, second));
 
         ShareholdingQueryService shareholdingQueryService =
-                new ShareholdingQueryService(shareholdingRepository, shareholderRepository);
+                new ShareholdingQueryService(shareholdingRepository, shareholderRepository, stationRepository);
 
         List<ShareholderStationListItemResponse> responses = shareholdingQueryService.getShareholderStations(3001L);
 
@@ -64,12 +68,13 @@ class ShareholdingQueryServiceTest {
     void getShareholderStationsShouldReturnEmptyListWhenNoActiveHoldings() {
         ShareholdingRepository shareholdingRepository = org.mockito.Mockito.mock(ShareholdingRepository.class);
         ShareholderRepository shareholderRepository = org.mockito.Mockito.mock(ShareholderRepository.class);
+        StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
         when(shareholderRepository.existsById(3001L)).thenReturn(true);
         when(shareholdingRepository.findStationListItemsByShareholderIdAndHoldingStatus(3001L, "ACTIVE"))
                 .thenReturn(List.of());
 
         ShareholdingQueryService shareholdingQueryService =
-                new ShareholdingQueryService(shareholdingRepository, shareholderRepository);
+                new ShareholdingQueryService(shareholdingRepository, shareholderRepository, stationRepository);
 
         List<ShareholderStationListItemResponse> responses = shareholdingQueryService.getShareholderStations(3001L);
 
@@ -80,10 +85,11 @@ class ShareholdingQueryServiceTest {
     void getShareholderStationsShouldRejectMissingShareholder() {
         ShareholdingRepository shareholdingRepository = org.mockito.Mockito.mock(ShareholdingRepository.class);
         ShareholderRepository shareholderRepository = org.mockito.Mockito.mock(ShareholderRepository.class);
+        StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
         when(shareholderRepository.existsById(3999L)).thenReturn(false);
 
         ShareholdingQueryService shareholdingQueryService =
-                new ShareholdingQueryService(shareholdingRepository, shareholderRepository);
+                new ShareholdingQueryService(shareholdingRepository, shareholderRepository, stationRepository);
 
         BusinessException exception = assertThrows(
                 BusinessException.class,
@@ -98,12 +104,95 @@ class ShareholdingQueryServiceTest {
     void getShareholderStationsShouldRejectInvalidShareholderId() {
         ShareholdingRepository shareholdingRepository = org.mockito.Mockito.mock(ShareholdingRepository.class);
         ShareholderRepository shareholderRepository = org.mockito.Mockito.mock(ShareholderRepository.class);
+        StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
         ShareholdingQueryService shareholdingQueryService =
-                new ShareholdingQueryService(shareholdingRepository, shareholderRepository);
+                new ShareholdingQueryService(shareholdingRepository, shareholderRepository, stationRepository);
 
         BusinessException exception = assertThrows(
                 BusinessException.class,
                 () -> shareholdingQueryService.getShareholderStations(0L)
+        );
+
+        assertEquals("VALIDATION_ERROR", exception.getCode());
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+    }
+
+    @Test
+    void getStationShareholdingsShouldReturnRelationsWithStatusNames() {
+        ShareholdingRepository shareholdingRepository = org.mockito.Mockito.mock(ShareholdingRepository.class);
+        ShareholderRepository shareholderRepository = org.mockito.Mockito.mock(ShareholderRepository.class);
+        StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
+        StationShareholderListItemProjection active = mockShareholderItem(
+                9001L,
+                1L,
+                "长沙众电",
+                "王强",
+                "13800000001",
+                "60.00",
+                "ACTIVE",
+                LocalDateTime.of(2026, 9, 2, 10, 0)
+        );
+        StationShareholderListItemProjection exited = mockShareholderItem(
+                9002L,
+                2L,
+                "晨曦创投",
+                "李敏",
+                "13800000002",
+                "40.00",
+                "EXITED",
+                LocalDateTime.of(2026, 9, 3, 10, 0)
+        );
+        when(stationRepository.existsById(2L)).thenReturn(true);
+        when(shareholdingRepository.findStationShareholderListItems(2L))
+                .thenReturn(List.of(active, exited));
+
+        ShareholdingQueryService shareholdingQueryService =
+                new ShareholdingQueryService(shareholdingRepository, shareholderRepository, stationRepository);
+
+        List<StationShareholdingListItemResponse> responses = shareholdingQueryService.getStationShareholdings(2L);
+
+        assertEquals(2, responses.size());
+        assertEquals(9001L, responses.get(0).id());
+        assertEquals(1L, responses.get(0).shareholderId());
+        assertEquals("长沙众电", responses.get(0).shareholderName());
+        assertEquals("王强", responses.get(0).contactName());
+        assertEquals("13800000001", responses.get(0).contactPhone());
+        assertEquals(new BigDecimal("60.00"), responses.get(0).ownershipPercentage());
+        assertEquals("持股中", responses.get(0).holdingStatusName());
+        assertEquals(LocalDateTime.of(2026, 9, 2, 10, 0), responses.get(0).effectiveAt());
+        assertEquals("已退出", responses.get(1).holdingStatusName());
+    }
+
+    @Test
+    void getStationShareholdingsShouldRejectMissingStation() {
+        ShareholdingRepository shareholdingRepository = org.mockito.Mockito.mock(ShareholdingRepository.class);
+        ShareholderRepository shareholderRepository = org.mockito.Mockito.mock(ShareholderRepository.class);
+        StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
+        when(stationRepository.existsById(9999L)).thenReturn(false);
+
+        ShareholdingQueryService shareholdingQueryService =
+                new ShareholdingQueryService(shareholdingRepository, shareholderRepository, stationRepository);
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> shareholdingQueryService.getStationShareholdings(9999L)
+        );
+
+        assertEquals("STATION_NOT_FOUND", exception.getCode());
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+    }
+
+    @Test
+    void getStationShareholdingsShouldRejectInvalidStationId() {
+        ShareholdingRepository shareholdingRepository = org.mockito.Mockito.mock(ShareholdingRepository.class);
+        ShareholderRepository shareholderRepository = org.mockito.Mockito.mock(ShareholderRepository.class);
+        StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
+        ShareholdingQueryService shareholdingQueryService =
+                new ShareholdingQueryService(shareholdingRepository, shareholderRepository, stationRepository);
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> shareholdingQueryService.getStationShareholdings(0L)
         );
 
         assertEquals("VALIDATION_ERROR", exception.getCode());
@@ -126,6 +215,30 @@ class ShareholdingQueryServiceTest {
         when(item.getStationName()).thenReturn(stationName);
         when(item.getStationStatusName()).thenReturn(stationStatusName);
         when(item.getOwnershipPercentage()).thenReturn(new BigDecimal(ownershipPercentage));
+        when(item.getEffectiveAt()).thenReturn(effectiveAt);
+        return item;
+    }
+
+    // 站点侧投影：持股行联股东主档，stub 覆盖名称/联系方式与持股状态原值（由服务层翻译状态名）
+    private StationShareholderListItemProjection mockShareholderItem(
+            Long id,
+            Long shareholderId,
+            String shareholderName,
+            String contactName,
+            String contactPhone,
+            String ownershipPercentage,
+            String holdingStatus,
+            LocalDateTime effectiveAt
+    ) {
+        StationShareholderListItemProjection item =
+                org.mockito.Mockito.mock(StationShareholderListItemProjection.class);
+        when(item.getId()).thenReturn(id);
+        when(item.getShareholderId()).thenReturn(shareholderId);
+        when(item.getShareholderName()).thenReturn(shareholderName);
+        when(item.getContactName()).thenReturn(contactName);
+        when(item.getContactPhone()).thenReturn(contactPhone);
+        when(item.getOwnershipPercentage()).thenReturn(new BigDecimal(ownershipPercentage));
+        when(item.getHoldingStatus()).thenReturn(holdingStatus);
         when(item.getEffectiveAt()).thenReturn(effectiveAt);
         return item;
     }

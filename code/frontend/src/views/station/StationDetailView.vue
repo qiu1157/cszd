@@ -48,7 +48,7 @@
             </div>
             <div class="info-card">
               <small>持股股东</small>
-              <strong>后续任务实现</strong>
+              <strong>{{ shareholderSummaryText }}</strong>
             </div>
           </div>
         </section>
@@ -139,11 +139,16 @@
           <div class="placeholder-card">充电站不存在，无法维护充电桩。</div>
         </section>
 
-        <section id="section-shareholders" class="detail-section">
+        <StationShareholderSection
+          v-if="resolvedStationId"
+          :station-id="resolvedStationId"
+          @loaded="applyShareholderSummary"
+        />
+        <section v-else id="section-shareholders" class="detail-section">
           <div class="detail-section__head">
             <h4>股东信息</h4>
           </div>
-          <div class="placeholder-card">后续任务实现：在此分区维护股东关系与占比信息。</div>
+          <div class="placeholder-card">充电站不存在，无法维护股东关系。</div>
         </section>
 
         <section id="section-timeline" class="detail-section">
@@ -221,6 +226,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { getStationDetail, updateStationStatus, type StationDetail } from '@/api/station'
 import { getStationStatusOptions, type StationStatusOption } from '@/api/station/form-options'
 import StationPileSection from '@/components/business/StationPileSection.vue'
+import StationShareholderSection from '@/components/business/StationShareholderSection.vue'
 import { buildStationEditPath, STATION_LIST_PATH } from '@/router/navigation'
 
 const route = useRoute()
@@ -268,8 +274,22 @@ const pileSummaryText = computed(() => {
   return `${pileSummary.value.pileCount} 根 / ${pileSummary.value.gunCount} 把枪`
 })
 
+const shareholderSummary = ref<{ activeShareholderCount: number; activePercentageSum: number } | null>(null)
+
+const shareholderSummaryText = computed(() => {
+  if (!shareholderSummary.value) {
+    return '--'
+  }
+  return `${shareholderSummary.value.activeShareholderCount} 位 / 合计 ${shareholderSummary.value.activePercentageSum}%`
+})
+
 function applyPileSummary(summary: { pileCount: number; gunCount: number }) {
   pileSummary.value = summary
+}
+
+// 股东分区加载完成时回填概览摘要：与桩分区同构，由子组件 emit loaded 驱动
+function applyShareholderSummary(summary: { activeShareholderCount: number; activePercentageSum: number }) {
+  shareholderSummary.value = summary
 }
 
 function applyDetail(data: StationDetail) {

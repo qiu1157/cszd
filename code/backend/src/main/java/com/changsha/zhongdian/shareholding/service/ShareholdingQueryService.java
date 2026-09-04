@@ -4,23 +4,29 @@ import java.util.List;
 
 import com.changsha.zhongdian.common.exception.BusinessException;
 import com.changsha.zhongdian.shareholding.dto.ShareholderStationListItemResponse;
+import com.changsha.zhongdian.shareholding.dto.StationShareholdingListItemResponse;
 import com.changsha.zhongdian.shareholding.entity.HoldingStatus;
 import com.changsha.zhongdian.shareholding.repository.ShareholdingRepository;
 import com.changsha.zhongdian.shareholder.repository.ShareholderRepository;
+import com.changsha.zhongdian.station.repository.StationRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-// 股东详情的关联站点只读查询：E-7 先交付只读链路，关联/调整/退出等维护能力由里程碑 F 在同一张表上补齐
+// 持股关系只读查询：股东详情侧查"股东-站点"、站点详情侧查"站点-股东"，同一张表的两侧视角；
+// 关联/调整/退出等维护能力由里程碑 F 在同一张表上补齐
 @Service
 public class ShareholdingQueryService {
 
     private final ShareholdingRepository shareholdingRepository;
     private final ShareholderRepository shareholderRepository;
+    private final StationRepository stationRepository;
 
     public ShareholdingQueryService(ShareholdingRepository shareholdingRepository,
-                                     ShareholderRepository shareholderRepository) {
+                                     ShareholderRepository shareholderRepository,
+                                     StationRepository stationRepository) {
         this.shareholdingRepository = shareholdingRepository;
         this.shareholderRepository = shareholderRepository;
+        this.stationRepository = stationRepository;
     }
 
     public List<ShareholderStationListItemResponse> getShareholderStations(Long shareholderId) {
@@ -45,5 +51,38 @@ public class ShareholdingQueryService {
                         item.getEffectiveAt()
                 ))
                 .toList();
+    }
+
+    // 站点详情股东分区列表：站点是路径资源，站点不存在时与站点详情接口同口径返回 404
+    public List<StationShareholdingListItemResponse> getStationShareholdings(Long stationId) {
+        if (stationId == null || stationId <= 0L) {
+            throw new BusinessException("VALIDATION_ERROR", "充电站不存在", HttpStatus.BAD_REQUEST);
+        }
+        if (!stationRepository.existsById(stationId)) {
+            throw new BusinessException("STATION_NOT_FOUND", "充电站不存在", HttpStatus.NOT_FOUND);
+        }
+        // 已退出关系是历史痕迹：列表保留展示（带状态标记），由前端摘要口径区分当前股权结构
+        return shareholdingRepository.findStationShareholderListItems(stationId)
+                .stream()
+                .map(item -> new StationShareholdingListItemResponse(
+                        item.getId(),
+                        item.getShareholderId(),
+                        item.getShareholderName(),
+                        item.getContactName(),
+                        item.getContactPhone(),
+                        item.getOwnershipPercentage(),
+                        resolveHoldingStatusName(item.getHoldingStatus()),
+                        item.getEffectiveAt()
+                ))
+                .toList();
+    }
+
+    // 状态名由应用层枚举映射：持股状态是应用层枚举口径（非字典项），与充电桩字典状态的来源不同
+    private String resolveHoldingStatusName(String holdingStatus) {
+        return switch (holdingStatus == null ? "" : holdingStatus) {
+            case "ACTIVE" -> "持股中";
+            case "EXITED" -> "已退出";
+            default -> "--";
+        };
     }
 }
