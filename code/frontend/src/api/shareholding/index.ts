@@ -43,9 +43,13 @@ export async function createStationShareholding(stationId: number, payload: Shar
 // 已退出关系是历史痕迹，不参与当前股权结构口径
 export function summarizeShareholdings(shareholdings: StationShareholding[]) {
   const activeRelations = shareholdings.filter(item => item.holdingStatusName === '持股中')
-  const activePercentageSum = activeRelations.reduce(
-    (total, item) => total + (item.ownershipPercentage || 0),
-    0,
+  // 占比域精度为 2 位小数（后端 DECIMAL(5,2)）：JS 浮点直加会产生尾差，
+  // 若不按域精度取整会把 33.33+33.33+33.34 误判为“合计≠100%”
+  const activePercentageSum = Number(
+    activeRelations.reduce(
+      (total, item) => total + (item.ownershipPercentage || 0),
+      0,
+    ).toFixed(2),
   )
   return {
     activeShareholderCount: activeRelations.length,

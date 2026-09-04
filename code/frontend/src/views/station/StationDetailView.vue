@@ -48,7 +48,10 @@
             </div>
             <div class="info-card">
               <small>持股股东</small>
-              <strong>{{ shareholderSummaryText }}</strong>
+              <strong :class="{ 'summary-warning': shareholderSumIncomplete }">{{ shareholderSummaryText }}</strong>
+              <p v-if="shareholderSumIncomplete" class="info-card__hint">
+                持股中合计不为 100%，可通过“股权调整”统一调整。
+              </p>
             </div>
           </div>
         </section>
@@ -283,6 +286,18 @@ const shareholderSummaryText = computed(() => {
   return `${shareholderSummary.value.activeShareholderCount} 位 / 合计 ${shareholderSummary.value.activePercentageSum}%`
 })
 
+// 与股东分区的警示口径一致：仅当“存在持股中股东且合计≠100%”时提示；
+// 摘要未加载（null）或无持股中股东时保持安静
+const shareholderSumIncomplete = computed(() => {
+  if (!shareholderSummary.value) {
+    return false
+  }
+  return (
+    shareholderSummary.value.activeShareholderCount > 0
+    && shareholderSummary.value.activePercentageSum !== 100
+  )
+})
+
 function applyPileSummary(summary: { pileCount: number; gunCount: number }) {
   pileSummary.value = summary
 }
@@ -511,6 +526,16 @@ onMounted(() => {
 .info-card strong {
   line-height: 1.5;
   word-break: break-all;
+}
+
+.info-card strong.summary-warning {
+  color: var(--warning);
+}
+
+.info-card__hint {
+  margin: 0;
+  color: var(--warning);
+  font-size: 12px;
 }
 
 .info-card--wide {

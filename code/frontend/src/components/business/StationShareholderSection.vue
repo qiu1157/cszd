@@ -17,6 +17,9 @@
     </div>
 
     <div v-else class="mini-list">
+      <div v-if="ownershipSumIncomplete" class="ownership-sum-warning">
+        当前持股中合计 {{ activeSummary.activePercentageSum }}%，最终需为 100%，可通过“股权调整”统一调整。
+      </div>
       <div v-for="holding in shareholdings" :key="holding.id" class="mini-item">
         <div class="mini-item__info">
           <strong>{{ holding.shareholderName }}</strong>
@@ -114,7 +117,7 @@
 <script setup lang="ts">
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 
 import { getShareholderLinkOptions, type ShareholderLinkOption } from '@/api/shareholder'
 import {
@@ -150,13 +153,24 @@ const holdingStatusOptions = [
   { value: 'EXITED' as const, label: '已退出' },
 ]
 
+// 列表警示与父组件摘要共用一份口径，数据变化时只需重算一次
+const activeSummary = computed(() => summarizeShareholdings(shareholdings.value))
+
+// spec 7.5 警示条件：仅当“存在持股中股东且合计≠100%”时警示；
+// 站点无股东时走既有空态引导，不产生警示噪音
+const ownershipSumIncomplete = computed(
+  () =>
+    activeSummary.value.activeShareholderCount > 0
+    && activeSummary.value.activePercentageSum !== 100,
+)
+
 async function refresh() {
   loading.value = true
   errorMessage.value = ''
   try {
     shareholdings.value = await getStationShareholdings(props.stationId)
     // 概览卡需要持股中股东数与占比合计，列表加载成功后同步给父组件
-    emit('loaded', summarizeShareholdings(shareholdings.value))
+    emit('loaded', activeSummary.value)
   } catch (error) {
     errorMessage.value = resolveApiErrorMessage(error, '股东关系列表加载失败，请稍后重试')
   } finally {
@@ -263,6 +277,15 @@ defineExpose({ refresh })
 .mini-list {
   display: grid;
   gap: 10px;
+}
+
+.ownership-sum-warning {
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(248, 184, 78, 0.35);
+  background: rgba(248, 184, 78, 0.08);
+  color: var(--warning);
+  font-size: 13px;
 }
 
 .mini-item {

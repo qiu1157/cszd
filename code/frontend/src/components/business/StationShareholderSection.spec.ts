@@ -63,4 +63,14 @@ describe('StationShareholderSection source', () => {
     expect(source).toContain('summarizeShareholdings')
     expect(source).toContain('getStationShareholdings')
   })
+
+  it('仅当存在持股中股东且合计不为 100% 时展示合计警示', () => {
+    expect(source).toContain('ownershipSumIncomplete')
+    expect(source).toContain('activeShareholderCount > 0')
+    expect(source).toContain('activePercentageSum !== 100')
+    expect(source).toContain('当前持股中合计')
+    expect(source).toContain('最终需为 100%')
+    expect(source).toContain('股权调整')
+    expect(source).toContain('ownership-sum-warning')
+  })
 })

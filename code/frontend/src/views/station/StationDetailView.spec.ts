@@ -54,4 +54,12 @@ describe('StationDetailView source', () => {
     expect(source).toContain('submitStatusForm')
     expect(source).toContain('状态切换成功')
   })
+
+  it('概览卡持股摘要应展示合计未满 100% 的警示提示', () => {
+    expect(source).toContain('shareholderSumIncomplete')
+    expect(source).toContain('activeShareholderCount > 0')
+    expect(source).toContain('activePercentageSum !== 100')
+    expect(source).toContain('持股中合计不为 100%')
+    expect(source).toContain('股权调整')
+  })
 })
