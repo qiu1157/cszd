@@ -8,6 +8,8 @@ public record ShareholderListItemResponse(
         String contactName,
         String contactPhone,
         String shareholderStatus,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        // 关联站点统计：只数持股中（ACTIVE）的在管站点，与详情页关联站点列表同一口径
+        long stationCount
 ) {
 }

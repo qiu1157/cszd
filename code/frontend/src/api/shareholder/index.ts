@@ -14,6 +14,7 @@ export type ShareholderListItem = {
   contactPhone: string | null
   shareholderStatus: string
   updatedAt: string
+  stationCount: number
 }
 
 export async function getShareholders(shareholderName?: string, shareholderStatus?: string | null) {

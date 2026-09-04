@@ -2,6 +2,7 @@ package com.changsha.zhongdian.shareholding.repository;
 
 import java.util.List;
 
+import com.changsha.zhongdian.shareholding.entity.HoldingStatus;
 import com.changsha.zhongdian.shareholding.entity.Shareholding;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -30,5 +31,17 @@ public interface ShareholdingRepository extends JpaRepository<Shareholding, Long
     List<ShareholderStationListItemProjection> findStationListItemsByShareholderIdAndHoldingStatus(
             @Param("shareholderId") Long shareholderId,
             @Param("holdingStatus") String holdingStatus
+    );
+
+    // 为什么 JPQL 而非原生 SQL：纯单实体聚合、无跨表 JOIN，JPQL 可直接绑定 HoldingStatus 枚举入参；
+    // GROUP BY 一次取出全部股东的统计，由调用方内存合并，避免列表行数级的逐股东 COUNT（N+1）
+    @Query("""
+            SELECT sh.shareholderId AS shareholderId, COUNT(sh.id) AS stationCount
+            FROM Shareholding sh
+            WHERE sh.holdingStatus = :holdingStatus
+            GROUP BY sh.shareholderId
+            """)
+    List<ShareholderStationCountProjection> countStationsGroupByShareholder(
+            @Param("holdingStatus") HoldingStatus holdingStatus
     );
 }

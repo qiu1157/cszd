@@ -1,8 +1,13 @@
 package com.changsha.zhongdian.shareholder.service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.changsha.zhongdian.common.exception.BusinessException;
+import com.changsha.zhongdian.shareholding.entity.HoldingStatus;
+import com.changsha.zhongdian.shareholding.repository.ShareholderStationCountProjection;
+import com.changsha.zhongdian.shareholding.repository.ShareholdingRepository;
 import com.changsha.zhongdian.shareholder.dto.ShareholderDetailResponse;
 import com.changsha.zhongdian.shareholder.dto.ShareholderListItemResponse;
 import com.changsha.zhongdian.shareholder.entity.Shareholder;
@@ -15,17 +20,23 @@ import org.springframework.stereotype.Service;
 public class ShareholderQueryService {
 
     private final ShareholderRepository shareholderRepository;
+    private final ShareholdingRepository shareholdingRepository;
 
-    public ShareholderQueryService(ShareholderRepository shareholderRepository) {
+    public ShareholderQueryService(ShareholderRepository shareholderRepository,
+                                    ShareholdingRepository shareholdingRepository) {
         this.shareholderRepository = shareholderRepository;
+        this.shareholdingRepository = shareholdingRepository;
     }
 
     public List<ShareholderListItemResponse> listShareholders(String shareholderNameKeyword, String shareholderStatusValue) {
         String normalizedKeyword = normalizeKeyword(shareholderNameKeyword);
         ShareholderStatus normalizedStatus = normalizeStatus(shareholderStatusValue);
 
+        // 一次 GROUP BY 拉全量持股统计再内存合并：股东列表行数有限，比逐行 COUNT 省数据库往返
+        Map<Long, Long> activeStationCountByShareholderId = loadActiveStationCountByShareholderId();
+
         return resolveShareholders(normalizedKeyword, normalizedStatus).stream()
-                .map(this::toListItemResponse)
+                .map(shareholder -> toListItemResponse(shareholder, activeStationCountByShareholderId))
                 .toList();
     }
 
@@ -65,14 +76,25 @@ public class ShareholderQueryService {
         return shareholderRepository.findAllByOrderByUpdatedAtDesc();
     }
 
-    private ShareholderListItemResponse toListItemResponse(Shareholder shareholder) {
+    private Map<Long, Long> loadActiveStationCountByShareholderId() {
+        return shareholdingRepository.countStationsGroupByShareholder(HoldingStatus.ACTIVE).stream()
+                .collect(Collectors.toMap(
+                        ShareholderStationCountProjection::getShareholderId,
+                        ShareholderStationCountProjection::getStationCount
+                ));
+    }
+
+    // 关联站点统计只数持股中（ACTIVE）的在管站点：已退出属历史痕迹，不计入统计口径
+    private ShareholderListItemResponse toListItemResponse(Shareholder shareholder, Map<Long, Long> activeStationCountByShareholderId) {
+        long stationCount = activeStationCountByShareholderId.getOrDefault(shareholder.getId(), 0L);
         return new ShareholderListItemResponse(
                 shareholder.getId(),
                 shareholder.getShareholderName(),
                 shareholder.getContactName(),
                 shareholder.getContactPhone(),
                 shareholder.getShareholderStatus().name(),
-                shareholder.getUpdatedAt()
+                shareholder.getUpdatedAt(),
+                stationCount
         );
     }
 

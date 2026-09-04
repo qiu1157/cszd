@@ -44,12 +44,9 @@
           </template>
         </el-table-column>
         <el-table-column prop="contactText" label="联系人" min-width="180" />
+        <!-- 关联站点为持股中站点的统计值，纯展示不下钻：明细由详情页"关联充电站"分区承载 -->
         <el-table-column label="关联站点" min-width="120">
-          <template #default="{ row }">
-            <el-button link type="primary" @click="handleShowStationDetail(row)">
-              {{ row.relatedStationCount }} 个站点
-            </el-button>
-          </template>
+          <template #default="{ row }">{{ row.relatedStationCount }} 个</template>
         </el-table-column>
         <el-table-column label="状态" min-width="100">
           <template #default="{ row }">
@@ -97,19 +94,6 @@
         </el-table-column>
       </el-table>
     </el-card>
-
-    <el-dialog
-      v-model="stationDialogVisible"
-      :close-on-click-modal="false"
-      :title="stationDialogTitle"
-      width="520px"
-    >
-      <div class="station-summary">共 {{ activeShareholder?.relatedStationCount ?? 0 }} 个关联站点</div>
-      <el-empty description="暂无关联站点" :image-size="80" />
-      <template #footer>
-        <el-button @click="stationDialogVisible = false">关闭</el-button>
-      </template>
-    </el-dialog>
 
     <el-dialog
       v-model="dialogVisible"
@@ -253,19 +237,6 @@ function handleResetFilters() {
   searchForm.value.shareholderName = ''
   searchForm.value.shareholderStatus = null
   void loadShareholders()
-}
-
-const stationDialogVisible = ref(false)
-const activeShareholder = ref<ShareholderTableRow | null>(null)
-
-const stationDialogTitle = computed(() =>
-  activeShareholder.value ? `${activeShareholder.value.shareholderName} · 关联站点` : '关联站点',
-)
-
-// 站点明细数据依赖里程碑 F 的持股关系表，当前先呈现数量与空态占位
-function handleShowStationDetail(row: ShareholderTableRow) {
-  activeShareholder.value = row
-  stationDialogVisible.value = true
 }
 
 const router = useRouter()
@@ -501,11 +472,6 @@ onMounted(() => {
 /* 操作列一行 3 个按钮、列宽有限，仅做最小宽度布局微调；按钮视觉样式以 global.scss 为全局唯一来源 */
 .action-group .action-button {
   min-width: 68px;
-}
-
-.station-summary {
-  margin-bottom: 8px;
-  color: var(--text-secondary);
 }
 
 .dialog-head {

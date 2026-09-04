@@ -44,7 +44,8 @@ class ShareholderControllerTest extends AuthenticatedWebTestSupport {
                         "刘可",
                         "13977882211",
                         "ENABLED",
-                        LocalDateTime.of(2026, 9, 4, 9, 40)
+                        LocalDateTime.of(2026, 9, 4, 9, 40),
+                        2L
                 )
         ));
         String token = loginAsBusinessAdmin();
@@ -55,7 +56,8 @@ class ShareholderControllerTest extends AuthenticatedWebTestSupport {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].shareholderName").value("长沙城新投资有限公司"))
                 .andExpect(jsonPath("$.data[0].contactName").value("刘可"))
-                .andExpect(jsonPath("$.data[0].shareholderStatus").value("ENABLED"));
+                .andExpect(jsonPath("$.data[0].shareholderStatus").value("ENABLED"))
+                .andExpect(jsonPath("$.data[0].stationCount").value(2));
     }
 
     @Test

@@ -25,7 +25,7 @@ export function mapShareholderToTableRow(item: ShareholderListItem): Shareholder
     contactText: item.contactName || item.contactPhone
       ? `${item.contactName ?? '--'} / ${item.contactPhone ?? '--'}`
       : '--',
-    relatedStationCount: 0,
+    relatedStationCount: item.stationCount,
     statusLabel: isEnabled ? '启用' : '停用',
     statusType: isEnabled ? 'success' : 'info',
     // 启用/停用互斥：仅当前状态的对立动作可用并高亮，与字典项状态切换交互保持一致
