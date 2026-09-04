@@ -18,7 +18,7 @@
 
     <div v-else class="mini-list">
       <div v-if="ownershipSumIncomplete" class="ownership-sum-warning">
-        当前持股中合计 {{ activeSummary.activePercentageSum }}%，最终需为 100%，可通过“股权调整”统一调整。
+        当前持股中合计 {{ activeSummary.activePercentageSum }}%，不等于 100%，请确认股权结构是否符合预期。
       </div>
       <div v-for="holding in shareholdings" :key="holding.id" class="mini-item">
         <div class="mini-item__info">
@@ -84,7 +84,7 @@
             :precision="2"
             controls-position="right"
           />
-          <p class="field-hint">“持股中”股东占比总和最终需为 100%，可先关联再通过“股权调整”统一调整。</p>
+          <p class="field-hint">持股中占比合计不等于 100% 时，保存前会提示确认。</p>
           <p v-if="linkFormError" class="field-error">{{ linkFormError }}</p>
         </div>
 
@@ -116,7 +116,7 @@
 
 <script setup lang="ts">
 import axios from 'axios'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 
 import { getShareholderLinkOptions, type ShareholderLinkOption } from '@/api/shareholder'
@@ -211,6 +211,35 @@ async function submitLinkForm() {
     return
   }
 
+  // 变更口径：合计≠100% 仅软提示——预演提交后的持股中口径（复用取整逻辑），
+  // 与列表警示同条件才弹确认；取消则直接中止，不进入保存态
+  const projectedSummary = summarizeShareholdings([
+    ...shareholdings.value,
+    {
+      id: 0,
+      shareholderId: linkForm.shareholderId ?? 0,
+      shareholderName: '',
+      contactName: null,
+      contactPhone: null,
+      ownershipPercentage: linkForm.ownershipPercentage ?? 0,
+      holdingStatusName: linkForm.holdingStatus === 'ACTIVE' ? '持股中' : '已退出',
+      effectiveAt: null,
+    },
+  ])
+  if (projectedSummary.activeShareholderCount > 0 && projectedSummary.activePercentageSum !== 100) {
+    try {
+      await ElMessageBox.confirm('充电站持股数合计不等于100%，是否确认。', '提示', {
+        confirmButtonText: '确认',
+        cancelButtonText: '取消',
+        type: 'warning',
+        closeOnClickModal: false,
+        closeOnPressEscape: false,
+      })
+    } catch {
+      return
+    }
+  }
+
   linkSaving.value = true
   try {
     await createStationShareholding(props.stationId, {
@@ -222,7 +251,7 @@ async function submitLinkForm() {
     linkDialogVisible.value = false
     await refresh()
   } catch (error) {
-    // 服务端校验口径（重复关联、占比合计超限）直接透出在表单内，便于用户修正后重试
+    // 服务端校验口径（重复关联、单条占比越界）直接透出在表单内，便于用户修正后重试
     linkFormError.value = resolveApiErrorMessage(error, '关联股东失败，请稍后重试')
   } finally {
     linkSaving.value = false

@@ -66,20 +66,6 @@ public class ShareholdingCommandService {
             );
         }
 
-        // 原型口径：新增只拦截合计将超过 100%，允许暂时低于 100% 由股权调整统一补齐；
-        // 已退出关系不计入合计，与占比总和统计口径一致
-        if (holdingStatus == HoldingStatus.ACTIVE) {
-            BigDecimal currentSum = shareholdingRepository
-                    .sumOwnershipPercentageByStationIdAndHoldingStatus(validStationId, HoldingStatus.ACTIVE);
-            if (currentSum.add(ownershipPercentage).compareTo(MAX_OWNERSHIP_PERCENTAGE) > 0) {
-                throw new BusinessException(
-                        "SHAREHOLDING_PERCENTAGE_EXCEEDED",
-                        "占股比例合计将超过 100%，请先通过股权调整重新分配后再关联",
-                        HttpStatus.BAD_REQUEST
-                );
-            }
-        }
-
         // spec 7.5：股权调整立即生效、不指定未来生效时间，新增关系同口径以当前时间生效
         Shareholding shareholding = new Shareholding();
         shareholding.setStationId(validStationId);

@@ -1,6 +1,5 @@
 package com.changsha.zhongdian.shareholding.repository;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 import com.changsha.zhongdian.shareholding.entity.HoldingStatus;
@@ -67,15 +66,4 @@ public interface ShareholdingRepository extends JpaRepository<Shareholding, Long
 
     boolean existsByStationIdAndShareholderIdAndHoldingStatus(
             Long stationId, Long shareholderId, HoldingStatus holdingStatus);
-
-    // 为什么 JPQL：纯单实体聚合无需跨表 JOIN，可直接绑定 HoldingStatus 枚举；
-    // COALESCE 兜住无持股中关系的站点返回 0 而非 null，调用方免判空
-    @Query("""
-            SELECT COALESCE(SUM(sh.ownershipPercentage), 0)
-            FROM Shareholding sh
-            WHERE sh.stationId = :stationId AND sh.holdingStatus = :holdingStatus
-            """)
-    BigDecimal sumOwnershipPercentageByStationIdAndHoldingStatus(
-            @Param("stationId") Long stationId,
-            @Param("holdingStatus") HoldingStatus holdingStatus);
 }

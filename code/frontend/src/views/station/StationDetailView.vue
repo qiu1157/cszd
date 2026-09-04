@@ -50,7 +50,7 @@
               <small>持股股东</small>
               <strong :class="{ 'summary-warning': shareholderSumIncomplete }">{{ shareholderSummaryText }}</strong>
               <p v-if="shareholderSumIncomplete" class="info-card__hint">
-                持股中合计不为 100%，可通过“股权调整”统一调整。
+                持股中合计不等于 100%，请确认股权结构是否符合预期。
               </p>
             </div>
           </div>

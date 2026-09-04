@@ -33,9 +33,6 @@ class ShareholdingCommandServiceTest {
         when(fixture.shareholderRepository.findById(1L)).thenReturn(Optional.of(fixture.enabledShareholder()));
         when(fixture.shareholdingRepository
                 .existsByStationIdAndShareholderIdAndHoldingStatus(2L, 1L, HoldingStatus.ACTIVE)).thenReturn(false);
-        when(fixture.shareholdingRepository
-                .sumOwnershipPercentageByStationIdAndHoldingStatus(2L, HoldingStatus.ACTIVE))
-                .thenReturn(new BigDecimal("60"));
 
         Long createdId = fixture.commandService.createShareholding(2L, new ShareholdingCreateRequest(
                 1L,
@@ -137,29 +134,26 @@ class ShareholdingCommandServiceTest {
     }
 
     @Test
-    void createShareholdingShouldRejectPercentageOverflow() {
+    void createShareholdingShouldAllowSumExceedingHundred() {
         ServiceFixture fixture = new ServiceFixture();
         when(fixture.stationRepository.existsById(2L)).thenReturn(true);
         when(fixture.shareholderRepository.findById(1L)).thenReturn(Optional.of(fixture.enabledShareholder()));
         when(fixture.shareholdingRepository
                 .existsByStationIdAndShareholderIdAndHoldingStatus(2L, 1L, HoldingStatus.ACTIVE)).thenReturn(false);
-        when(fixture.shareholdingRepository
-                .sumOwnershipPercentageByStationIdAndHoldingStatus(2L, HoldingStatus.ACTIVE))
-                .thenReturn(new BigDecimal("90"));
 
-        BusinessException exception = assertThrows(
-                BusinessException.class,
-                () -> fixture.commandService.createShareholding(2L, new ShareholdingCreateRequest(
-                        1L,
-                        new BigDecimal("20"),
-                        "ACTIVE"
-                ))
-        );
+        Long createdId = fixture.commandService.createShareholding(2L, new ShareholdingCreateRequest(
+                1L,
+                new BigDecimal("20"),
+                "ACTIVE"
+        ));
 
-        // 原型口径：合计将超过 100% 才拦截（90 + 20 = 110），低于 100% 允许后续补齐
-        assertEquals("SHAREHOLDING_PERCENTAGE_EXCEEDED", exception.getCode());
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
-        verify(fixture.shareholdingRepository, never()).save(any(Shareholding.class));
+        // 变更口径：合计不等于 100% 不再强制拦截（如已有 90% 再加 20% 也放行），
+        // 保存确认提示由前端弹窗承担，服务端仅保留单条 0% ~ 100% 强制校验
+        assertEquals(9001L, createdId);
+        verify(fixture.shareholdingRepository).save(argThat(shareholding ->
+                HoldingStatus.ACTIVE.equals(shareholding.getHoldingStatus())
+                        && new BigDecimal("20").compareTo(shareholding.getOwnershipPercentage()) == 0
+        ));
     }
 
     @Test
@@ -186,12 +180,9 @@ class ShareholdingCommandServiceTest {
         ServiceFixture fixture = new ServiceFixture();
         when(fixture.stationRepository.existsById(2L)).thenReturn(true);
         when(fixture.shareholderRepository.findById(1L)).thenReturn(Optional.of(fixture.enabledShareholder()));
-        // 同股东已有持股中关系、且持股中合计已到 100%：以已退出状态补录历史关系仍应放行
+        // 同股东已有持股中关系：以已退出状态补录历史关系仍应放行，不受持股中重复与合计限制
         when(fixture.shareholdingRepository
                 .existsByStationIdAndShareholderIdAndHoldingStatus(2L, 1L, HoldingStatus.ACTIVE)).thenReturn(true);
-        when(fixture.shareholdingRepository
-                .sumOwnershipPercentageByStationIdAndHoldingStatus(2L, HoldingStatus.ACTIVE))
-                .thenReturn(new BigDecimal("100"));
 
         Long createdId = fixture.commandService.createShareholding(2L, new ShareholdingCreateRequest(
                 1L,

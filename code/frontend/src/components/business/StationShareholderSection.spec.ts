@@ -17,7 +17,7 @@ describe('StationShareholderSection source', () => {
     expect(source).toContain('占股比例（%）')
     expect(source).toContain(':min="0"')
     expect(source).toContain(':max="100"')
-    expect(source).toContain('“持股中”股东占比总和最终需为 100%')
+    expect(source).toContain('持股中占比合计不等于 100% 时，保存前会提示确认。')
     expect(source).toContain('关系状态')
     expect(source).toContain('holdingStatusOptions')
     expect(source).toContain(':show-close="false"')
@@ -64,13 +64,23 @@ describe('StationShareholderSection source', () => {
     expect(source).toContain('getStationShareholdings')
   })
 
-  it('仅当存在持股中股东且合计不为 100% 时展示合计警示', () => {
+  it('仅当存在持股中股东且合计不等于 100% 时展示合计提示', () => {
     expect(source).toContain('ownershipSumIncomplete')
     expect(source).toContain('activeShareholderCount > 0')
     expect(source).toContain('activePercentageSum !== 100')
     expect(source).toContain('当前持股中合计')
-    expect(source).toContain('最终需为 100%')
-    expect(source).toContain('股权调整')
+    expect(source).toContain('不等于 100%，请确认股权结构是否符合预期。')
     expect(source).toContain('ownership-sum-warning')
+  })
+
+  it('保存前合计不等于 100% 应弹窗确认，确认后继续保存、取消则不保存', () => {
+    expect(source).toContain('ElMessageBox')
+    expect(source).toContain('充电站持股数合计不等于100%，是否确认。')
+    expect(source).toContain("confirmButtonText: '确认'")
+    expect(source).toContain("cancelButtonText: '取消'")
+    expect(source).toContain("type: 'warning'")
+    expect(source).toContain('closeOnClickModal: false')
+    expect(source).toContain('closeOnPressEscape: false')
+    expect(source).toContain('projectedSummary')
   })
 })
