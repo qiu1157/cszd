@@ -5,7 +5,7 @@
         <div class="section-head section-head--stacked">
           <div class="section-head__top">
             <h3>股东列表页</h3>
-            <el-button class="action-button" type="primary" @click="handleCreate">新增股东</el-button>
+            <el-button class="action-button" type="primary" @click="openCreateDialog">新增股东</el-button>
           </div>
           <div class="toolbar-row">
             <el-input
@@ -72,6 +72,83 @@
         <el-button @click="stationDialogVisible = false">关闭</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog
+      v-model="createDialogVisible"
+      class="shareholder-create-dialog"
+      width="520px"
+      :show-close="false"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+      destroy-on-close
+      align-center
+    >
+      <template #header>
+        <div class="dialog-head">
+          <h3>新增股东</h3>
+          <el-button text @click="closeCreateDialog">关闭</el-button>
+        </div>
+      </template>
+
+      <div class="dialog-body">
+        <div class="form-field">
+          <label>股东名称</label>
+          <el-input
+            v-model="createForm.shareholderName"
+            maxlength="128"
+            placeholder="请输入股东名称"
+            @blur="validateCreateField('shareholderName')"
+          />
+          <p v-if="createErrors.shareholderName" class="field-error">{{ createErrors.shareholderName }}</p>
+        </div>
+
+        <div class="form-field">
+          <label>联系人</label>
+          <el-input
+            v-model="createForm.contactName"
+            maxlength="64"
+            placeholder="请输入联系人（选填）"
+            @blur="validateCreateField('contactName')"
+          />
+          <p v-if="createErrors.contactName" class="field-error">{{ createErrors.contactName }}</p>
+        </div>
+
+        <div class="form-field">
+          <label>联系电话</label>
+          <el-input
+            v-model="createForm.contactPhone"
+            maxlength="20"
+            placeholder="请输入联系电话（选填）"
+            @blur="validateCreateField('contactPhone')"
+          />
+          <p v-if="createErrors.contactPhone" class="field-error">{{ createErrors.contactPhone }}</p>
+        </div>
+
+        <div class="form-field">
+          <label>股东状态</label>
+          <el-select
+            v-model="createForm.shareholderStatus"
+            placeholder="请选择股东状态"
+            @change="validateCreateField('shareholderStatus')"
+          >
+            <el-option
+              v-for="item in statusOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
+          <p v-if="createErrors.shareholderStatus" class="field-error">{{ createErrors.shareholderStatus }}</p>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="dialog-actions">
+          <el-button @click="closeCreateDialog">取消</el-button>
+          <el-button type="primary" :loading="creating" @click="submitCreateForm">保存</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </section>
 </template>
 
@@ -80,13 +157,19 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 
-import { getShareholders, type ShareholderListItem } from '@/api/shareholder'
+import { createShareholder, getShareholders, type ShareholderListItem } from '@/api/shareholder'
 import {
   SHAREHOLDER_STATUS_OPTIONS,
   type ShareholderStatus,
 } from '@/constants/enums/shareholder-status'
 
 import { mapShareholderToTableRow, type ShareholderTableRow } from './adapters'
+import {
+  buildShareholderCreatePayload,
+  validateShareholderForm,
+  type ShareholderForm,
+  type ShareholderFormErrors,
+} from './shareholder-form'
 
 const loading = ref(false)
 const shareholders = ref<ShareholderListItem[]>([])
@@ -135,9 +218,60 @@ function handleShowStationDetail(row: ShareholderTableRow) {
   stationDialogVisible.value = true
 }
 
-// 新增表单在 E-3 任务实现，先给出明确提示避免死按钮
-function handleCreate() {
-  ElMessage.info('新增股东功能开发中，将在股东新增任务中开放')
+const createDialogVisible = ref(false)
+const creating = ref(false)
+const createForm = ref<ShareholderForm>(createInitialForm())
+const createErrors = ref<ShareholderFormErrors>({})
+
+function createInitialForm(): ShareholderForm {
+  return {
+    shareholderName: '',
+    contactName: '',
+    contactPhone: '',
+    shareholderStatus: '',
+  }
+}
+
+function openCreateDialog() {
+  createForm.value = createInitialForm()
+  createErrors.value = {}
+  createDialogVisible.value = true
+}
+
+// 保存请求进行中禁止关闭，避免半途提交造成数据不一致
+function closeCreateDialog() {
+  if (creating.value) {
+    return
+  }
+  createDialogVisible.value = false
+}
+
+function validateCreateField(field: keyof ShareholderForm) {
+  const nextErrors = validateShareholderForm(createForm.value)
+  createErrors.value = {
+    ...createErrors.value,
+    [field]: nextErrors[field],
+  }
+}
+
+async function submitCreateForm() {
+  createErrors.value = validateShareholderForm(createForm.value)
+  if (Object.values(createErrors.value).some(Boolean)) {
+    return
+  }
+
+  creating.value = true
+  try {
+    await createShareholder(buildShareholderCreatePayload(createForm.value))
+    ElMessage.success('股东新增成功')
+    createDialogVisible.value = false
+    createForm.value = createInitialForm()
+    await loadShareholders()
+  } catch (error) {
+    ElMessage.error(resolveApiErrorMessage(error, '股东新增失败，请稍后重试'))
+  } finally {
+    creating.value = false
+  }
 }
 
 function resolveApiErrorMessage(error: unknown, fallbackMessage: string) {
@@ -227,6 +361,46 @@ onMounted(() => {
 .station-summary {
   margin-bottom: 8px;
   color: var(--text-secondary);
+}
+
+.dialog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dialog-head h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.dialog-body {
+  display: grid;
+  gap: 16px;
+}
+
+.form-field {
+  display: grid;
+  gap: 8px;
+}
+
+.form-field label {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.field-error {
+  margin: 0;
+  color: #ff8f8f;
+  font-size: 13px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
 }
 
 @media (max-width: 768px) {

@@ -6,7 +6,7 @@ describe('ShareholderListView source', () => {
   it('应渲染股东列表结构，并提供新增入口', () => {
     expect(source).toContain('股东列表页')
     expect(source).toContain('新增股东')
-    expect(source).toContain('@click="handleCreate"')
+    expect(source).toContain('@click="openCreateDialog"')
     expect(source).toContain('请输入股东名称')
     expect(source).toContain('请选择状态')
     expect(source).toContain('SHAREHOLDER_STATUS_OPTIONS')
@@ -27,6 +27,22 @@ describe('ShareholderListView source', () => {
     expect(source).toContain('最近变化')
     expect(source).toContain('getShareholders')
     expect(source).toContain('handleSearch')
+  })
+
+  it('应包含新增股东弹窗，禁用遮罩与ESC关闭，保存中防重复提交', () => {
+    expect(source).toContain('createDialogVisible')
+    expect(source).toContain(':show-close="false"')
+    expect(source).toContain(':close-on-press-escape="false"')
+    expect(source).toContain('destroy-on-close')
+    expect(source).toContain('openCreateDialog')
+    expect(source).toContain('closeCreateDialog')
+    expect(source).toContain('validateShareholderForm')
+    expect(source).toContain('buildShareholderCreatePayload')
+    expect(source).toContain('createShareholder')
+    expect(source).toContain('submitCreateForm')
+    expect(source).toContain(':loading="creating"')
+    expect(source).toContain('股东新增成功')
+    expect(source).toContain('validateCreateField')
   })
 
   it('不应渲染原型中未要求或后续任务实现的入口', () => {

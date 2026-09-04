@@ -25,3 +25,15 @@ export async function getShareholders(shareholderName?: string, shareholderStatu
   })
   return response.data.data
 }
+
+export type ShareholderCreatePayload = {
+  shareholderName: string
+  contactName: string
+  contactPhone: string
+  shareholderStatus: string
+}
+
+export async function createShareholder(payload: ShareholderCreatePayload) {
+  const response = await request.post<ApiResponse<number>>('/api/shareholders', payload)
+  return response.data.data
+}
