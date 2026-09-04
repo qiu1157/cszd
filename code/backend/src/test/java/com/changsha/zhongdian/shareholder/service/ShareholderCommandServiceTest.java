@@ -121,4 +121,56 @@ class ShareholderCommandServiceTest {
         assertEquals("SHAREHOLDER_NOT_FOUND", exception.getCode());
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
     }
+
+    @Test
+    void updateShareholderStatusShouldSwitchEnabledToDisabled() {
+        ShareholderRepository shareholderRepository = org.mockito.Mockito.mock(ShareholderRepository.class);
+        ShareholderCommandService commandService = new ShareholderCommandService(shareholderRepository);
+
+        Shareholder existing = new Shareholder();
+        existing.setShareholderName("长沙城新投资有限公司");
+        existing.setShareholderStatus(ShareholderStatus.ENABLED);
+        when(shareholderRepository.findById(2001L)).thenReturn(Optional.of(existing));
+
+        commandService.updateShareholderStatus(2001L, "DISABLED");
+
+        verify(shareholderRepository).save(argThat(shareholder ->
+                ShareholderStatus.DISABLED.equals(shareholder.getShareholderStatus())
+                        && "长沙城新投资有限公司".equals(shareholder.getShareholderName())
+        ));
+    }
+
+    @Test
+    void updateShareholderStatusShouldSwitchDisabledToEnabled() {
+        ShareholderRepository shareholderRepository = org.mockito.Mockito.mock(ShareholderRepository.class);
+        ShareholderCommandService commandService = new ShareholderCommandService(shareholderRepository);
+
+        Shareholder existing = new Shareholder();
+        existing.setShareholderName("湘江产业基金");
+        existing.setShareholderStatus(ShareholderStatus.DISABLED);
+        when(shareholderRepository.findById(2002L)).thenReturn(Optional.of(existing));
+
+        commandService.updateShareholderStatus(2002L, "ENABLED");
+
+        verify(shareholderRepository).save(argThat(shareholder ->
+                ShareholderStatus.ENABLED.equals(shareholder.getShareholderStatus())
+                        && "湘江产业基金".equals(shareholder.getShareholderName())
+        ));
+    }
+
+    @Test
+    void updateShareholderStatusShouldRejectMissingShareholder() {
+        ShareholderRepository shareholderRepository = org.mockito.Mockito.mock(ShareholderRepository.class);
+        ShareholderCommandService commandService = new ShareholderCommandService(shareholderRepository);
+
+        when(shareholderRepository.findById(9999L)).thenReturn(Optional.empty());
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> commandService.updateShareholderStatus(9999L, "ENABLED")
+        );
+
+        assertEquals("SHAREHOLDER_NOT_FOUND", exception.getCode());
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+    }
 }

@@ -57,9 +57,35 @@
           </template>
         </el-table-column>
         <el-table-column prop="updatedAtText" label="最近变化" min-width="180" />
-        <el-table-column label="操作" min-width="90">
+        <el-table-column label="操作" min-width="220">
           <template #default="{ row }">
-            <el-button link type="primary" @click="openEditDialog(row)">编辑</el-button>
+            <div class="action-group">
+              <el-button
+                class="action-button action-button--secondary"
+                :disabled="saving || statusSubmitting"
+                @click="openEditDialog(row)"
+              >
+                编辑
+              </el-button>
+              <el-button
+                class="action-button"
+                :class="`action-button--${row.enableActionTone}`"
+                :disabled="!row.canEnable || saving || statusSubmitting"
+                :loading="statusSubmitting && statusSubmittingId === row.id && statusSubmittingAction === 'enable'"
+                @click="submitShareholderStatus(row, 'enable')"
+              >
+                启用
+              </el-button>
+              <el-button
+                class="action-button"
+                :class="`action-button--${row.disableActionTone}`"
+                :disabled="!row.canDisable || saving || statusSubmitting"
+                :loading="statusSubmitting && statusSubmittingId === row.id && statusSubmittingAction === 'disable'"
+                @click="submitShareholderStatus(row, 'disable')"
+              >
+                停用
+              </el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -160,14 +186,16 @@
 
 <script setup lang="ts">
 import axios from 'axios'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 
 import {
   createShareholder,
   getShareholders,
   updateShareholder,
+  updateShareholderStatus,
   type ShareholderListItem,
+  type ShareholderStatusAction,
 } from '@/api/shareholder'
 import {
   SHAREHOLDER_STATUS_OPTIONS,
@@ -229,6 +257,43 @@ const stationDialogTitle = computed(() =>
 function handleShowStationDetail(row: ShareholderTableRow) {
   activeShareholder.value = row
   stationDialogVisible.value = true
+}
+
+const statusSubmitting = ref(false)
+const statusSubmittingId = ref<number | null>(null)
+const statusSubmittingAction = ref<'' | ShareholderStatusAction>('')
+
+// 为什么二次确认：状态切换影响后续持股关系的可用性（E-8 叠加限制），误触需有明确的拦截
+async function submitShareholderStatus(row: ShareholderTableRow, action: ShareholderStatusAction) {
+  const actionText = action === 'enable' ? '启用' : '停用'
+
+  try {
+    await ElMessageBox.confirm(`确认${actionText}股东 ${row.shareholderName} 吗？`, `${actionText}股东`, {
+      confirmButtonText: actionText,
+      cancelButtonText: '取消',
+      type: 'warning',
+      closeOnClickModal: false,
+      closeOnPressEscape: false,
+    })
+  } catch {
+    return
+  }
+
+  statusSubmitting.value = true
+  statusSubmittingId.value = row.id
+  statusSubmittingAction.value = action
+
+  try {
+    await updateShareholderStatus(row.id, action)
+    ElMessage.success(`股东已${actionText}`)
+    await loadShareholders()
+  } catch (error) {
+    ElMessage.error(resolveApiErrorMessage(error, `股东${actionText}失败，请稍后重试`))
+  } finally {
+    statusSubmitting.value = false
+    statusSubmittingId.value = null
+    statusSubmittingAction.value = ''
+  }
 }
 
 const dialogVisible = ref(false)
@@ -408,6 +473,18 @@ onMounted(() => {
 .title-cell__subtitle {
   font-size: 12px;
   color: var(--text-secondary);
+}
+
+.action-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+/* 操作列一行 3 个按钮、列宽有限，仅做最小宽度布局微调；按钮视觉样式以 global.scss 为全局唯一来源 */
+.action-group .action-button {
+  min-width: 68px;
 }
 
 .station-summary {

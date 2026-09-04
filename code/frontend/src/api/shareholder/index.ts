@@ -48,3 +48,10 @@ export async function updateShareholder(shareholderId: number, payload: Sharehol
   const response = await request.put<ApiResponse<number>>(`/api/shareholders/${shareholderId}`, payload)
   return response.data.data
 }
+
+export type ShareholderStatusAction = 'enable' | 'disable'
+
+export async function updateShareholderStatus(shareholderId: number, action: ShareholderStatusAction) {
+  const response = await request.post<ApiResponse<null>>(`/api/shareholders/${shareholderId}/${action}`)
+  return response.data.data
+}

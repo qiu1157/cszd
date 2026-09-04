@@ -143,4 +143,37 @@ class ShareholderControllerTest extends AuthenticatedWebTestSupport {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }
+
+    @Test
+    void updateShareholderStatusShouldSucceedForAuthenticatedUser() throws Exception {
+        String token = loginAsBusinessAdmin();
+
+        mockMvc.perform(post("/api/shareholders/2001/disable")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("股东状态更新成功"));
+
+        verify(shareholderCommandService).updateShareholderStatus(2001L, "DISABLED");
+    }
+
+    @Test
+    void updateShareholderStatusShouldRejectAnonymousRequest() throws Exception {
+        mockMvc.perform(post("/api/shareholders/2001/disable"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    void updateShareholderStatusShouldRejectInvalidAction() throws Exception {
+        String token = loginAsBusinessAdmin();
+
+        mockMvc.perform(post("/api/shareholders/2001/frobnicate")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+
+        verify(shareholderCommandService, org.mockito.Mockito.never())
+                .updateShareholderStatus(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyString());
+    }
 }

@@ -41,6 +41,23 @@ describe('ShareholderListView source', () => {
     expect(source).toContain('股东更新成功')
   })
 
+  it('应提供启用/停用操作：按钮组互斥高亮、二次确认、防重复提交', () => {
+    expect(source).toContain('action-group')
+    expect(source).toContain('submitShareholderStatus')
+    expect(source).toContain("submitShareholderStatus(row, 'enable')")
+    expect(source).toContain("submitShareholderStatus(row, 'disable')")
+    expect(source).toContain('updateShareholderStatus')
+    expect(source).toContain('ElMessageBox.confirm')
+    expect(source).toContain('closeOnClickModal: false')
+    expect(source).toContain('closeOnPressEscape: false')
+    expect(source).toContain('statusSubmitting')
+    expect(source).toContain('row.canEnable')
+    expect(source).toContain('row.canDisable')
+    expect(source).toContain('row.enableActionTone')
+    expect(source).toContain('row.disableActionTone')
+    expect(source).toContain('股东已')
+  })
+
   it('应包含新增/编辑共用弹窗，禁用遮罩与ESC关闭，保存中防重复提交', () => {
     expect(source).toContain('dialogVisible')
     expect(source).toContain(':show-close="false"')

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { mapShareholderToTableRow } from './adapters'
 
 describe('mapShareholderToTableRow', () => {
-  it('应将启用股东映射为绿色状态标签与完整联系信息', () => {
+  it('应将启用股东映射为绿色状态标签，且停用为唯一可用动作', () => {
     expect(
       mapShareholderToTableRow({
         id: 2001,
@@ -20,11 +20,15 @@ describe('mapShareholderToTableRow', () => {
       relatedStationCount: 0,
       statusLabel: '启用',
       statusType: 'success',
+      canEnable: false,
+      canDisable: true,
+      enableActionTone: 'secondary',
+      disableActionTone: 'primary',
       updatedAtText: '2026-09-04 09:40',
     })
   })
 
-  it('应将停用股东映射为灰色状态标签，并处理缺失联系人', () => {
+  it('应将停用股东映射为灰色状态标签与启用高亮动作，并处理缺失联系人', () => {
     expect(
       mapShareholderToTableRow({
         id: 2002,
@@ -38,6 +42,10 @@ describe('mapShareholderToTableRow', () => {
       contactText: '--',
       statusLabel: '停用',
       statusType: 'info',
+      canEnable: true,
+      canDisable: false,
+      enableActionTone: 'primary',
+      disableActionTone: 'secondary',
     })
   })
 })
