@@ -179,4 +179,23 @@ CREATE TABLE IF NOT EXISTS biz_shareholder (
   KEY idx_biz_shareholder_shareholder_status (shareholder_status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='股东主档表';
 
--- TODO: 里程碑 F 起补齐：shareholder_station/equity_change ... 等业务表。
+-- 为什么：持股关系是股东与充电站的中间实体，spec 7.5 已定义字段与状态；
+-- 关联两侧只存主键ID（与 biz_pile.station_id 同口径），不做物理外键，由应用层维护引用一致性。
+-- holding_status 两态：ACTIVE 持股中 / EXITED 已退出；退股不物理删除（spec 8.2 删除策略），
+-- 同一股东对同一站可能存在“退出后再持股”的历史记录，因此不加 (station_id, shareholder_id)
+-- 唯一约束，唯一性由里程碑 F 的维护逻辑在应用层校验。
+CREATE TABLE IF NOT EXISTS biz_shareholding (
+  id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  station_id BIGINT NOT NULL COMMENT '充电站ID；引用 biz_station.id',
+  shareholder_id BIGINT NOT NULL COMMENT '股东ID；引用 biz_shareholder.id',
+  ownership_percentage DECIMAL(5,2) NOT NULL COMMENT '股份占比；0-100，同一站点所有持股中股东合计须为100',
+  holding_status VARCHAR(16) NOT NULL DEFAULT 'ACTIVE' COMMENT '持股状态：ACTIVE 持股中 / EXITED 已退出',
+  effective_at TIMESTAMP NULL DEFAULT NULL COMMENT '生效时间；股权调整立即生效，保存时记录当前时间',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  KEY idx_biz_shareholding_shareholder_status (shareholder_id, holding_status),
+  KEY idx_biz_shareholding_station (station_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='持股关系表';
+
+-- TODO: 里程碑 F/G 起补齐：equity_change / operation_log ... 等业务表。

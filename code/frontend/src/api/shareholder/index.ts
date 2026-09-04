@@ -70,3 +70,19 @@ export async function updateShareholderStatus(shareholderId: number, action: Sha
   const response = await request.post<ApiResponse<null>>(`/api/shareholders/${shareholderId}/${action}`)
   return response.data.data
 }
+
+export type ShareholderStationListItem = {
+  stationId: number
+  stationCode: string
+  stationName: string
+  stationStatusName: string | null
+  ownershipPercentage: number
+  effectiveAt: string | null
+}
+
+export async function getShareholderStations(shareholderId: number) {
+  const response = await request.get<ApiResponse<ShareholderStationListItem[]>>(
+    `/api/shareholders/${shareholderId}/stations`,
+  )
+  return response.data.data
+}

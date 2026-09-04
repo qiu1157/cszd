@@ -42,7 +42,7 @@
             </div>
             <div class="info-card">
               <small>关联站点</small>
-              <strong>后续任务实现</strong>
+              <strong>{{ stationCountText }}</strong>
             </div>
             <div class="info-card">
               <small>最近更新</small>
@@ -73,7 +73,7 @@
             </div>
             <div class="kpi-item">
               <span>关联站点数</span>
-              <strong>后续任务实现</strong>
+              <strong>{{ stationCountText }}</strong>
             </div>
             <div class="kpi-item">
               <span>创建时间</span>
@@ -120,7 +120,30 @@
           <div class="detail-section__head">
             <h4>关联充电站</h4>
           </div>
-          <div class="placeholder-card">后续任务实现：在此分区展示该股东关联的充电站列表。</div>
+          <el-empty v-if="stationsError" description="关联充电站加载失败，请稍后重试">
+            <el-button class="action-button action-button--secondary" @click="reloadShareholderStations">
+              重新加载
+            </el-button>
+          </el-empty>
+          <el-table
+            v-else
+            v-loading="stationsLoading"
+            :data="stationList"
+            class="shareholder-station-table"
+            empty-text="暂无关联站点"
+          >
+            <el-table-column prop="stationCode" label="站点编号" min-width="150" />
+            <el-table-column prop="stationName" label="站点名称" min-width="180" />
+            <el-table-column label="站点状态" min-width="110">
+              <template #default="{ row }">{{ row.stationStatusName || '--' }}</template>
+            </el-table-column>
+            <el-table-column label="持股占比" min-width="110">
+              <template #default="{ row }">{{ formatOwnershipText(row.ownershipPercentage) }}</template>
+            </el-table-column>
+            <el-table-column label="生效时间" min-width="160">
+              <template #default="{ row }">{{ formatDateTimeText(row.effectiveAt || '') }}</template>
+            </el-table-column>
+          </el-table>
         </section>
 
         <section id="section-timeline" class="detail-section">
@@ -140,7 +163,12 @@ import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { getShareholderDetail, type ShareholderDetail } from '@/api/shareholder'
+import {
+  getShareholderDetail,
+  getShareholderStations,
+  type ShareholderDetail,
+  type ShareholderStationListItem,
+} from '@/api/shareholder'
 import { SHAREHOLDER_LIST_PATH } from '@/router/navigation'
 
 const route = useRoute()
@@ -155,6 +183,10 @@ const detail = reactive<ShareholderDetail>({
   createdAt: '',
   updatedAt: '',
 })
+
+const stationList = ref<ShareholderStationListItem[]>([])
+const stationsLoading = ref(true)
+const stationsError = ref(false)
 
 const statusLabel = computed(() => {
   if (detail.shareholderStatus === 'ENABLED') {
@@ -172,8 +204,46 @@ const contactSummaryText = computed(() => {
   return contactPhone ? `${contactName} / ${contactPhone}` : contactName
 })
 
+// 关联站点数独立于详情主体加载：加载中/失败时先给占位文案，避免误展示 0 个
+const stationCountText = computed(() => {
+  if (stationsLoading.value) {
+    return '加载中...'
+  }
+  if (stationsError.value) {
+    return '--'
+  }
+  return `${stationList.value.length} 个`
+})
+
 function formatDateTimeText(value: string) {
   return value ? value.slice(0, 16).replace('T', ' ') : '--'
+}
+
+function formatOwnershipText(value: number) {
+  return `${value}%`
+}
+
+// 关联站点独立加载：失败仅影响本分区（空态+重试），不回退整页，避免详情主体已可见时被强制跳走
+function loadShareholderStations(shareholderId: number) {
+  stationsLoading.value = true
+  stationsError.value = false
+  void (async () => {
+    try {
+      stationList.value = await getShareholderStations(shareholderId)
+    } catch (error) {
+      stationsError.value = true
+      ElMessage.error(resolveApiErrorMessage(error, '关联充电站加载失败，请稍后重试'))
+    } finally {
+      stationsLoading.value = false
+    }
+  })()
+}
+
+function reloadShareholderStations() {
+  const shareholderId = resolveShareholderId()
+  if (shareholderId) {
+    loadShareholderStations(shareholderId)
+  }
 }
 
 function resolveShareholderId() {
@@ -208,6 +278,9 @@ onMounted(() => {
     void router.push(SHAREHOLDER_LIST_PATH)
     return
   }
+
+  // 站点列表与详情并行加载：站点分区有独立的加载/失败态，不阻塞详情主体渲染
+  loadShareholderStations(shareholderId)
 
   void (async () => {
     try {
@@ -359,6 +432,17 @@ onMounted(() => {
   display: flex;
   gap: 8px;
   align-items: center;
+}
+
+/* 暗色主题适配：Element Plus 表格默认白色背景，通过 CSS 变量对齐详情页暗色风格（与股东列表页同口径） */
+.shareholder-station-table {
+  --el-table-bg-color: transparent;
+  --el-table-tr-bg-color: transparent;
+  --el-table-header-bg-color: rgba(57, 200, 255, 0.05);
+  --el-table-border-color: rgba(150, 206, 255, 0.1);
+  --el-table-row-hover-bg-color: rgba(57, 200, 255, 0.04);
+  --el-table-text-color: var(--text-primary);
+  --el-table-header-text-color: var(--text-secondary);
 }
 
 @media (max-width: 768px) {

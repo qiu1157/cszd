@@ -8,10 +8,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
 import com.changsha.zhongdian.AuthenticatedWebTestSupport;
+import com.changsha.zhongdian.shareholding.dto.ShareholderStationListItemResponse;
+import com.changsha.zhongdian.shareholding.service.ShareholdingQueryService;
 import com.changsha.zhongdian.shareholder.dto.ShareholderDetailResponse;
 import com.changsha.zhongdian.shareholder.dto.ShareholderListItemResponse;
 import com.changsha.zhongdian.shareholder.service.ShareholderCommandService;
@@ -28,6 +31,9 @@ class ShareholderControllerTest extends AuthenticatedWebTestSupport {
 
     @MockBean
     private ShareholderCommandService shareholderCommandService;
+
+    @MockBean
+    private ShareholdingQueryService shareholdingQueryService;
 
     @Test
     void listShareholdersShouldReturnShareholderRowsForAuthenticatedUser() throws Exception {
@@ -208,6 +214,41 @@ class ShareholderControllerTest extends AuthenticatedWebTestSupport {
     @Test
     void getShareholderDetailShouldRejectAnonymousRequest() throws Exception {
         mockMvc.perform(get("/api/shareholders/2001"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    void getShareholderStationsShouldReturnStationRowsForAuthenticatedUser() throws Exception {
+        when(shareholdingQueryService.getShareholderStations(3001L)).thenReturn(List.of(
+                new ShareholderStationListItemResponse(
+                        1001L,
+                        "ST-20260829-0001",
+                        "长沙高铁南站充电站",
+                        "运营中",
+                        new BigDecimal("60.00"),
+                        LocalDateTime.of(2026, 9, 1, 9, 0)
+                )
+        ));
+        String token = loginAsBusinessAdmin();
+
+        mockMvc.perform(get("/api/shareholders/3001/stations")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].stationId").value(1001))
+                .andExpect(jsonPath("$.data[0].stationCode").value("ST-20260829-0001"))
+                .andExpect(jsonPath("$.data[0].stationName").value("长沙高铁南站充电站"))
+                .andExpect(jsonPath("$.data[0].stationStatusName").value("运营中"))
+                .andExpect(jsonPath("$.data[0].ownershipPercentage").value(60.00))
+                .andExpect(jsonPath("$.data[0].effectiveAt").exists());
+
+        verify(shareholdingQueryService).getShareholderStations(3001L);
+    }
+
+    @Test
+    void getShareholderStationsShouldRejectAnonymousRequest() throws Exception {
+        mockMvc.perform(get("/api/shareholders/3001/stations"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }

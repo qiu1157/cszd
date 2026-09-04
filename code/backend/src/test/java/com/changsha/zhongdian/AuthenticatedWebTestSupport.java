@@ -14,6 +14,7 @@ import com.changsha.zhongdian.dictionary.repository.SystemDictTypeRepository;
 import com.changsha.zhongdian.pile.repository.PileRepository;
 import com.changsha.zhongdian.pile.repository.PileStatusLogRepository;
 import com.changsha.zhongdian.shareholder.repository.ShareholderRepository;
+import com.changsha.zhongdian.shareholding.repository.ShareholdingRepository;
 import com.changsha.zhongdian.station.repository.StationRepository;
 import com.changsha.zhongdian.station.repository.StationStatusLogRepository;
 import com.changsha.zhongdian.user.entity.SystemUser;
@@ -73,6 +74,9 @@ public abstract class AuthenticatedWebTestSupport {
 
     @MockBean
     protected ShareholderRepository shareholderRepository;
+
+    @MockBean
+    protected ShareholdingRepository shareholdingRepository;
 
     protected String loginAsBusinessAdmin() throws Exception {
         return loginAs("13800000001", "dev-biz-password", UserRole.BUSINESS_ADMIN, "业务管理员");

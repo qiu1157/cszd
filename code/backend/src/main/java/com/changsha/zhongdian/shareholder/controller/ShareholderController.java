@@ -4,6 +4,8 @@ import java.util.List;
 
 import com.changsha.zhongdian.common.api.ApiResponse;
 import com.changsha.zhongdian.common.exception.BusinessException;
+import com.changsha.zhongdian.shareholding.dto.ShareholderStationListItemResponse;
+import com.changsha.zhongdian.shareholding.service.ShareholdingQueryService;
 import com.changsha.zhongdian.shareholder.dto.ShareholderCreateRequest;
 import com.changsha.zhongdian.shareholder.dto.ShareholderDetailResponse;
 import com.changsha.zhongdian.shareholder.dto.ShareholderListItemResponse;
@@ -27,11 +29,14 @@ public class ShareholderController {
 
     private final ShareholderQueryService shareholderQueryService;
     private final ShareholderCommandService shareholderCommandService;
+    private final ShareholdingQueryService shareholdingQueryService;
 
     public ShareholderController(ShareholderQueryService shareholderQueryService,
-                                 ShareholderCommandService shareholderCommandService) {
+                                 ShareholderCommandService shareholderCommandService,
+                                 ShareholdingQueryService shareholdingQueryService) {
         this.shareholderQueryService = shareholderQueryService;
         this.shareholderCommandService = shareholderCommandService;
+        this.shareholdingQueryService = shareholdingQueryService;
     }
 
     @GetMapping
@@ -45,6 +50,12 @@ public class ShareholderController {
     @GetMapping("/{shareholderId}")
     public ApiResponse<ShareholderDetailResponse> getShareholderDetail(@PathVariable Long shareholderId) {
         return ApiResponse.success(shareholderQueryService.getShareholderDetail(shareholderId));
+    }
+
+    // 股东详情的关联站点子资源：URL 挂股东前缀表达归属关系，数据由持股关系模块提供
+    @GetMapping("/{shareholderId}/stations")
+    public ApiResponse<List<ShareholderStationListItemResponse>> getShareholderStations(@PathVariable Long shareholderId) {
+        return ApiResponse.success(shareholdingQueryService.getShareholderStations(shareholderId));
     }
 
     @PostMapping
