@@ -68,7 +68,7 @@ const routes: Array<RouteRecordRaw & { meta: AppRouteMeta }> = [
         path: '/shareholders',
         name: 'ShareholderList',
         component: () => import('@/views/shareholder/ShareholderListView.vue'),
-        meta: { title: '股东管理', requiresAuth: true, roles: [USER_ROLES.BUSINESS_ADMIN] },
+        meta: { title: '股东管理', requiresAuth: true, roles: [USER_ROLES.SYSTEM_ADMIN, USER_ROLES.BUSINESS_ADMIN] },
       },
       {
         path: '/system-dictionaries',

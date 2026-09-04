@@ -1,7 +1,7 @@
 import type { ShareholderListItem } from '@/api/shareholder'
 import { getShareholderStatusLabel, SHAREHOLDER_STATUS } from '@/constants/enums/shareholder-status'
 
-type ShareholderTableRow = {
+export type ShareholderTableRow = {
   id: number
   shareholderName: string
   shareholderSubtitle: string

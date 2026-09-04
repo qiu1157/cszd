@@ -35,7 +35,7 @@
       </template>
 
       <el-table v-loading="loading" :data="tableRows" class="shareholder-table" empty-text="暂无股东，请先新增股东。">
-        <el-table-column label="股东主档" min-width="220">
+        <el-table-column label="股东名称" min-width="220">
           <template #default="{ row }">
             <div class="title-cell">
               <strong>{{ row.shareholderName }}</strong>
@@ -46,7 +46,9 @@
         <el-table-column prop="contactText" label="联系人" min-width="180" />
         <el-table-column label="关联站点" min-width="120">
           <template #default="{ row }">
-            {{ row.relatedStationCount }} 个站点
+            <el-button link type="primary" @click="handleShowStationDetail(row)">
+              {{ row.relatedStationCount }} 个站点
+            </el-button>
           </template>
         </el-table-column>
         <el-table-column label="状态" min-width="100">
@@ -57,6 +59,19 @@
         <el-table-column prop="updatedAtText" label="最近变化" min-width="180" />
       </el-table>
     </el-card>
+
+    <el-dialog
+      v-model="stationDialogVisible"
+      :close-on-click-modal="false"
+      :title="stationDialogTitle"
+      width="520px"
+    >
+      <div class="station-summary">共 {{ activeShareholder?.relatedStationCount ?? 0 }} 个关联站点</div>
+      <el-empty description="暂无关联站点" :image-size="80" />
+      <template #footer>
+        <el-button @click="stationDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </section>
 </template>
 
@@ -71,7 +86,7 @@ import {
   type ShareholderStatus,
 } from '@/constants/enums/shareholder-status'
 
-import { mapShareholderToTableRow } from './adapters'
+import { mapShareholderToTableRow, type ShareholderTableRow } from './adapters'
 
 const loading = ref(false)
 const shareholders = ref<ShareholderListItem[]>([])
@@ -105,6 +120,19 @@ function handleResetFilters() {
   searchForm.value.shareholderName = ''
   searchForm.value.shareholderStatus = null
   void loadShareholders()
+}
+
+const stationDialogVisible = ref(false)
+const activeShareholder = ref<ShareholderTableRow | null>(null)
+
+const stationDialogTitle = computed(() =>
+  activeShareholder.value ? `${activeShareholder.value.shareholderName} · 关联站点` : '关联站点',
+)
+
+// 站点明细数据依赖里程碑 F 的持股关系表，当前先呈现数量与空态占位
+function handleShowStationDetail(row: ShareholderTableRow) {
+  activeShareholder.value = row
+  stationDialogVisible.value = true
 }
 
 // 新增表单在 E-3 任务实现，先给出明确提示避免死按钮
@@ -193,6 +221,11 @@ onMounted(() => {
 
 .title-cell__subtitle {
   font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.station-summary {
+  margin-bottom: 8px;
   color: var(--text-secondary);
 }
 
