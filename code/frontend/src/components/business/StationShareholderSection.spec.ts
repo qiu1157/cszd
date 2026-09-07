@@ -82,5 +82,7 @@ describe('StationShareholderSection source', () => {
     expect(source).toContain('closeOnClickModal: false')
     expect(source).toContain('closeOnPressEscape: false')
     expect(source).toContain('projectedSummary')
+    expect(source).toContain("confirmButtonClass: 'action-button action-button--primary'")
+    expect(source).toContain("cancelButtonClass: 'action-button action-button--secondary'")
   })
 })

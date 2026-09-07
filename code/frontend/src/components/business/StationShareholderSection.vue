@@ -231,6 +231,9 @@ async function submitLinkForm() {
       await ElMessageBox.confirm('充电站持股数合计不等于100%，是否确认。', '提示', {
         confirmButtonText: '确认',
         cancelButtonText: '取消',
+        // 与 el-dialog 底部按钮同为胶囊体系，保持弹窗家族视觉一致
+        confirmButtonClass: 'action-button action-button--primary',
+        cancelButtonClass: 'action-button action-button--secondary',
         type: 'warning',
         closeOnClickModal: false,
         closeOnPressEscape: false,

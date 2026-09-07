@@ -137,3 +137,48 @@ body {
   color: rgba(159, 182, 201, 0.45);
   cursor: not-allowed;
 }
+
+/* ==================== 弹窗暗色主题（对齐原型 modal 基调） ==================== */
+/* 为什么：应用整体是深色工业风，Element Plus 若按浅色主题渲染，
+   弹窗会出现"白底面板 + 近白标题/取消按钮"肉眼不可读的问题；
+   官方暗色变量解决对比度后，此处再按原型 modal-card 的遮罩/面板/分区线统一皮肤，
+   全部 9 处 el-dialog 与 ElMessageBox 消息弹窗一次对齐，避免逐弹窗覆盖。 */
+
+/* 遮罩：对齐原型 .modal 的深色叠加与背景模糊 */
+.el-overlay {
+  background: rgba(6, 10, 16, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+/* 面板：对齐原型 .modal-card 的深色面板 + 1px 边线 + 18px 圆角 + 大投影 */
+.el-dialog,
+.el-message-box {
+  border: 1px solid var(--line-soft);
+  border-radius: 18px;
+  background: var(--bg-panel-strong);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+}
+
+/* 标题沿用主题近白文字，确保与深色面板高对比（覆盖默认标题与消息弹窗标题） */
+.el-dialog__title,
+.el-message-box__title {
+  color: var(--text-primary);
+}
+
+/* 头部/底部：对齐原型 .modal-head / .modal-actions 的分区线、浅叠层与内边距 */
+.el-dialog__header {
+  margin-right: 0;
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.el-dialog__body {
+  padding: 18px;
+}
+
+.el-dialog__footer {
+  padding: 14px 18px 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.01);
+}
