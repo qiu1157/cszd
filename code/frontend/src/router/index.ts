@@ -13,6 +13,7 @@ import {
   STATION_CREATE_PATH,
   STATION_DETAIL_PATH,
   STATION_EDIT_PATH,
+  STATION_EQUITY_ADJUSTMENT_PATH,
   SYSTEM_DICTIONARY_PATH,
 } from './navigation'
 
@@ -65,6 +66,12 @@ const routes: Array<RouteRecordRaw & { meta: AppRouteMeta }> = [
         name: 'StationEdit',
         component: () => import('@/views/station/StationEditView.vue'),
         meta: { title: '编辑充电站', requiresAuth: true, roles: [USER_ROLES.SYSTEM_ADMIN, USER_ROLES.BUSINESS_ADMIN] },
+      },
+      {
+        path: STATION_EQUITY_ADJUSTMENT_PATH,
+        name: 'StationEquityAdjustment',
+        component: () => import('@/views/station/StationEquityAdjustmentView.vue'),
+        meta: { title: '股权调整', requiresAuth: true, roles: [USER_ROLES.SYSTEM_ADMIN, USER_ROLES.BUSINESS_ADMIN] },
       },
       {
         path: SHAREHOLDER_LIST_PATH,

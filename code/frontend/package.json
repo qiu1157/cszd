@@ -19,6 +19,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-vue": "^10.10.0",
     "prettier": "^3.9.6",
+    "puppeteer-core": "^25.10.0",
     "sass": "^1.91.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.68.0",

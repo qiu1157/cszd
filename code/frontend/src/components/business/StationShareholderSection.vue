@@ -2,7 +2,10 @@
   <section id="section-shareholders" class="detail-section shareholder-section">
     <div class="detail-section__head">
       <h4>股东信息</h4>
-      <el-button class="action-button" type="primary" @click="openLinkDialog">关联股东</el-button>
+      <div class="action-group">
+        <el-button class="action-button action-button--secondary" @click="goToEquityAdjustment">股权调整</el-button>
+        <el-button class="action-button" type="primary" @click="openLinkDialog">关联股东</el-button>
+      </div>
     </div>
 
     <el-skeleton v-if="loading" :rows="3" animated />
@@ -129,8 +132,10 @@
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 import { getShareholderLinkOptions, type ShareholderLinkOption } from '@/api/shareholder'
+import { buildStationEquityAdjustmentPath } from '@/router/navigation'
 import {
   createStationShareholding,
   exitStationShareholding,
@@ -144,6 +149,8 @@ const props = defineProps<{ stationId: number }>()
 const emit = defineEmits<{
   loaded: [summary: { activeShareholderCount: number; activePercentageSum: number }]
 }>()
+
+const router = useRouter()
 
 const loading = ref(true)
 const errorMessage = ref('')
@@ -211,6 +218,11 @@ function closeLinkDialog() {
     return
   }
   linkDialogVisible.value = false
+}
+
+// 股权调整是独立页面的入口：从详情分区跳转后，用户可在独立页面集中维护多个股东占比
+function goToEquityAdjustment() {
+  void router.push(buildStationEquityAdjustmentPath(props.stationId))
 }
 
 // 退出中标记：既驱动行内按钮 loading，也让其他行的退出入口同时禁用，避免并发重复提交
