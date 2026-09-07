@@ -64,6 +64,28 @@ public interface ShareholdingRepository extends JpaRepository<Shareholding, Long
             """, nativeQuery = true)
     List<StationShareholderListItemProjection> findStationShareholderListItems(@Param("stationId") Long stationId);
 
+    // 站点详情股东按持股状态过滤：时间线等场景只关注某一状态下的历史记录，按创建时间倒序展示最新变更
+    @Query(value = """
+            SELECT
+                sh.id AS id,
+                sh.shareholder_id AS shareholderId,
+                h.shareholder_name AS shareholderName,
+                h.contact_name AS contactName,
+                h.contact_phone AS contactPhone,
+                sh.ownership_percentage AS ownershipPercentage,
+                sh.holding_status AS holdingStatus,
+                sh.effective_at AS effectiveAt
+            FROM biz_shareholding sh
+            INNER JOIN biz_shareholder h ON sh.shareholder_id = h.id
+            WHERE sh.station_id = :stationId
+              AND sh.holding_status = :holdingStatus
+            ORDER BY sh.created_at DESC
+            """, nativeQuery = true)
+    List<StationShareholderListItemProjection> findByStationIdAndHoldingStatus(
+            @Param("stationId") Long stationId,
+            @Param("holdingStatus") String holdingStatus
+    );
+
     boolean existsByStationIdAndShareholderIdAndHoldingStatus(
             Long stationId, Long shareholderId, HoldingStatus holdingStatus);
 

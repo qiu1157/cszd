@@ -7,6 +7,7 @@ import com.changsha.zhongdian.shareholding.dto.ShareholderStationListItemRespons
 import com.changsha.zhongdian.shareholding.dto.StationShareholdingListItemResponse;
 import com.changsha.zhongdian.shareholding.entity.HoldingStatus;
 import com.changsha.zhongdian.shareholding.repository.ShareholdingRepository;
+import com.changsha.zhongdian.shareholding.repository.StationShareholderListItemProjection;
 import com.changsha.zhongdian.shareholder.repository.ShareholderRepository;
 import com.changsha.zhongdian.station.repository.StationRepository;
 import org.springframework.http.HttpStatus;
@@ -55,6 +56,11 @@ public class ShareholdingQueryService {
 
     // 站点详情股东分区列表：站点是路径资源，站点不存在时与站点详情接口同口径返回 404
     public List<StationShareholdingListItemResponse> getStationShareholdings(Long stationId) {
+        return getStationShareholdings(stationId, null);
+    }
+
+    // 站点详情股东按持股状态过滤：holdingStatus 为 null 时返回全部（供时间线复用），否则仅返回指定状态
+    public List<StationShareholdingListItemResponse> getStationShareholdings(Long stationId, HoldingStatus holdingStatus) {
         if (stationId == null || stationId <= 0L) {
             throw new BusinessException("VALIDATION_ERROR", "充电站不存在", HttpStatus.BAD_REQUEST);
         }
@@ -63,8 +69,11 @@ public class ShareholdingQueryService {
         }
         // 已退出关系是历史痕迹：列表保留展示（带状态标记），由前端摘要口径区分当前股权结构；
         // 状态码原值与中文名一并透出，前端按状态码做条件渲染，中文名仅用于展示
-        return shareholdingRepository.findStationShareholderListItems(stationId)
-                .stream()
+        List<StationShareholderListItemProjection> items =
+                (holdingStatus == null)
+                        ? shareholdingRepository.findStationShareholderListItems(stationId)
+                        : shareholdingRepository.findByStationIdAndHoldingStatus(stationId, holdingStatus.name());
+        return items.stream()
                 .map(item -> new StationShareholdingListItemResponse(
                         item.getId(),
                         item.getShareholderId(),

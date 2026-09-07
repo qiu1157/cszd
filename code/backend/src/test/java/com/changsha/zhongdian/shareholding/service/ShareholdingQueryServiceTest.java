@@ -12,6 +12,7 @@ import java.util.List;
 import com.changsha.zhongdian.common.exception.BusinessException;
 import com.changsha.zhongdian.shareholding.dto.ShareholderStationListItemResponse;
 import com.changsha.zhongdian.shareholding.dto.StationShareholdingListItemResponse;
+import com.changsha.zhongdian.shareholding.entity.HoldingStatus;
 import com.changsha.zhongdian.shareholding.repository.ShareholderStationListItemProjection;
 import com.changsha.zhongdian.shareholding.repository.ShareholdingRepository;
 import com.changsha.zhongdian.shareholding.repository.StationShareholderListItemProjection;
@@ -164,6 +165,76 @@ class ShareholdingQueryServiceTest {
         assertEquals(LocalDateTime.of(2026, 9, 2, 10, 0), responses.get(0).effectiveAt());
         assertEquals("EXITED", responses.get(1).holdingStatus());
         assertEquals("已退出", responses.get(1).holdingStatusName());
+    }
+
+    @Test
+    void getStationShareholdingsShouldFilterByActiveStatus() {
+        ShareholdingRepository shareholdingRepository = org.mockito.Mockito.mock(ShareholdingRepository.class);
+        ShareholderRepository shareholderRepository = org.mockito.Mockito.mock(ShareholderRepository.class);
+        StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
+        StationShareholderListItemProjection active = mockShareholderItem(
+                9001L,
+                1L,
+                "长沙众电",
+                "王强",
+                "13800000001",
+                "60.00",
+                "ACTIVE",
+                LocalDateTime.of(2026, 9, 2, 10, 0)
+        );
+        when(stationRepository.existsById(1L)).thenReturn(true);
+        when(shareholdingRepository.findByStationIdAndHoldingStatus(1L, "ACTIVE"))
+                .thenReturn(List.of(active));
+
+        ShareholdingQueryService shareholdingQueryService =
+                new ShareholdingQueryService(shareholdingRepository, shareholderRepository, stationRepository);
+
+        List<StationShareholdingListItemResponse> responses =
+                shareholdingQueryService.getStationShareholdings(1L, HoldingStatus.ACTIVE);
+
+        assertEquals(1, responses.size());
+        assertEquals("ACTIVE", responses.get(0).holdingStatus());
+        assertEquals("持股中", responses.get(0).holdingStatusName());
+    }
+
+    @Test
+    void getStationShareholdingsShouldReturnAllWhenStatusIsNull() {
+        ShareholdingRepository shareholdingRepository = org.mockito.Mockito.mock(ShareholdingRepository.class);
+        ShareholderRepository shareholderRepository = org.mockito.Mockito.mock(ShareholderRepository.class);
+        StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
+        StationShareholderListItemProjection active = mockShareholderItem(
+                9001L,
+                1L,
+                "长沙众电",
+                "王强",
+                "13800000001",
+                "60.00",
+                "ACTIVE",
+                LocalDateTime.of(2026, 9, 2, 10, 0)
+        );
+        StationShareholderListItemProjection exited = mockShareholderItem(
+                9002L,
+                2L,
+                "晨曦创投",
+                "李敏",
+                "13800000002",
+                "40.00",
+                "EXITED",
+                LocalDateTime.of(2026, 9, 3, 10, 0)
+        );
+        when(stationRepository.existsById(1L)).thenReturn(true);
+        when(shareholdingRepository.findStationShareholderListItems(1L))
+                .thenReturn(List.of(active, exited));
+
+        ShareholdingQueryService shareholdingQueryService =
+                new ShareholdingQueryService(shareholdingRepository, shareholderRepository, stationRepository);
+
+        List<StationShareholdingListItemResponse> responses =
+                shareholdingQueryService.getStationShareholdings(1L, null);
+
+        assertEquals(2, responses.size());
+        assertEquals("ACTIVE", responses.get(0).holdingStatus());
+        assertEquals("EXITED", responses.get(1).holdingStatus());
     }
 
     @Test
