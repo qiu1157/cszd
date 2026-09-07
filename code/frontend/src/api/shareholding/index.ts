@@ -41,6 +41,14 @@ export async function createStationShareholding(stationId: number, payload: Shar
   return response.data.data
 }
 
+// 退股是状态流转（spec 8.2）：服务端将关系置为已退出并刷新生效时间，前端不做本地状态改写
+export async function exitStationShareholding(stationId: number, shareholdingId: number) {
+  const response = await request.put<ApiResponse<number>>(
+    `/api/stations/${stationId}/shareholdings/${shareholdingId}/exit`,
+  )
+  return response.data.data
+}
+
 // 站点详情概览卡摘要：只统计持股中关系的股东数与占比合计，
 // 已退出关系是历史痕迹，不参与当前股权结构口径；
 // 过滤依据为状态码而非中文状态名，避免展示文案变化导致口径静默失真

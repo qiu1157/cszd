@@ -86,4 +86,20 @@ describe('StationShareholderSection source', () => {
     expect(source).toContain("confirmButtonClass: 'action-button action-button--primary'")
     expect(source).toContain("cancelButtonClass: 'action-button action-button--secondary'")
   })
+
+  it('持股中关系提供退股入口，已退出关系不展示，确认弹窗不可遮罩/ESC关闭', () => {
+    expect(source).toContain("holding.holdingStatus === 'ACTIVE'")
+    expect(source).toContain('requestExit')
+    expect(source).toContain('退股确认')
+    expect(source).toContain('退出后不再计入占比合计')
+    expect(source).toContain('closeOnPressEscape: false')
+  })
+
+  it('退股确认后调用退出接口并刷新列表，退出中防重复提交，失败透出服务端口径', () => {
+    expect(source).toContain('exitStationShareholding')
+    expect(source).toContain('exitingId')
+    expect(source).toContain('退股成功')
+    expect(source).toContain('退股失败，请稍后重试')
+    expect(source).toContain('await refresh()')
+  })
 })

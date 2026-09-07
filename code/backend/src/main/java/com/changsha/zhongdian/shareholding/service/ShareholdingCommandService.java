@@ -77,6 +77,33 @@ public class ShareholdingCommandService {
         return shareholdingRepository.save(shareholding).getId();
     }
 
+    @Transactional
+    public Long exitShareholding(Long stationId, Long shareholdingId) {
+        Long validStationId = requirePositiveId(stationId, "充电站不存在");
+        if (!stationRepository.existsById(validStationId)) {
+            throw new BusinessException("STATION_NOT_FOUND", "充电站不存在", HttpStatus.NOT_FOUND);
+        }
+
+        // 跨站点访问按不存在处理：不区分"关系不存在"与"关系属于其他站点"，避免暴露存在性供探测
+        Shareholding shareholding = shareholdingRepository.findById(requirePositiveId(shareholdingId, "持股关系不存在"))
+                .filter(item -> item.getStationId().equals(validStationId))
+                .orElseThrow(() -> new BusinessException(
+                        "SHAREHOLDING_NOT_FOUND", "持股关系不存在", HttpStatus.NOT_FOUND));
+
+        // 重复退出是双击/重试的常见结果：幂等拦截，避免已落定的历史痕迹被二次刷新
+        if (shareholding.getHoldingStatus() == HoldingStatus.EXITED) {
+            throw new BusinessException(
+                    "SHAREHOLDING_ALREADY_EXITED", "该股东已退出，请勿重复操作", HttpStatus.BAD_REQUEST);
+        }
+
+        // spec 8.2：退股以"已退出"状态表达而非物理删除，历史关系留痕；
+        // spec 7.5：与股权调整同口径立即生效，生效时间刷新为退出时刻
+        shareholding.setHoldingStatus(HoldingStatus.EXITED);
+        shareholding.setEffectiveAt(LocalDateTime.now());
+
+        return shareholdingRepository.save(shareholding).getId();
+    }
+
     private Long requirePositiveId(Long value, String message) {
         if (value == null || value <= 0L) {
             throw new BusinessException("VALIDATION_ERROR", message, HttpStatus.BAD_REQUEST);

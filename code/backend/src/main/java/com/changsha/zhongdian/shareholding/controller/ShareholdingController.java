@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -43,5 +44,14 @@ public class ShareholdingController {
             @Valid @RequestBody ShareholdingCreateRequest request
     ) {
         return ApiResponse.success("关联股东成功", shareholdingCommandService.createShareholding(stationId, request));
+    }
+
+    // 退股是状态流转而非删除（spec 8.2）：用 PUT 子资源动作表达，路径仍锚定站点归属
+    @PutMapping("/{stationId}/shareholdings/{shareholdingId}/exit")
+    public ApiResponse<Long> exitShareholding(
+            @PathVariable Long stationId,
+            @PathVariable Long shareholdingId
+    ) {
+        return ApiResponse.success("退股成功", shareholdingCommandService.exitShareholding(stationId, shareholdingId));
     }
 }

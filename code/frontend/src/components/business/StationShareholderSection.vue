@@ -32,6 +32,17 @@
           <el-tag :type="resolveHoldingStatusType(holding.holdingStatus)" effect="dark" round>
             {{ holding.holdingStatusName }}
           </el-tag>
+          <!-- 退股入口只对持股中关系开放：已退出是历史痕迹，再次操作无业务含义 -->
+          <el-button
+            v-if="holding.holdingStatus === 'ACTIVE'"
+            class="action-button action-button--secondary"
+            size="small"
+            :loading="exitingId === holding.id"
+            :disabled="exitingId != null"
+            @click="requestExit(holding)"
+          >
+            退出
+          </el-button>
         </div>
       </div>
     </div>
@@ -122,6 +133,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { getShareholderLinkOptions, type ShareholderLinkOption } from '@/api/shareholder'
 import {
   createStationShareholding,
+  exitStationShareholding,
   getStationShareholdings,
   summarizeShareholdings,
   type StationShareholding,
@@ -199,6 +211,42 @@ function closeLinkDialog() {
     return
   }
   linkDialogVisible.value = false
+}
+
+// 退出中标记：既驱动行内按钮 loading，也让其他行的退出入口同时禁用，避免并发重复提交
+const exitingId = ref<number | null>(null)
+
+async function requestExit(holding: StationShareholding) {
+  try {
+    await ElMessageBox.confirm(
+      `确认将「${holding.shareholderName}」标记为已退出吗？退出后不再计入占比合计，历史关系将保留。`,
+      '退股确认',
+      {
+        confirmButtonText: '确认',
+        cancelButtonText: '取消',
+        confirmButtonClass: 'action-button action-button--primary',
+        cancelButtonClass: 'action-button action-button--secondary',
+        type: 'warning',
+        closeOnClickModal: false,
+        closeOnPressEscape: false,
+      },
+    )
+  } catch {
+    return
+  }
+
+  exitingId.value = holding.id
+  try {
+    await exitStationShareholding(props.stationId, holding.id)
+    ElMessage.success('退股成功')
+    // 列表与概览摘要都依赖后端新口径，统一走 refresh 而非本地改写状态
+    await refresh()
+  } catch (error) {
+    // 幂等拦截、关系不存在等服务端口径直接透出，用户可据此理解后处理
+    ElMessage.error(resolveApiErrorMessage(error, '退股失败，请稍后重试'))
+  } finally {
+    exitingId.value = null
+  }
 }
 
 async function submitLinkForm() {

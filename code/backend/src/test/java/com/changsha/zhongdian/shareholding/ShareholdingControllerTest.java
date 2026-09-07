@@ -4,6 +4,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -105,6 +106,28 @@ class ShareholdingControllerTest extends AuthenticatedWebTestSupport {
                                   "holdingStatus": "ACTIVE"
                                 }
                                 """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    void exitShareholdingShouldReturnIdForAuthenticatedUser() throws Exception {
+        when(shareholdingCommandService.exitShareholding(2L, 9001L)).thenReturn(9001L);
+        String token = loginAsBusinessAdmin();
+
+        mockMvc.perform(put("/api/stations/2/shareholdings/9001/exit")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("退股成功"))
+                .andExpect(jsonPath("$.data").value(9001));
+
+        verify(shareholdingCommandService).exitShareholding(2L, 9001L);
+    }
+
+    @Test
+    void exitShareholdingShouldRejectAnonymousRequest() throws Exception {
+        mockMvc.perform(put("/api/stations/2/shareholdings/9001/exit"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }

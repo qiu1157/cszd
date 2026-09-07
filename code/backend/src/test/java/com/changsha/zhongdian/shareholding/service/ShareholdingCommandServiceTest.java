@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import com.changsha.zhongdian.common.exception.BusinessException;
@@ -194,6 +195,104 @@ class ShareholdingCommandServiceTest {
         verify(fixture.shareholdingRepository).save(argThat(shareholding ->
                 HoldingStatus.EXITED.equals(shareholding.getHoldingStatus())
         ));
+    }
+
+    @Test
+    void exitShareholdingShouldMarkExitedAndRefreshEffectiveAt() {
+        ServiceFixture fixture = new ServiceFixture();
+        when(fixture.stationRepository.existsById(2L)).thenReturn(true);
+        when(fixture.shareholdingRepository.findById(9001L))
+                .thenReturn(Optional.of(activeRelation(2L, new BigDecimal("30"))));
+
+        Long exitedId = fixture.commandService.exitShareholding(2L, 9001L);
+
+        assertEquals(9001L, exitedId);
+        verify(fixture.shareholdingRepository).save(argThat(shareholding ->
+                HoldingStatus.EXITED.equals(shareholding.getHoldingStatus())
+                        // spec 7.5/8.2：退出立即生效，生效时间由服务端刷新为当前时间，不保留原生效时刻
+                        && shareholding.getEffectiveAt() != null
+                        && !ORIGINAL_EFFECTIVE_AT.equals(shareholding.getEffectiveAt())
+        ));
+    }
+
+    @Test
+    void exitShareholdingShouldRejectMissingStation() {
+        ServiceFixture fixture = new ServiceFixture();
+        when(fixture.stationRepository.existsById(9999L)).thenReturn(false);
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> fixture.commandService.exitShareholding(9999L, 9001L)
+        );
+
+        assertEquals("STATION_NOT_FOUND", exception.getCode());
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+        verify(fixture.shareholdingRepository, never()).save(any(Shareholding.class));
+    }
+
+    @Test
+    void exitShareholdingShouldRejectMissingRelation() {
+        ServiceFixture fixture = new ServiceFixture();
+        when(fixture.stationRepository.existsById(2L)).thenReturn(true);
+        when(fixture.shareholdingRepository.findById(9999L)).thenReturn(Optional.empty());
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> fixture.commandService.exitShareholding(2L, 9999L)
+        );
+
+        assertEquals("SHAREHOLDING_NOT_FOUND", exception.getCode());
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+        verify(fixture.shareholdingRepository, never()).save(any(Shareholding.class));
+    }
+
+    @Test
+    void exitShareholdingShouldRejectRelationOfOtherStation() {
+        ServiceFixture fixture = new ServiceFixture();
+        when(fixture.stationRepository.existsById(2L)).thenReturn(true);
+        // 关系挂在站点 3 下：路径站点 2 的操作按不存在拦截，避免跨站篡改与存在性探测
+        when(fixture.shareholdingRepository.findById(9001L))
+                .thenReturn(Optional.of(activeRelation(3L, new BigDecimal("30"))));
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> fixture.commandService.exitShareholding(2L, 9001L)
+        );
+
+        assertEquals("SHAREHOLDING_NOT_FOUND", exception.getCode());
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+        verify(fixture.shareholdingRepository, never()).save(any(Shareholding.class));
+    }
+
+    @Test
+    void exitShareholdingShouldRejectAlreadyExitedRelation() {
+        ServiceFixture fixture = new ServiceFixture();
+        when(fixture.stationRepository.existsById(2L)).thenReturn(true);
+        Shareholding exited = activeRelation(2L, new BigDecimal("30"));
+        exited.setHoldingStatus(HoldingStatus.EXITED);
+        when(fixture.shareholdingRepository.findById(9001L)).thenReturn(Optional.of(exited));
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> fixture.commandService.exitShareholding(2L, 9001L)
+        );
+
+        // 重复退出是并发双击/重复提交的常见结果，幂等拦截避免历史痕迹被二次改写
+        assertEquals("SHAREHOLDING_ALREADY_EXITED", exception.getCode());
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        verify(fixture.shareholdingRepository, never()).save(any(Shareholding.class));
+    }
+
+    private static final LocalDateTime ORIGINAL_EFFECTIVE_AT = LocalDateTime.of(2026, 9, 1, 10, 0);
+
+    private static Shareholding activeRelation(Long stationId, BigDecimal ownershipPercentage) {
+        Shareholding shareholding = new Shareholding();
+        shareholding.setStationId(stationId);
+        shareholding.setShareholderId(1L);
+        shareholding.setOwnershipPercentage(ownershipPercentage);
+        shareholding.setHoldingStatus(HoldingStatus.ACTIVE);
+        shareholding.setEffectiveAt(ORIGINAL_EFFECTIVE_AT);
+        return shareholding;
     }
 
     private static class ServiceFixture {
