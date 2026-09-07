@@ -5,19 +5,23 @@ import java.util.List;
 import com.changsha.zhongdian.auth.model.LoginUser;
 import com.changsha.zhongdian.auth.service.AuthService;
 import com.changsha.zhongdian.common.api.ApiResponse;
+import com.changsha.zhongdian.common.exception.BusinessException;
 import com.changsha.zhongdian.shareholding.dto.ShareholdingCreateRequest;
 import com.changsha.zhongdian.shareholding.dto.ShareholdingEquityAdjustmentRequest;
 import com.changsha.zhongdian.shareholding.dto.StationShareholdingListItemResponse;
+import com.changsha.zhongdian.shareholding.entity.HoldingStatus;
 import com.changsha.zhongdian.shareholding.service.ShareholdingCommandService;
 import com.changsha.zhongdian.shareholding.service.ShareholdingQueryService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 // 站点维度持股关系接口：与充电桩一致采用 /api/stations/{stationId}/ 子资源路径表达归属；
@@ -41,8 +45,22 @@ public class ShareholdingController {
     }
 
     @GetMapping("/{stationId}/shareholdings")
-    public ApiResponse<List<StationShareholdingListItemResponse>> listStationShareholdings(@PathVariable Long stationId) {
-        return ApiResponse.success(shareholdingQueryService.getStationShareholdings(stationId));
+    public ApiResponse<List<StationShareholdingListItemResponse>> listStationShareholdings(
+            @PathVariable Long stationId,
+            @RequestParam(required = false) String holdingStatus
+    ) {
+        return ApiResponse.success(shareholdingQueryService.getStationShareholdings(stationId, resolveHoldingStatus(holdingStatus)));
+    }
+
+    private HoldingStatus resolveHoldingStatus(String holdingStatus) {
+        if (holdingStatus == null || holdingStatus.isBlank()) {
+            return null;
+        }
+        return switch (holdingStatus) {
+            case "ACTIVE" -> HoldingStatus.ACTIVE;
+            case "EXITED" -> HoldingStatus.EXITED;
+            default -> throw new BusinessException("VALIDATION_ERROR", "持股状态参数非法，仅支持 ACTIVE / EXITED", HttpStatus.BAD_REQUEST);
+        };
     }
 
     @PostMapping("/{stationId}/shareholdings")

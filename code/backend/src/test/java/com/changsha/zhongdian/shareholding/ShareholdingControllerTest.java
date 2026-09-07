@@ -15,6 +15,7 @@ import java.util.List;
 import com.changsha.zhongdian.AuthenticatedWebTestSupport;
 import com.changsha.zhongdian.shareholding.dto.ShareholdingCreateRequest;
 import com.changsha.zhongdian.shareholding.dto.StationShareholdingListItemResponse;
+import com.changsha.zhongdian.shareholding.entity.HoldingStatus;
 import com.changsha.zhongdian.shareholding.service.ShareholdingCommandService;
 import com.changsha.zhongdian.shareholding.service.ShareholdingQueryService;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,7 @@ class ShareholdingControllerTest extends AuthenticatedWebTestSupport {
 
     @Test
     void listStationShareholdingsShouldReturnRelationsForAuthenticatedUser() throws Exception {
-        when(shareholdingQueryService.getStationShareholdings(2L)).thenReturn(List.of(
+        when(shareholdingQueryService.getStationShareholdings(2L, null)).thenReturn(List.of(
                 new StationShareholdingListItemResponse(
                         9001L,
                         1L,
@@ -57,7 +58,7 @@ class ShareholdingControllerTest extends AuthenticatedWebTestSupport {
                 .andExpect(jsonPath("$.data[0].holdingStatus").value("ACTIVE"))
                 .andExpect(jsonPath("$.data[0].holdingStatusName").value("持股中"));
 
-        verify(shareholdingQueryService).getStationShareholdings(2L);
+        verify(shareholdingQueryService).getStationShareholdings(2L, null);
     }
 
     @Test
@@ -65,6 +66,32 @@ class ShareholdingControllerTest extends AuthenticatedWebTestSupport {
         mockMvc.perform(get("/api/stations/2/shareholdings"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    void shouldPassActiveStatusToQueryService() throws Exception {
+        when(shareholdingQueryService.getStationShareholdings(1L, HoldingStatus.ACTIVE)).thenReturn(List.of());
+        String token = loginAsBusinessAdmin();
+
+        mockMvc.perform(get("/api/stations/1/shareholdings")
+                        .param("holdingStatus", "ACTIVE")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+
+        verify(shareholdingQueryService).getStationShareholdings(1L, HoldingStatus.ACTIVE);
+    }
+
+    @Test
+    void shouldRejectInvalidHoldingStatus() throws Exception {
+        String token = loginAsBusinessAdmin();
+
+        mockMvc.perform(get("/api/stations/1/shareholdings")
+                        .param("holdingStatus", "INVALID")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.message").value("持股状态参数非法，仅支持 ACTIVE / EXITED"));
     }
 
     @Test
