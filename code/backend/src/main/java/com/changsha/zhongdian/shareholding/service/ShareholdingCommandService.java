@@ -1,7 +1,9 @@
 package com.changsha.zhongdian.shareholding.service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.changsha.zhongdian.common.exception.BusinessException;
 import com.changsha.zhongdian.shareholding.dto.ShareholdingCreateRequest;
@@ -101,7 +103,50 @@ public class ShareholdingCommandService {
         shareholding.setHoldingStatus(HoldingStatus.EXITED);
         shareholding.setEffectiveAt(LocalDateTime.now());
 
+        // spec 7.5：退股时必须同步调整其他股东占比。
+        // 采用等比例放大策略：剩余股东按各自当前占比占剩余合计的比例瓜分 100%，
+        // 最后一条做 100 减去前几条之和的兜底，避免 DECIMAL(5,2) 四舍五入导致合计偏离 100
+        redistributeRemainingOwnership(validStationId, shareholding.getId());
+
         return shareholdingRepository.save(shareholding).getId();
+    }
+
+    private void redistributeRemainingOwnership(Long stationId, Long exitedShareholdingId) {
+        List<Shareholding> activeRelations = shareholdingRepository
+                .findByStationIdAndHoldingStatus(stationId, HoldingStatus.ACTIVE)
+                .stream()
+                .filter(relation -> !relation.getId().equals(exitedShareholdingId))
+                .toList();
+
+        if (activeRelations.isEmpty()) {
+            return;
+        }
+
+        BigDecimal remainingSum = activeRelations.stream()
+                .map(Shareholding::getOwnershipPercentage)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        if (remainingSum.compareTo(BigDecimal.ZERO) <= 0) {
+            // 剩余持股中合计为 0 时无法做比例分配，保持原值即可（极端历史数据场景）
+            return;
+        }
+
+        BigDecimal distributedSum = BigDecimal.ZERO;
+        for (int index = 0; index < activeRelations.size(); index++) {
+            Shareholding relation = activeRelations.get(index);
+            if (index < activeRelations.size() - 1) {
+                BigDecimal newPercentage = relation.getOwnershipPercentage()
+                        .multiply(new BigDecimal("100"))
+                        .divide(remainingSum, 2, RoundingMode.HALF_UP);
+                relation.setOwnershipPercentage(newPercentage);
+                distributedSum = distributedSum.add(newPercentage);
+            } else {
+                BigDecimal lastPercentage = new BigDecimal("100").subtract(distributedSum);
+                relation.setOwnershipPercentage(lastPercentage);
+            }
+            relation.setEffectiveAt(LocalDateTime.now());
+            shareholdingRepository.save(relation);
+        }
     }
 
     private Long requirePositiveId(Long value, String message) {

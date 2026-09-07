@@ -6,11 +6,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import com.changsha.zhongdian.common.exception.BusinessException;
@@ -202,7 +204,7 @@ class ShareholdingCommandServiceTest {
         ServiceFixture fixture = new ServiceFixture();
         when(fixture.stationRepository.existsById(2L)).thenReturn(true);
         when(fixture.shareholdingRepository.findById(9001L))
-                .thenReturn(Optional.of(activeRelation(2L, new BigDecimal("30"))));
+                .thenReturn(Optional.of(activeRelation(2L, 1L, new BigDecimal("30"))));
 
         Long exitedId = fixture.commandService.exitShareholding(2L, 9001L);
 
@@ -252,7 +254,7 @@ class ShareholdingCommandServiceTest {
         when(fixture.stationRepository.existsById(2L)).thenReturn(true);
         // 关系挂在站点 3 下：路径站点 2 的操作按不存在拦截，避免跨站篡改与存在性探测
         when(fixture.shareholdingRepository.findById(9001L))
-                .thenReturn(Optional.of(activeRelation(3L, new BigDecimal("30"))));
+                .thenReturn(Optional.of(activeRelation(3L, 1L, new BigDecimal("30"))));
 
         BusinessException exception = assertThrows(
                 BusinessException.class,
@@ -268,7 +270,7 @@ class ShareholdingCommandServiceTest {
     void exitShareholdingShouldRejectAlreadyExitedRelation() {
         ServiceFixture fixture = new ServiceFixture();
         when(fixture.stationRepository.existsById(2L)).thenReturn(true);
-        Shareholding exited = activeRelation(2L, new BigDecimal("30"));
+        Shareholding exited = activeRelation(2L, 1L, new BigDecimal("30"));
         exited.setHoldingStatus(HoldingStatus.EXITED);
         when(fixture.shareholdingRepository.findById(9001L)).thenReturn(Optional.of(exited));
 
@@ -283,12 +285,91 @@ class ShareholdingCommandServiceTest {
         verify(fixture.shareholdingRepository, never()).save(any(Shareholding.class));
     }
 
+    @Test
+    void exitShareholdingShouldRedistributeRemainingOwnershipProportionally() {
+        ServiceFixture fixture = new ServiceFixture();
+        when(fixture.stationRepository.existsById(2L)).thenReturn(true);
+        // A(9001) 60%, B(9002) 30%, C(9003) 10%：A 退出后 B、C 按 3:1 瓜分 100%
+        Shareholding relationA = activeRelation(2L, 1L, new BigDecimal("60"));
+        Shareholding relationB = activeRelation(2L, 2L, new BigDecimal("30"));
+        Shareholding relationC = activeRelation(2L, 3L, new BigDecimal("10"));
+        setRelationId(relationB, 9002L);
+        setRelationId(relationC, 9003L);
+        when(fixture.shareholdingRepository.findById(9001L)).thenReturn(Optional.of(relationA));
+        when(fixture.shareholdingRepository.findByStationIdAndHoldingStatus(2L, HoldingStatus.ACTIVE))
+                .thenReturn(List.of(relationB, relationC));
+
+        fixture.commandService.exitShareholding(2L, 9001L);
+
+        verify(fixture.shareholdingRepository).save(argThat(saved ->
+                saved.getId().equals(9001L) && HoldingStatus.EXITED.equals(saved.getHoldingStatus())));
+        assertEquals(new BigDecimal("75.00"), relationB.getOwnershipPercentage());
+        assertEquals(new BigDecimal("25.00"), relationC.getOwnershipPercentage());
+    }
+
+    @Test
+    void exitShareholdingShouldSetSingleRemainingRelationToFullOwnership() {
+        ServiceFixture fixture = new ServiceFixture();
+        when(fixture.stationRepository.existsById(2L)).thenReturn(true);
+        Shareholding relationA = activeRelation(2L, 1L, new BigDecimal("60"));
+        Shareholding relationB = activeRelation(2L, 2L, new BigDecimal("40"));
+        setRelationId(relationB, 9002L);
+        when(fixture.shareholdingRepository.findById(9001L)).thenReturn(Optional.of(relationA));
+        when(fixture.shareholdingRepository.findByStationIdAndHoldingStatus(2L, HoldingStatus.ACTIVE))
+                .thenReturn(List.of(relationB));
+
+        fixture.commandService.exitShareholding(2L, 9001L);
+
+        assertEquals(0, new BigDecimal("100.00").compareTo(relationB.getOwnershipPercentage()));
+    }
+
+    @Test
+    void exitShareholdingShouldSkipRedistributionWhenNoActiveRelationsRemain() {
+        ServiceFixture fixture = new ServiceFixture();
+        when(fixture.stationRepository.existsById(2L)).thenReturn(true);
+        Shareholding relationA = activeRelation(2L, 1L, new BigDecimal("100"));
+        when(fixture.shareholdingRepository.findById(9001L)).thenReturn(Optional.of(relationA));
+        when(fixture.shareholdingRepository.findByStationIdAndHoldingStatus(2L, HoldingStatus.ACTIVE))
+                .thenReturn(List.of());
+
+        fixture.commandService.exitShareholding(2L, 9001L);
+
+        // 仅剩的唯一关系退出后，站点下已无持股中股东：无需调整，也不应触发除零
+        verify(fixture.shareholdingRepository, times(1)).save(any(Shareholding.class));
+    }
+
+    @Test
+    void exitShareholdingShouldSkipRedistributionWhenRemainingActiveSumIsZero() {
+        ServiceFixture fixture = new ServiceFixture();
+        when(fixture.stationRepository.existsById(2L)).thenReturn(true);
+        Shareholding relationA = activeRelation(2L, 1L, new BigDecimal("60"));
+        Shareholding relationB = activeRelation(2L, 2L, BigDecimal.ZERO);
+        setRelationId(relationB, 9002L);
+        when(fixture.shareholdingRepository.findById(9001L)).thenReturn(Optional.of(relationA));
+        when(fixture.shareholdingRepository.findByStationIdAndHoldingStatus(2L, HoldingStatus.ACTIVE))
+                .thenReturn(List.of(relationB));
+
+        fixture.commandService.exitShareholding(2L, 9001L);
+
+        assertEquals(0, BigDecimal.ZERO.compareTo(relationB.getOwnershipPercentage()));
+    }
+
     private static final LocalDateTime ORIGINAL_EFFECTIVE_AT = LocalDateTime.of(2026, 9, 1, 10, 0);
 
-    private static Shareholding activeRelation(Long stationId, BigDecimal ownershipPercentage) {
+    private static void setRelationId(Shareholding shareholding, Long id) {
+        try {
+            java.lang.reflect.Field idField = Shareholding.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(shareholding, id);
+        } catch (NoSuchFieldException | IllegalAccessException exception) {
+            throw new RuntimeException("测试数据构造失败：无法设置持股关系 ID", exception);
+        }
+    }
+
+    private static Shareholding activeRelation(Long stationId, Long shareholderId, BigDecimal ownershipPercentage) {
         Shareholding shareholding = new Shareholding();
         shareholding.setStationId(stationId);
-        shareholding.setShareholderId(1L);
+        shareholding.setShareholderId(shareholderId);
         shareholding.setOwnershipPercentage(ownershipPercentage);
         shareholding.setHoldingStatus(HoldingStatus.ACTIVE);
         shareholding.setEffectiveAt(ORIGINAL_EFFECTIVE_AT);

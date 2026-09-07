@@ -66,4 +66,7 @@ public interface ShareholdingRepository extends JpaRepository<Shareholding, Long
 
     boolean existsByStationIdAndShareholderIdAndHoldingStatus(
             Long stationId, Long shareholderId, HoldingStatus holdingStatus);
+
+    // 退股同步调整占比：需要取出同站点下除当前关系外的其他持股中关系
+    List<Shareholding> findByStationIdAndHoldingStatus(Long stationId, HoldingStatus holdingStatus);
 }

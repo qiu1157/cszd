@@ -92,6 +92,7 @@ describe('StationShareholderSection source', () => {
     expect(source).toContain('requestExit')
     expect(source).toContain('退股确认')
     expect(source).toContain('退出后不再计入占比合计')
+    expect(source).toContain('其他股东占比将按当前比例自动调整')
     expect(source).toContain('closeOnPressEscape: false')
   })
 

@@ -219,7 +219,7 @@ const exitingId = ref<number | null>(null)
 async function requestExit(holding: StationShareholding) {
   try {
     await ElMessageBox.confirm(
-      `确认将「${holding.shareholderName}」标记为已退出吗？退出后不再计入占比合计，历史关系将保留。`,
+      `确认将「${holding.shareholderName}」标记为已退出吗？退出后不再计入占比合计，其他股东占比将按当前比例自动调整，历史关系将保留。`,
       '退股确认',
       {
         confirmButtonText: '确认',
