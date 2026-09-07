@@ -125,6 +125,7 @@ describe('StationShareholderSection source', () => {
 
 describe('StationShareholderSection behavior', () => {
   it('只展示持股中股东，已退出股东不渲染', async () => {
+    // 接口已按 ACTIVE 过滤，mock 只返回持股中记录
     vi.mocked(getStationShareholdings).mockResolvedValue([
       {
         id: 1,
@@ -135,17 +136,6 @@ describe('StationShareholderSection behavior', () => {
         ownershipPercentage: 60,
         holdingStatus: 'ACTIVE',
         holdingStatusName: '持股中',
-        effectiveAt: null,
-      },
-      {
-        id: 2,
-        shareholderId: 1,
-        shareholderName: '长沙众电',
-        contactName: null,
-        contactPhone: null,
-        ownershipPercentage: 40,
-        holdingStatus: 'EXITED',
-        holdingStatusName: '已退出',
         effectiveAt: null,
       },
     ])
@@ -168,9 +158,10 @@ describe('StationShareholderSection behavior', () => {
     await flushPromises()
 
     expect(getStationShareholdings).toHaveBeenCalledWith(1, 'ACTIVE')
-    // 仅在股东列表区域内断言：弹窗提示文案也含“已退出”，不应被误判
-    const listText = wrapper.find('.mini-list').text()
-    expect(listText).toContain('长沙众电')
-    expect(listText).not.toContain('已退出')
+    const items = wrapper.findAll('.mini-item')
+    expect(items).toHaveLength(1)
+    expect(items[0].text()).toContain('长沙众电')
+    expect(items[0].text()).toContain('持股中')
+    expect(wrapper.find('.mini-list').text()).not.toContain('已退出')
   })
 })

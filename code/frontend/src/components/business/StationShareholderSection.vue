@@ -187,10 +187,8 @@ async function refresh() {
   loading.value = true
   errorMessage.value = ''
   try {
-    // 前端防御性过滤：即使接口返回已退出记录也不应出现在详情分区
-    shareholdings.value = (await getStationShareholdings(props.stationId, 'ACTIVE')).filter(
-      holding => holding.holdingStatus === 'ACTIVE',
-    )
+    // 站点详情股东分区只展示持股中记录；接口侧已按 ACTIVE 过滤
+    shareholdings.value = await getStationShareholdings(props.stationId, 'ACTIVE')
     // 概览卡需要持股中股东数与占比合计，列表加载成功后同步给父组件
     emit('loaded', activeSummary.value)
   } catch (error) {
