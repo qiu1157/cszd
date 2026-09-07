@@ -20,9 +20,15 @@ export type StationShareholding = {
   effectiveAt: string | null
 }
 
-export async function getStationShareholdings(stationId: number) {
+export async function getStationShareholdings(
+  stationId: number,
+  holdingStatus?: 'ACTIVE' | 'EXITED',
+) {
   const response = await request.get<ApiResponse<StationShareholding[]>>(
     `/api/stations/${stationId}/shareholdings`,
+    {
+      params: holdingStatus ? { holdingStatus } : undefined,
+    },
   )
   return response.data.data
 }
