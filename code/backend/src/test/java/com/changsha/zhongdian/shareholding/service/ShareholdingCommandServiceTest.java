@@ -17,6 +17,7 @@ import java.util.Optional;
 
 import com.changsha.zhongdian.common.exception.BusinessException;
 import com.changsha.zhongdian.shareholding.dto.ShareholdingCreateRequest;
+import com.changsha.zhongdian.shareholding.dto.ShareholdingEquityAdjustmentRequest;
 import com.changsha.zhongdian.shareholding.entity.HoldingStatus;
 import com.changsha.zhongdian.shareholding.entity.Shareholding;
 import com.changsha.zhongdian.shareholding.repository.ShareholdingRepository;
@@ -352,6 +353,66 @@ class ShareholdingCommandServiceTest {
         fixture.commandService.exitShareholding(2L, 9001L);
 
         assertEquals(0, BigDecimal.ZERO.compareTo(relationB.getOwnershipPercentage()));
+    }
+
+    @Test
+    void adjustEquityShouldUpdateActiveRelationsAndRefreshEffectiveAt() {
+        ServiceFixture fixture = new ServiceFixture();
+        when(fixture.stationRepository.existsById(2L)).thenReturn(true);
+        Shareholding relationA = activeRelation(2L, 1L, new BigDecimal("60"));
+        Shareholding relationB = activeRelation(2L, 2L, new BigDecimal("40"));
+        setRelationId(relationA, 9001L);
+        setRelationId(relationB, 9002L);
+        when(fixture.shareholdingRepository.findByStationIdAndHoldingStatus(2L, HoldingStatus.ACTIVE))
+                .thenReturn(List.of(relationA, relationB));
+
+        fixture.commandService.adjustEquity(2L, new ShareholdingEquityAdjustmentRequest(List.of(
+                new ShareholdingEquityAdjustmentRequest.EquityAdjustmentItem(9001L, new BigDecimal("55")),
+                new ShareholdingEquityAdjustmentRequest.EquityAdjustmentItem(9002L, new BigDecimal("45"))
+        )));
+
+        assertEquals(0, new BigDecimal("55.00").compareTo(relationA.getOwnershipPercentage()));
+        assertEquals(0, new BigDecimal("45.00").compareTo(relationB.getOwnershipPercentage()));
+        // spec 7.5：股权调整立即生效，生效时间由服务端刷新为当前时间
+        assertEquals(0, ORIGINAL_EFFECTIVE_AT.compareTo(relationA.getEffectiveAt()) < 0 ? 0 : -1);
+    }
+
+    @Test
+    void adjustEquityShouldRejectMissingStation() {
+        ServiceFixture fixture = new ServiceFixture();
+        when(fixture.stationRepository.existsById(9999L)).thenReturn(false);
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> fixture.commandService.adjustEquity(9999L, new ShareholdingEquityAdjustmentRequest(List.of(
+                        new ShareholdingEquityAdjustmentRequest.EquityAdjustmentItem(9001L, new BigDecimal("50"))
+                )))
+        );
+
+        assertEquals("STATION_NOT_FOUND", exception.getCode());
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+        verify(fixture.shareholdingRepository, never()).save(any(Shareholding.class));
+    }
+
+    @Test
+    void adjustEquityShouldRejectNotActiveRelation() {
+        ServiceFixture fixture = new ServiceFixture();
+        when(fixture.stationRepository.existsById(2L)).thenReturn(true);
+        Shareholding relationA = activeRelation(2L, 1L, new BigDecimal("60"));
+        setRelationId(relationA, 9001L);
+        when(fixture.shareholdingRepository.findByStationIdAndHoldingStatus(2L, HoldingStatus.ACTIVE))
+                .thenReturn(List.of(relationA));
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> fixture.commandService.adjustEquity(2L, new ShareholdingEquityAdjustmentRequest(List.of(
+                        new ShareholdingEquityAdjustmentRequest.EquityAdjustmentItem(9999L, new BigDecimal("50"))
+                )))
+        );
+
+        assertEquals("SHAREHOLDING_NOT_FOUND", exception.getCode());
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+        verify(fixture.shareholdingRepository, never()).save(any(Shareholding.class));
     }
 
     private static final LocalDateTime ORIGINAL_EFFECTIVE_AT = LocalDateTime.of(2026, 9, 1, 10, 0);

@@ -4,9 +4,14 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import com.changsha.zhongdian.common.exception.BusinessException;
 import com.changsha.zhongdian.shareholding.dto.ShareholdingCreateRequest;
+import com.changsha.zhongdian.shareholding.dto.ShareholdingEquityAdjustmentRequest;
+import com.changsha.zhongdian.shareholding.dto.ShareholdingEquityAdjustmentRequest.EquityAdjustmentItem;
 import com.changsha.zhongdian.shareholding.entity.HoldingStatus;
 import com.changsha.zhongdian.shareholding.entity.Shareholding;
 import com.changsha.zhongdian.shareholding.repository.ShareholdingRepository;
@@ -109,6 +114,33 @@ public class ShareholdingCommandService {
         redistributeRemainingOwnership(validStationId, shareholding.getId());
 
         return shareholdingRepository.save(shareholding).getId();
+    }
+
+    @Transactional
+    public Long adjustEquity(Long stationId, ShareholdingEquityAdjustmentRequest request) {
+        Long validStationId = requirePositiveId(stationId, "充电站不存在");
+        if (!stationRepository.existsById(validStationId)) {
+            throw new BusinessException("STATION_NOT_FOUND", "充电站不存在", HttpStatus.NOT_FOUND);
+        }
+
+        // 仅允许调整当前持股中的关系：已退出是历史痕迹，不参与本次股权结构调整
+        List<Shareholding> activeRelations = shareholdingRepository
+                .findByStationIdAndHoldingStatus(validStationId, HoldingStatus.ACTIVE);
+        Map<Long, Shareholding> relationMap = activeRelations.stream()
+                .collect(Collectors.toMap(Shareholding::getId, Function.identity()));
+
+        for (EquityAdjustmentItem item : request.items()) {
+            Shareholding relation = relationMap.get(item.shareholdingId());
+            if (relation == null) {
+                throw new BusinessException(
+                        "SHAREHOLDING_NOT_FOUND", "持股关系不存在或已退出", HttpStatus.NOT_FOUND);
+            }
+            relation.setOwnershipPercentage(requireValidOwnershipPercentage(item.ownershipPercentage()));
+            relation.setEffectiveAt(LocalDateTime.now());
+            shareholdingRepository.save(relation);
+        }
+
+        return validStationId;
     }
 
     private void redistributeRemainingOwnership(Long stationId, Long exitedShareholdingId) {

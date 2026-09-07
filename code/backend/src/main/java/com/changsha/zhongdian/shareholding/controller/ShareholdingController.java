@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.changsha.zhongdian.common.api.ApiResponse;
 import com.changsha.zhongdian.shareholding.dto.ShareholdingCreateRequest;
+import com.changsha.zhongdian.shareholding.dto.ShareholdingEquityAdjustmentRequest;
 import com.changsha.zhongdian.shareholding.dto.StationShareholdingListItemResponse;
 import com.changsha.zhongdian.shareholding.service.ShareholdingCommandService;
 import com.changsha.zhongdian.shareholding.service.ShareholdingQueryService;
@@ -53,5 +54,14 @@ public class ShareholdingController {
             @PathVariable Long shareholdingId
     ) {
         return ApiResponse.success("退股成功", shareholdingCommandService.exitShareholding(stationId, shareholdingId));
+    }
+
+    // 股权调整是批量更新站点下持股中关系的占比（spec 8.3），用 PUT 子资源集合动作表达
+    @PutMapping("/{stationId}/shareholdings/equity-adjustment")
+    public ApiResponse<Long> adjustEquity(
+            @PathVariable Long stationId,
+            @Valid @RequestBody ShareholdingEquityAdjustmentRequest request
+    ) {
+        return ApiResponse.success("股权调整成功", shareholdingCommandService.adjustEquity(stationId, request));
     }
 }

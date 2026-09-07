@@ -9,6 +9,15 @@
           </div>
           <div class="action-group">
             <el-button class="action-button action-button--secondary" @click="goBack">返回详情</el-button>
+            <el-button
+              class="action-button"
+              type="primary"
+              :loading="saving"
+              :disabled="activeShareholdings.length === 0"
+              @click="submitAdjustment"
+            >
+              保存调整
+            </el-button>
           </div>
         </div>
       </template>
@@ -79,16 +88,22 @@
 
 <script setup lang="ts">
 import axios from 'axios'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { getStationShareholdings, type StationShareholding } from '@/api/shareholding'
+import {
+  adjustStationShareholdings,
+  getStationShareholdings,
+  type EquityAdjustmentItem,
+  type StationShareholding,
+} from '@/api/shareholding'
 import { buildStationDetailPath, STATION_LIST_PATH } from '@/router/navigation'
 
 const route = useRoute()
 const router = useRouter()
 const loading = ref(true)
+const saving = ref(false)
 const resolvedStationId = resolveStationIdAtSetup()
 const shareholdings = ref<StationShareholding[]>([])
 
@@ -129,6 +144,47 @@ function resolveApiErrorMessage(error: unknown, fallbackMessage: string) {
   }
 
   return fallbackMessage
+}
+
+async function submitAdjustment() {
+  const stationId = resolveStationId()
+  if (!stationId) {
+    return
+  }
+
+  // 合计不等于 100% 时仅软提示：用户可在特殊股权结构下继续保存
+  if (percentageSum.value !== 100) {
+    try {
+      await ElMessageBox.confirm('充电站持股数合计不等于100%，是否确认。', '提示', {
+        confirmButtonText: '确认',
+        cancelButtonText: '取消',
+        confirmButtonClass: 'action-button action-button--primary',
+        cancelButtonClass: 'action-button action-button--secondary',
+        type: 'warning',
+        closeOnClickModal: false,
+        closeOnPressEscape: false,
+      })
+    } catch {
+      return
+    }
+  }
+
+  const items: EquityAdjustmentItem[] = activeShareholdings.value.map((holding) => ({
+    shareholdingId: holding.id,
+    ownershipPercentage: Number(holding.ownershipPercentage),
+  }))
+
+  saving.value = true
+  try {
+    await adjustStationShareholdings(stationId, items)
+    ElMessage.success('股权调整保存成功')
+    // 保存成功后刷新列表，确保页面数据与后端一致
+    shareholdings.value = await getStationShareholdings(stationId)
+  } catch (error) {
+    ElMessage.error(resolveApiErrorMessage(error, '股权调整保存失败，请稍后重试'))
+  } finally {
+    saving.value = false
+  }
 }
 
 function goBack() {
