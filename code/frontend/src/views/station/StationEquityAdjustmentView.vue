@@ -39,16 +39,16 @@
                 <span class="equity-item__contact">{{ resolveContactSummary(holding) }}</span>
               </div>
               <div class="equity-item__input">
-                <el-input
-                  v-model.number="holding.ownershipPercentage"
-                  type="number"
+                <el-input-number
+                  v-model="holding.ownershipPercentage"
                   :min="0"
                   :max="100"
+                  :precision="2"
+                  :step="1"
+                  controls-position="right"
                   placeholder="占股比例"
-                  disabled
-                >
-                  <template #append>%</template>
-                </el-input>
+                  style="width: 100%"
+                />
               </div>
             </div>
           </div>
@@ -96,8 +96,13 @@ const activeShareholdings = computed(() =>
   shareholdings.value.filter(holding => holding.holdingStatus === 'ACTIVE')
 )
 
+// 占比域精度为 2 位小数：浮点直加会产生尾差，按域精度取整后再判断是否为 100%
 const percentageSum = computed(() =>
-  activeShareholdings.value.reduce((sum, holding) => sum + Number(holding.ownershipPercentage), 0)
+  Number(
+    activeShareholdings.value
+      .reduce((sum, holding) => sum + Number(holding.ownershipPercentage), 0)
+      .toFixed(2),
+  )
 )
 
 function resolveStationId() {
