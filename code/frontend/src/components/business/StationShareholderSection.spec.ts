@@ -1,6 +1,24 @@
-import { describe, expect, it } from 'vitest'
+// @vitest-environment jsdom
+import { mount } from '@vue/test-utils'
+import flushPromises from 'flush-promises'
+import { describe, expect, it, vi } from 'vitest'
 
+import { getStationShareholdings } from '@/api/shareholding'
+
+import StationShareholderSection from './StationShareholderSection.vue'
 import source from './StationShareholderSection.vue?raw'
+
+vi.mock('@/api/shareholding', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/api/shareholding')>('@/api/shareholding')
+  return {
+    ...actual,
+    getStationShareholdings: vi.fn(),
+  }
+})
+
+vi.mock('vue-router', () => ({
+  useRouter: vi.fn(() => ({ push: vi.fn() })),
+}))
 
 describe('StationShareholderSection source', () => {
   it('应渲染分区标题与关联股东入口，弹窗可打开', () => {
@@ -46,7 +64,7 @@ describe('StationShareholderSection source', () => {
     expect(source).toContain('el-skeleton')
     expect(source).toContain('errorMessage')
     expect(source).toContain('重试')
-    expect(source).toContain('暂无股东关系，点击右上角“关联股东”开始维护。')
+    expect(source).toContain('暂无持股中股东，点击右上角“关联股东”开始维护。')
     expect(source).toContain('mini-list')
     expect(source).toContain('holding.shareholderName')
     expect(source).toContain('联系人：')
@@ -102,5 +120,57 @@ describe('StationShareholderSection source', () => {
     expect(source).toContain('退股成功')
     expect(source).toContain('退股失败，请稍后重试')
     expect(source).toContain('await refresh()')
+  })
+})
+
+describe('StationShareholderSection behavior', () => {
+  it('只展示持股中股东，已退出股东不渲染', async () => {
+    vi.mocked(getStationShareholdings).mockResolvedValue([
+      {
+        id: 1,
+        shareholderId: 1,
+        shareholderName: '长沙众电',
+        contactName: null,
+        contactPhone: null,
+        ownershipPercentage: 60,
+        holdingStatus: 'ACTIVE',
+        holdingStatusName: '持股中',
+        effectiveAt: null,
+      },
+      {
+        id: 2,
+        shareholderId: 1,
+        shareholderName: '长沙众电',
+        contactName: null,
+        contactPhone: null,
+        ownershipPercentage: 40,
+        holdingStatus: 'EXITED',
+        holdingStatusName: '已退出',
+        effectiveAt: null,
+      },
+    ])
+
+    const wrapper = mount(StationShareholderSection, {
+      props: { stationId: 1 },
+      global: {
+        stubs: {
+          'el-button': { template: '<button><slot /></button>' },
+          'el-skeleton': { template: '<div class="el-skeleton"><slot /></div>' },
+          'el-tag': { template: '<span class="el-tag"><slot /></span>' },
+          'el-dialog': { template: '<div class="el-dialog"><slot /></div>' },
+          'el-select': { template: '<div class="el-select"><slot /></div>' },
+          'el-option': { template: '<div class="el-option"><slot /></div>' },
+          'el-input-number': { template: '<div class="el-input-number"><slot /></div>' },
+        },
+      },
+    })
+
+    await flushPromises()
+
+    expect(getStationShareholdings).toHaveBeenCalledWith(1, 'ACTIVE')
+    // 仅在股东列表区域内断言：弹窗提示文案也含“已退出”，不应被误判
+    const listText = wrapper.find('.mini-list').text()
+    expect(listText).toContain('长沙众电')
+    expect(listText).not.toContain('已退出')
   })
 })

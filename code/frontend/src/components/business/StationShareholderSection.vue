@@ -16,7 +16,7 @@
     </div>
 
     <div v-else-if="shareholdings.length === 0" class="empty-card">
-      暂无股东关系，点击右上角“关联股东”开始维护。
+      暂无持股中股东，点击右上角“关联股东”开始维护。
     </div>
 
     <div v-else class="mini-list">
@@ -187,7 +187,10 @@ async function refresh() {
   loading.value = true
   errorMessage.value = ''
   try {
-    shareholdings.value = await getStationShareholdings(props.stationId)
+    // 前端防御性过滤：即使接口返回已退出记录也不应出现在详情分区
+    shareholdings.value = (await getStationShareholdings(props.stationId, 'ACTIVE')).filter(
+      holding => holding.holdingStatus === 'ACTIVE',
+    )
     // 概览卡需要持股中股东数与占比合计，列表加载成功后同步给父组件
     emit('loaded', activeSummary.value)
   } catch (error) {
