@@ -198,4 +198,24 @@ CREATE TABLE IF NOT EXISTS biz_shareholding (
   KEY idx_biz_shareholding_station (station_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='持股关系表';
 
--- TODO: 里程碑 F/G 起补齐：equity_change / operation_log ... 等业务表。
+-- 为什么：股权调整独立页面保存成功后要求写入一条调整事件（spec 8.3），
+-- 为里程碑 G 的历史变化时间线与审计留存完整的前后持股快照；
+-- 快照为 JSON 数组并内嵌股东名称，避免后续股东改名导致历史事件展示失真。
+-- total_percentage 记录保存后所有持股中关系的占比合计，合计非 100 的调整
+-- 已在保存前经用户二次确认放行（spec 8.3 交互要求），事件中如实留痕。
+-- station_id 与 biz_shareholding 口径一致：不做物理外键，由应用层维护引用一致性。
+CREATE TABLE IF NOT EXISTS biz_equity_adjustment_event (
+  id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  station_id BIGINT NOT NULL COMMENT '充电站ID；引用 biz_station.id',
+  before_snapshot TEXT NOT NULL COMMENT '调整前持股快照；JSON数组，元素含持股关系ID/股东ID/股东名称/股份占比',
+  after_snapshot TEXT NOT NULL COMMENT '调整后持股快照；JSON数组，结构同调整前快照',
+  total_percentage DECIMAL(5,2) NOT NULL COMMENT '调整后持股中占比合计；正常为100.00，非100需保存前二次确认',
+  operator_account VARCHAR(32) DEFAULT NULL COMMENT '操作人登录账号',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  KEY idx_biz_equity_adjustment_event_station_id (station_id),
+  KEY idx_biz_equity_adjustment_event_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='股权调整事件表';
+
+-- TODO: 里程碑 G 起补齐：operation_log 等业务表。

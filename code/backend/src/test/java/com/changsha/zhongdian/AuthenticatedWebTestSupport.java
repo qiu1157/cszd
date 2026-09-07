@@ -14,6 +14,7 @@ import com.changsha.zhongdian.dictionary.repository.SystemDictTypeRepository;
 import com.changsha.zhongdian.pile.repository.PileRepository;
 import com.changsha.zhongdian.pile.repository.PileStatusLogRepository;
 import com.changsha.zhongdian.shareholder.repository.ShareholderRepository;
+import com.changsha.zhongdian.shareholding.repository.EquityAdjustmentEventRepository;
 import com.changsha.zhongdian.shareholding.repository.ShareholdingRepository;
 import com.changsha.zhongdian.station.repository.StationRepository;
 import com.changsha.zhongdian.station.repository.StationStatusLogRepository;
@@ -77,6 +78,11 @@ public abstract class AuthenticatedWebTestSupport {
 
     @MockBean
     protected ShareholdingRepository shareholdingRepository;
+
+    // 为什么：股权调整事件落库后 ShareholdingCommandService 新增了该依赖，
+    // 无数据库上下文中必须一并 mock，否则所有继承本基类的 Web 测试会因缺 Bean 而启动失败
+    @MockBean
+    protected EquityAdjustmentEventRepository equityAdjustmentEventRepository;
 
     protected String loginAsBusinessAdmin() throws Exception {
         return loginAs("13800000001", "dev-biz-password", UserRole.BUSINESS_ADMIN, "业务管理员");

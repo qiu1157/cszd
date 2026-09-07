@@ -12,13 +12,16 @@ import com.changsha.zhongdian.common.exception.BusinessException;
 import com.changsha.zhongdian.shareholding.dto.ShareholdingCreateRequest;
 import com.changsha.zhongdian.shareholding.dto.ShareholdingEquityAdjustmentRequest;
 import com.changsha.zhongdian.shareholding.dto.ShareholdingEquityAdjustmentRequest.EquityAdjustmentItem;
+import com.changsha.zhongdian.shareholding.entity.EquityAdjustmentEvent;
 import com.changsha.zhongdian.shareholding.entity.HoldingStatus;
 import com.changsha.zhongdian.shareholding.entity.Shareholding;
+import com.changsha.zhongdian.shareholding.repository.EquityAdjustmentEventRepository;
 import com.changsha.zhongdian.shareholding.repository.ShareholdingRepository;
 import com.changsha.zhongdian.shareholder.entity.Shareholder;
 import com.changsha.zhongdian.shareholder.entity.ShareholderStatus;
 import com.changsha.zhongdian.shareholder.repository.ShareholderRepository;
 import com.changsha.zhongdian.station.repository.StationRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,15 +35,21 @@ public class ShareholdingCommandService {
     private final ShareholdingRepository shareholdingRepository;
     private final ShareholderRepository shareholderRepository;
     private final StationRepository stationRepository;
+    private final EquityAdjustmentEventRepository equityAdjustmentEventRepository;
+    private final ObjectMapper objectMapper;
 
     public ShareholdingCommandService(
             ShareholdingRepository shareholdingRepository,
             ShareholderRepository shareholderRepository,
-            StationRepository stationRepository
+            StationRepository stationRepository,
+            EquityAdjustmentEventRepository equityAdjustmentEventRepository,
+            ObjectMapper objectMapper
     ) {
         this.shareholdingRepository = shareholdingRepository;
         this.shareholderRepository = shareholderRepository;
         this.stationRepository = stationRepository;
+        this.equityAdjustmentEventRepository = equityAdjustmentEventRepository;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -117,7 +126,7 @@ public class ShareholdingCommandService {
     }
 
     @Transactional
-    public Long adjustEquity(Long stationId, ShareholdingEquityAdjustmentRequest request) {
+    public Long adjustEquity(Long stationId, ShareholdingEquityAdjustmentRequest request, String operatorAccount) {
         Long validStationId = requirePositiveId(stationId, "充电站不存在");
         if (!stationRepository.existsById(validStationId)) {
             throw new BusinessException("STATION_NOT_FOUND", "充电站不存在", HttpStatus.NOT_FOUND);
@@ -129,6 +138,10 @@ public class ShareholdingCommandService {
         Map<Long, Shareholding> relationMap = activeRelations.stream()
                 .collect(Collectors.toMap(Shareholding::getId, Function.identity()));
 
+        // 为快照留存股东名称，避免后续股东改名导致历史事件展示失真
+        Map<Long, String> shareholderNameMap = resolveShareholderNames(activeRelations);
+        String beforeSnapshot = buildSnapshotJson(activeRelations, shareholderNameMap);
+
         for (EquityAdjustmentItem item : request.items()) {
             Shareholding relation = relationMap.get(item.shareholdingId());
             if (relation == null) {
@@ -139,6 +152,20 @@ public class ShareholdingCommandService {
             relation.setEffectiveAt(LocalDateTime.now());
             shareholdingRepository.save(relation);
         }
+
+        // 事件记录全部持股中关系的最新占比，而不仅是本次被调整的条目
+        String afterSnapshot = buildSnapshotJson(activeRelations, shareholderNameMap);
+        BigDecimal totalPercentage = activeRelations.stream()
+                .map(Shareholding::getOwnershipPercentage)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        EquityAdjustmentEvent event = new EquityAdjustmentEvent();
+        event.setStationId(validStationId);
+        event.setBeforeSnapshot(beforeSnapshot);
+        event.setAfterSnapshot(afterSnapshot);
+        event.setTotalPercentage(totalPercentage);
+        event.setOperatorAccount(trimToNull(operatorAccount));
+        equityAdjustmentEventRepository.save(event);
 
         return validStationId;
     }
@@ -210,5 +237,46 @@ public class ShareholdingCommandService {
             throw new BusinessException("VALIDATION_ERROR", "占股比例不能超过100", HttpStatus.BAD_REQUEST);
         }
         return ownershipPercentage;
+    }
+
+    private Map<Long, String> resolveShareholderNames(List<Shareholding> relations) {
+        List<Long> shareholderIds = relations.stream()
+                .map(Shareholding::getShareholderId)
+                .distinct()
+                .toList();
+        return shareholderRepository.findAllById(shareholderIds).stream()
+                .collect(Collectors.toMap(Shareholder::getId, Shareholder::getShareholderName));
+    }
+
+    private String buildSnapshotJson(List<Shareholding> relations, Map<Long, String> shareholderNameMap) {
+        List<EquitySnapshotItem> items = relations.stream()
+                .map(relation -> new EquitySnapshotItem(
+                        relation.getId(),
+                        relation.getShareholderId(),
+                        shareholderNameMap.get(relation.getShareholderId()),
+                        relation.getOwnershipPercentage()))
+                .toList();
+        try {
+            return objectMapper.writeValueAsString(items);
+        } catch (Exception exception) {
+            throw new BusinessException("SERIALIZE_ERROR", "持股快照序列化失败", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
+    }
+
+    // 股权调整快照项：仅用于序列化进事件表，便于后续时间线还原历史股权结构
+    private record EquitySnapshotItem(
+            Long shareholdingId,
+            Long shareholderId,
+            String shareholderName,
+            BigDecimal ownershipPercentage
+    ) {
     }
 }

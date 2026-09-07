@@ -2,12 +2,15 @@ package com.changsha.zhongdian.shareholding.controller;
 
 import java.util.List;
 
+import com.changsha.zhongdian.auth.model.LoginUser;
+import com.changsha.zhongdian.auth.service.AuthService;
 import com.changsha.zhongdian.common.api.ApiResponse;
 import com.changsha.zhongdian.shareholding.dto.ShareholdingCreateRequest;
 import com.changsha.zhongdian.shareholding.dto.ShareholdingEquityAdjustmentRequest;
 import com.changsha.zhongdian.shareholding.dto.StationShareholdingListItemResponse;
 import com.changsha.zhongdian.shareholding.service.ShareholdingCommandService;
 import com.changsha.zhongdian.shareholding.service.ShareholdingQueryService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,13 +28,16 @@ public class ShareholdingController {
 
     private final ShareholdingQueryService shareholdingQueryService;
     private final ShareholdingCommandService shareholdingCommandService;
+    private final AuthService authService;
 
     public ShareholdingController(
             ShareholdingQueryService shareholdingQueryService,
-            ShareholdingCommandService shareholdingCommandService
+            ShareholdingCommandService shareholdingCommandService,
+            AuthService authService
     ) {
         this.shareholdingQueryService = shareholdingQueryService;
         this.shareholdingCommandService = shareholdingCommandService;
+        this.authService = authService;
     }
 
     @GetMapping("/{stationId}/shareholdings")
@@ -60,8 +66,13 @@ public class ShareholdingController {
     @PutMapping("/{stationId}/shareholdings/equity-adjustment")
     public ApiResponse<Long> adjustEquity(
             @PathVariable Long stationId,
-            @Valid @RequestBody ShareholdingEquityAdjustmentRequest request
+            @Valid @RequestBody ShareholdingEquityAdjustmentRequest request,
+            HttpServletRequest httpServletRequest
     ) {
-        return ApiResponse.success("股权调整成功", shareholdingCommandService.adjustEquity(stationId, request));
+        LoginUser currentUser = authService.getCurrentUser(httpServletRequest);
+        return ApiResponse.success(
+                "股权调整成功",
+                shareholdingCommandService.adjustEquity(stationId, request, currentUser.account())
+        );
     }
 }

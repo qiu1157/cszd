@@ -2,8 +2,10 @@ package com.changsha.zhongdian.shareholding.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -18,13 +20,16 @@ import java.util.Optional;
 import com.changsha.zhongdian.common.exception.BusinessException;
 import com.changsha.zhongdian.shareholding.dto.ShareholdingCreateRequest;
 import com.changsha.zhongdian.shareholding.dto.ShareholdingEquityAdjustmentRequest;
+import com.changsha.zhongdian.shareholding.entity.EquityAdjustmentEvent;
 import com.changsha.zhongdian.shareholding.entity.HoldingStatus;
 import com.changsha.zhongdian.shareholding.entity.Shareholding;
+import com.changsha.zhongdian.shareholding.repository.EquityAdjustmentEventRepository;
 import com.changsha.zhongdian.shareholding.repository.ShareholdingRepository;
 import com.changsha.zhongdian.shareholder.entity.Shareholder;
 import com.changsha.zhongdian.shareholder.entity.ShareholderStatus;
 import com.changsha.zhongdian.shareholder.repository.ShareholderRepository;
 import com.changsha.zhongdian.station.repository.StationRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
@@ -365,16 +370,46 @@ class ShareholdingCommandServiceTest {
         setRelationId(relationB, 9002L);
         when(fixture.shareholdingRepository.findByStationIdAndHoldingStatus(2L, HoldingStatus.ACTIVE))
                 .thenReturn(List.of(relationA, relationB));
+        when(fixture.shareholderRepository.findAllById(List.of(1L, 2L)))
+                .thenReturn(List.of(shareholderOf(1L, "股东A"), shareholderOf(2L, "股东B")));
 
         fixture.commandService.adjustEquity(2L, new ShareholdingEquityAdjustmentRequest(List.of(
                 new ShareholdingEquityAdjustmentRequest.EquityAdjustmentItem(9001L, new BigDecimal("55")),
                 new ShareholdingEquityAdjustmentRequest.EquityAdjustmentItem(9002L, new BigDecimal("45"))
-        )));
+        )), "admin");
 
         assertEquals(0, new BigDecimal("55.00").compareTo(relationA.getOwnershipPercentage()));
         assertEquals(0, new BigDecimal("45.00").compareTo(relationB.getOwnershipPercentage()));
         // spec 7.5：股权调整立即生效，生效时间由服务端刷新为当前时间
         assertEquals(0, ORIGINAL_EFFECTIVE_AT.compareTo(relationA.getEffectiveAt()) < 0 ? 0 : -1);
+    }
+
+    @Test
+    void adjustEquityShouldRecordEventWithSnapshots() {
+        ServiceFixture fixture = new ServiceFixture();
+        when(fixture.stationRepository.existsById(2L)).thenReturn(true);
+        Shareholding relationA = activeRelation(2L, 1L, new BigDecimal("60"));
+        Shareholding relationB = activeRelation(2L, 2L, new BigDecimal("40"));
+        setRelationId(relationA, 9001L);
+        setRelationId(relationB, 9002L);
+        when(fixture.shareholdingRepository.findByStationIdAndHoldingStatus(2L, HoldingStatus.ACTIVE))
+                .thenReturn(List.of(relationA, relationB));
+        when(fixture.shareholderRepository.findAllById(List.of(1L, 2L)))
+                .thenReturn(List.of(shareholderOf(1L, "股东A"), shareholderOf(2L, "股东B")));
+
+        fixture.commandService.adjustEquity(2L, new ShareholdingEquityAdjustmentRequest(List.of(
+                new ShareholdingEquityAdjustmentRequest.EquityAdjustmentItem(9001L, new BigDecimal("55")),
+                new ShareholdingEquityAdjustmentRequest.EquityAdjustmentItem(9002L, new BigDecimal("45"))
+        )), "admin");
+
+        // F-12：保存成功后必须写入股权调整事件，并留存调整前后快照
+        verify(fixture.equityAdjustmentEventRepository, times(1)).save(fixture.eventCaptor.capture());
+        EquityAdjustmentEvent event = fixture.eventCaptor.getValue();
+        assertEquals(2L, event.getStationId());
+        assertEquals("admin", event.getOperatorAccount());
+        assertEquals(0, new BigDecimal("100.00").compareTo(event.getTotalPercentage()));
+        assertTrue(event.getBeforeSnapshot().contains("股东A") && event.getBeforeSnapshot().contains("60"));
+        assertTrue(event.getAfterSnapshot().contains("股东A") && event.getAfterSnapshot().contains("55"));
     }
 
     @Test
@@ -386,12 +421,13 @@ class ShareholdingCommandServiceTest {
                 BusinessException.class,
                 () -> fixture.commandService.adjustEquity(9999L, new ShareholdingEquityAdjustmentRequest(List.of(
                         new ShareholdingEquityAdjustmentRequest.EquityAdjustmentItem(9001L, new BigDecimal("50"))
-                )))
+                )), "admin")
         );
 
         assertEquals("STATION_NOT_FOUND", exception.getCode());
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
         verify(fixture.shareholdingRepository, never()).save(any(Shareholding.class));
+        verify(fixture.equityAdjustmentEventRepository, never()).save(any(EquityAdjustmentEvent.class));
     }
 
     @Test
@@ -402,17 +438,20 @@ class ShareholdingCommandServiceTest {
         setRelationId(relationA, 9001L);
         when(fixture.shareholdingRepository.findByStationIdAndHoldingStatus(2L, HoldingStatus.ACTIVE))
                 .thenReturn(List.of(relationA));
+        when(fixture.shareholderRepository.findAllById(List.of(1L)))
+                .thenReturn(List.of(shareholderOf(1L, "股东A")));
 
         BusinessException exception = assertThrows(
                 BusinessException.class,
                 () -> fixture.commandService.adjustEquity(2L, new ShareholdingEquityAdjustmentRequest(List.of(
                         new ShareholdingEquityAdjustmentRequest.EquityAdjustmentItem(9999L, new BigDecimal("50"))
-                )))
+                )), "admin")
         );
 
         assertEquals("SHAREHOLDING_NOT_FOUND", exception.getCode());
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
         verify(fixture.shareholdingRepository, never()).save(any(Shareholding.class));
+        verify(fixture.equityAdjustmentEventRepository, never()).save(any(EquityAdjustmentEvent.class));
     }
 
     private static final LocalDateTime ORIGINAL_EFFECTIVE_AT = LocalDateTime.of(2026, 9, 1, 10, 0);
@@ -437,12 +476,28 @@ class ShareholdingCommandServiceTest {
         return shareholding;
     }
 
+    private static Shareholder shareholderOf(Long id, String name) {
+        Shareholder shareholder = new Shareholder();
+        shareholder.setShareholderName(name);
+        try {
+            java.lang.reflect.Field idField = Shareholder.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(shareholder, id);
+        } catch (NoSuchFieldException | IllegalAccessException exception) {
+            throw new RuntimeException("测试数据构造失败：无法设置股东 ID", exception);
+        }
+        return shareholder;
+    }
+
     private static class ServiceFixture {
         private final ShareholdingRepository shareholdingRepository = mock(ShareholdingRepository.class);
         private final ShareholderRepository shareholderRepository = mock(ShareholderRepository.class);
         private final StationRepository stationRepository = mock(StationRepository.class);
+        private final EquityAdjustmentEventRepository equityAdjustmentEventRepository = mock(EquityAdjustmentEventRepository.class);
+        private final org.mockito.ArgumentCaptor<EquityAdjustmentEvent> eventCaptor = forClass(EquityAdjustmentEvent.class);
+        private final ObjectMapper objectMapper = new ObjectMapper();
         private final ShareholdingCommandService commandService = new ShareholdingCommandService(
-                shareholdingRepository, shareholderRepository, stationRepository
+                shareholdingRepository, shareholderRepository, stationRepository, equityAdjustmentEventRepository, objectMapper
         );
 
         private Shareholder enabledShareholder() {
