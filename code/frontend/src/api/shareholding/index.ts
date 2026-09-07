@@ -14,6 +14,8 @@ export type StationShareholding = {
   contactName: string | null
   contactPhone: string | null
   ownershipPercentage: number
+  // 状态码是逻辑判断的唯一依据；holdingStatusName 仅为展示文案，不参与任何口径计算
+  holdingStatus: 'ACTIVE' | 'EXITED'
   holdingStatusName: string
   effectiveAt: string | null
 }
@@ -40,9 +42,10 @@ export async function createStationShareholding(stationId: number, payload: Shar
 }
 
 // 站点详情概览卡摘要：只统计持股中关系的股东数与占比合计，
-// 已退出关系是历史痕迹，不参与当前股权结构口径
+// 已退出关系是历史痕迹，不参与当前股权结构口径；
+// 过滤依据为状态码而非中文状态名，避免展示文案变化导致口径静默失真
 export function summarizeShareholdings(shareholdings: StationShareholding[]) {
-  const activeRelations = shareholdings.filter(item => item.holdingStatusName === '持股中')
+  const activeRelations = shareholdings.filter(item => item.holdingStatus === 'ACTIVE')
   // 占比域精度为 2 位小数（后端 DECIMAL(5,2)）：JS 浮点直加会产生尾差，
   // 若不按域精度取整会把 33.33+33.33+33.34 误判为“合计≠100%”
   const activePercentageSum = Number(

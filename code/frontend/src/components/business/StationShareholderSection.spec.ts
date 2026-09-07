@@ -54,10 +54,11 @@ describe('StationShareholderSection source', () => {
     expect(source).toContain('holding.holdingStatusName')
   })
 
-  it('应按持股状态映射标签颜色，并对外提供刷新与摘要能力', () => {
-    expect(source).toContain("case '持股中'")
-    expect(source).toContain("case '已退出'")
-    expect(source).toContain('resolveHoldingStatusType')
+  it('应按持股状态码映射标签颜色，并对外提供刷新与摘要能力', () => {
+    // 标签颜色按状态码（ACTIVE/EXITED）映射：中文名仅作展示文案，不参与逻辑判断
+    expect(source).toContain("case 'ACTIVE'")
+    expect(source).toContain("case 'EXITED'")
+    expect(source).toContain('resolveHoldingStatusType(holding.holdingStatus)')
     expect(source).toContain('defineExpose({ refresh })')
     expect(source).toContain("emit('loaded'")
     expect(source).toContain('summarizeShareholdings')

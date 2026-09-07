@@ -61,7 +61,8 @@ public class ShareholdingQueryService {
         if (!stationRepository.existsById(stationId)) {
             throw new BusinessException("STATION_NOT_FOUND", "充电站不存在", HttpStatus.NOT_FOUND);
         }
-        // 已退出关系是历史痕迹：列表保留展示（带状态标记），由前端摘要口径区分当前股权结构
+        // 已退出关系是历史痕迹：列表保留展示（带状态标记），由前端摘要口径区分当前股权结构；
+        // 状态码原值与中文名一并透出，前端按状态码做条件渲染，中文名仅用于展示
         return shareholdingRepository.findStationShareholderListItems(stationId)
                 .stream()
                 .map(item -> new StationShareholdingListItemResponse(
@@ -71,6 +72,7 @@ public class ShareholdingQueryService {
                         item.getContactName(),
                         item.getContactPhone(),
                         item.getOwnershipPercentage(),
+                        item.getHoldingStatus(),
                         resolveHoldingStatusName(item.getHoldingStatus()),
                         item.getEffectiveAt()
                 ))

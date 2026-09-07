@@ -158,8 +158,11 @@ class ShareholdingQueryServiceTest {
         assertEquals("王强", responses.get(0).contactName());
         assertEquals("13800000001", responses.get(0).contactPhone());
         assertEquals(new BigDecimal("60.00"), responses.get(0).ownershipPercentage());
+        // 状态码与状态名成对透出：前端按状态码做条件渲染与摘要口径，中文名仅用于展示
+        assertEquals("ACTIVE", responses.get(0).holdingStatus());
         assertEquals("持股中", responses.get(0).holdingStatusName());
         assertEquals(LocalDateTime.of(2026, 9, 2, 10, 0), responses.get(0).effectiveAt());
+        assertEquals("EXITED", responses.get(1).holdingStatus());
         assertEquals("已退出", responses.get(1).holdingStatusName());
     }
 

@@ -39,6 +39,7 @@ class ShareholdingControllerTest extends AuthenticatedWebTestSupport {
                         "张伟",
                         "13800000002",
                         new BigDecimal("60"),
+                        "ACTIVE",
                         "持股中",
                         LocalDateTime.of(2026, 9, 4, 10, 0)
                 )
@@ -52,6 +53,7 @@ class ShareholdingControllerTest extends AuthenticatedWebTestSupport {
                 .andExpect(jsonPath("$.data[0].shareholderName").value("长沙众电电气服务有限公司"))
                 .andExpect(jsonPath("$.data[0].contactPhone").value("13800000002"))
                 .andExpect(jsonPath("$.data[0].ownershipPercentage").value(60))
+                .andExpect(jsonPath("$.data[0].holdingStatus").value("ACTIVE"))
                 .andExpect(jsonPath("$.data[0].holdingStatusName").value("持股中"));
 
         verify(shareholdingQueryService).getStationShareholdings(2L);

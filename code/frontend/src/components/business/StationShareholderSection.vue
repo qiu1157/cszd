@@ -29,7 +29,7 @@
           </p>
         </div>
         <div class="mini-item__side">
-          <el-tag :type="resolveHoldingStatusType(holding.holdingStatusName)" effect="dark" round>
+          <el-tag :type="resolveHoldingStatusType(holding.holdingStatus)" effect="dark" round>
             {{ holding.holdingStatusName }}
           </el-tag>
         </div>
@@ -222,6 +222,7 @@ async function submitLinkForm() {
       contactName: null,
       contactPhone: null,
       ownershipPercentage: linkForm.ownershipPercentage ?? 0,
+      holdingStatus: linkForm.holdingStatus,
       holdingStatusName: linkForm.holdingStatus === 'ACTIVE' ? '持股中' : '已退出',
       effectiveAt: null,
     },
@@ -265,11 +266,12 @@ function formatShareholderOption(option: ShareholderLinkOption) {
   return `${option.shareholderName}（${option.contactName || '—'} / ${option.contactPhone || '—'}）`
 }
 
-function resolveHoldingStatusType(statusName: string) {
-  switch (statusName) {
-    case '持股中':
+// 标签颜色按状态码映射：状态名是展示文案，若按文案判断会在措辞调整时静默失效
+function resolveHoldingStatusType(status: StationShareholding['holdingStatus']) {
+  switch (status) {
+    case 'ACTIVE':
       return 'success'
-    case '已退出':
+    case 'EXITED':
       return 'info'
     default:
       return 'info'
