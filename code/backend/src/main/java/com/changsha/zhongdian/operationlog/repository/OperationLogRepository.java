@@ -16,16 +16,16 @@ public interface OperationLogRepository extends JpaRepository<OperationLog, Long
     List<OperationLog> findByStationIdOrderByCreatedAtDesc(Long stationId);
     
     @Query("SELECT l FROM OperationLog l WHERE " +
-           "(l.targetType = 'SHAREHOLDER' AND l.targetId = :shareholderId) OR " +
-           "(l.targetType = 'SHAREHOLDING' AND l.targetId IN " +
-           "(SELECT CAST(sh.id AS string) FROM Shareholding sh WHERE sh.shareholder.id = :shareholderId)) " +
+           "(l.targetType = com.changsha.zhongdian.operationlog.entity.OperationTargetType.SHAREHOLDER AND CAST(l.targetId AS long) = :shareholderId) OR " +
+           "(l.targetType = com.changsha.zhongdian.operationlog.entity.OperationTargetType.SHAREHOLDING AND CAST(l.targetId AS long) IN " +
+           "(SELECT sh.id FROM Shareholding sh WHERE sh.shareholderId = :shareholderId)) " +
            "ORDER BY l.createdAt DESC")
     List<OperationLog> findShareholderTimelineEvents(@Param("shareholderId") Long shareholderId);
     
     @Query("SELECT l FROM OperationLog l WHERE l.stationId = :stationId AND " +
-           "((l.targetType = 'SHAREHOLDER' AND l.targetId = :shareholderId) OR " +
-           "(l.targetType = 'SHAREHOLDING' AND l.targetId IN " +
-           "(SELECT CAST(sh.id AS string) FROM Shareholding sh WHERE sh.shareholder.id = :shareholderId AND sh.station.id = :stationId))) " +
+           "((l.targetType = com.changsha.zhongdian.operationlog.entity.OperationTargetType.SHAREHOLDER AND CAST(l.targetId AS long) = :shareholderId) OR " +
+           "(l.targetType = com.changsha.zhongdian.operationlog.entity.OperationTargetType.SHAREHOLDING AND CAST(l.targetId AS long) IN " +
+           "(SELECT sh.id FROM Shareholding sh WHERE sh.shareholderId = :shareholderId AND sh.stationId = :stationId))) " +
            "ORDER BY l.createdAt DESC")
     List<OperationLog> findShareholderTimelineEventsByStation(
         @Param("shareholderId") Long shareholderId, 
