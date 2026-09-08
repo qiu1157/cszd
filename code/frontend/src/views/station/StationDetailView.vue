@@ -158,7 +158,7 @@
           <div class="detail-section__head">
             <h4>历史变化时间线</h4>
           </div>
-          <div class="placeholder-card">后续任务实现：在此分区展示站点历史变化时间线。</div>
+          <TimelineView :events="timelineEvents" :loading="timelineLoading" />
         </section>
       </div>
     </el-card>
@@ -226,10 +226,12 @@ import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { getStationTimeline, type TimelineEvent } from '@/api/operation-log'
 import { getStationDetail, updateStationStatus, type StationDetail } from '@/api/station'
 import { getStationStatusOptions, type StationStatusOption } from '@/api/station/form-options'
 import StationPileSection from '@/components/business/StationPileSection.vue'
 import StationShareholderSection from '@/components/business/StationShareholderSection.vue'
+import TimelineView from '@/components/common/TimelineView.vue'
 import { buildStationEditPath, STATION_LIST_PATH } from '@/router/navigation'
 
 const route = useRoute()
@@ -258,6 +260,9 @@ const statusForm = reactive({
   targetStatusItemId: null as number | null,
   remark: '',
 })
+
+const timelineEvents = ref<TimelineEvent[]>([])
+const timelineLoading = ref(false)
 
 function resolveStationId() {
   const rawId = Number(route.params.id)
@@ -414,6 +419,18 @@ function resolveApiErrorMessage(error: unknown, fallbackMessage: string) {
   return fallbackMessage
 }
 
+async function loadTimeline(stationId: number) {
+  timelineLoading.value = true
+  try {
+    timelineEvents.value = await getStationTimeline(stationId)
+  } catch (error) {
+    console.error('时间线加载失败:', error)
+    timelineEvents.value = []
+  } finally {
+    timelineLoading.value = false
+  }
+}
+
 onMounted(() => {
   const stationId = resolveStationId()
   if (!stationId) {
@@ -426,6 +443,7 @@ onMounted(() => {
     try {
       const data = await getStationDetail(stationId)
       applyDetail(data)
+      await loadTimeline(stationId)
     } catch (error) {
       ElMessage.error(resolveApiErrorMessage(error, '充电站详情加载失败，请稍后重试'))
       await router.push(STATION_LIST_PATH)

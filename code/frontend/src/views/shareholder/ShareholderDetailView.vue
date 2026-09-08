@@ -149,8 +149,23 @@
         <section id="section-timeline" class="detail-section">
           <div class="detail-section__head">
             <h4>历史变化时间线</h4>
+            <el-select
+              v-model="selectedStationIdForTimeline"
+              placeholder="全部站点"
+              clearable
+              style="width: 240px"
+              @change="handleTimelineStationFilterChange"
+            >
+              <el-option label="全部站点" :value="null" />
+              <el-option
+                v-for="station in stationList"
+                :key="station.stationId"
+                :label="station.stationName"
+                :value="station.stationId"
+              />
+            </el-select>
           </div>
-          <div class="placeholder-card">后续任务实现：在此分区展示该股东的历史变化时间线，支持按充电站筛选。</div>
+          <TimelineView :events="timelineEvents" :loading="timelineLoading" />
         </section>
       </div>
     </el-card>
@@ -163,12 +178,14 @@ import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { getShareholderTimeline, type TimelineEvent } from '@/api/operation-log'
 import {
   getShareholderDetail,
   getShareholderStations,
   type ShareholderDetail,
   type ShareholderStationListItem,
 } from '@/api/shareholder'
+import TimelineView from '@/components/common/TimelineView.vue'
 import { SHAREHOLDER_LIST_PATH } from '@/router/navigation'
 
 const route = useRoute()
@@ -187,6 +204,10 @@ const detail = reactive<ShareholderDetail>({
 const stationList = ref<ShareholderStationListItem[]>([])
 const stationsLoading = ref(true)
 const stationsError = ref(false)
+
+const timelineEvents = ref<TimelineEvent[]>([])
+const timelineLoading = ref(false)
+const selectedStationIdForTimeline = ref<number | null>(null)
 
 const statusLabel = computed(() => {
   if (detail.shareholderStatus === 'ENABLED') {
@@ -260,6 +281,26 @@ function handleAnchorClick(sectionId: string) {
   element?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
+async function loadTimeline(shareholderId: number, stationId?: number) {
+  timelineLoading.value = true
+  try {
+    timelineEvents.value = await getShareholderTimeline(shareholderId, stationId)
+  } catch (error) {
+    console.error('时间线加载失败:', error)
+    timelineEvents.value = []
+  } finally {
+    timelineLoading.value = false
+  }
+}
+
+function handleTimelineStationFilterChange() {
+  const shareholderId = resolveShareholderId()
+  if (!shareholderId) return
+  
+  const stationId = selectedStationIdForTimeline.value ?? undefined
+  void loadTimeline(shareholderId, stationId)
+}
+
 function resolveApiErrorMessage(error: unknown, fallbackMessage: string) {
   if (axios.isAxiosError(error)) {
     const message = error.response?.data?.message
@@ -281,6 +322,9 @@ onMounted(() => {
 
   // 站点列表与详情并行加载：站点分区有独立的加载/失败态，不阻塞详情主体渲染
   loadShareholderStations(shareholderId)
+  
+  // 加载时间线
+  void loadTimeline(shareholderId)
 
   void (async () => {
     try {
