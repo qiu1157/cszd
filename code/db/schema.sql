@@ -218,4 +218,29 @@ CREATE TABLE IF NOT EXISTS biz_equity_adjustment_event (
   KEY idx_biz_equity_adjustment_event_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='股权调整事件表';
 
--- TODO: 里程碑 G 起补齐：operation_log 等业务表。
+-- 为什么：spec 9 要求对所有关键操作进行统一审计，时间线、全局日志页都依赖这份数据；
+-- 将分散在站/桩/股东/持股/字典/用户等模块的操作集中记录，避免为每个对象单独维护日志表。
+-- target_type / operation_type 使用字符串枚举，由应用层统一校验，便于全局日志页按类型筛选。
+-- before_content / after_content 使用 TEXT 存储 JSON 或文本摘要，兼容不同对象的结构差异。
+-- station_id 允许为空：字典维护、用户管理等操作不归属具体充电站；站点/桩/持股/股权调整等操作填写该字段，
+-- 用于全局日志页按充电站筛选。
+CREATE TABLE IF NOT EXISTS biz_operation_log (
+  id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  operator_account VARCHAR(32) DEFAULT NULL COMMENT '操作人登录账号',
+  operator_role VARCHAR(32) DEFAULT NULL COMMENT '操作人角色：SYSTEM_ADMIN / BUSINESS_ADMIN',
+  target_type VARCHAR(32) NOT NULL COMMENT '对象类型：STATION 充电站 / PILE 充电桩 / SHAREHOLDER 股东 / SHAREHOLDING 持股关系 / SYSTEM_DICT 系统字典 / USER 用户',
+  target_id VARCHAR(64) DEFAULT NULL COMMENT '对象标识；业务对象编号或主键ID字符串',
+  target_name VARCHAR(128) DEFAULT NULL COMMENT '对象名称；如充电站名称、股东名称，用于快速展示',
+  operation_type VARCHAR(32) NOT NULL COMMENT '操作类型：CREATE 新增 / UPDATE 修改 / STATUS_CHANGE 状态变更 / ENABLE 启用 / DISABLE 停用 / RESET_PASSWORD 重置密码 / EQUITY_ADJUST 股权调整 / EXIT 退出',
+  before_content TEXT DEFAULT NULL COMMENT '修改前内容；JSON或文本摘要',
+  after_content TEXT DEFAULT NULL COMMENT '修改后内容；JSON或文本摘要',
+  remark VARCHAR(500) DEFAULT NULL COMMENT '备注；如状态变更原因',
+  station_id BIGINT DEFAULT NULL COMMENT '关联充电站ID；用于按充电站筛选，非站点操作可为空',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  KEY idx_biz_operation_log_created_at (created_at),
+  KEY idx_biz_operation_log_operator_account (operator_account),
+  KEY idx_biz_operation_log_target_type (target_type),
+  KEY idx_biz_operation_log_station_id (station_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='统一操作日志表';

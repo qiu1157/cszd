@@ -11,6 +11,7 @@ import java.util.Optional;
 
 import com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository;
 import com.changsha.zhongdian.dictionary.repository.SystemDictTypeRepository;
+import com.changsha.zhongdian.operationlog.repository.OperationLogRepository;
 import com.changsha.zhongdian.pile.repository.PileRepository;
 import com.changsha.zhongdian.pile.repository.PileStatusLogRepository;
 import com.changsha.zhongdian.shareholder.repository.ShareholderRepository;
@@ -83,6 +84,11 @@ public abstract class AuthenticatedWebTestSupport {
     // 无数据库上下文中必须一并 mock，否则所有继承本基类的 Web 测试会因缺 Bean 而启动失败
     @MockBean
     protected EquityAdjustmentEventRepository equityAdjustmentEventRepository;
+
+    // 为什么：里程碑 G 引入统一操作日志，后续所有写操作都会注入 OperationLogRepository，
+    // 无数据库上下文中需提前 mock，避免 Web 层测试启动失败
+    @MockBean
+    protected OperationLogRepository operationLogRepository;
 
     protected String loginAsBusinessAdmin() throws Exception {
         return loginAs("13800000001", "dev-biz-password", UserRole.BUSINESS_ADMIN, "业务管理员");

@@ -9,7 +9,7 @@ import StationShareholderSection from './StationShareholderSection.vue'
 import source from './StationShareholderSection.vue?raw'
 
 vi.mock('@/api/shareholding', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/api/shareholding')>('@/api/shareholding')
+  const actual = await importOriginal<typeof import('@/api/shareholding')>()
   return {
     ...actual,
     getStationShareholdings: vi.fn(),
