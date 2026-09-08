@@ -14,6 +14,36 @@ export interface TimelineEvent {
   afterState: string | null
 }
 
+export interface OperationLogPageData {
+  records: TimelineEvent[]
+  total: number
+  page: number
+  size: number
+}
+
+export interface OperationLogQueryParams {
+  startTime?: string
+  endTime?: string
+  operatorAccount?: string
+  targetType?: string
+  stationId?: number
+  keyword?: string
+  page?: number
+  size?: number
+}
+
+export async function queryOperationLogs(
+  params: OperationLogQueryParams
+): Promise<OperationLogPageData> {
+  const response = await request.get<OperationLogPageData>('/operation-logs', { params })
+  return response.data
+}
+
+export async function getOperationLogDetail(id: number): Promise<TimelineEvent> {
+  const response = await request.get<TimelineEvent>(`/operation-logs/${id}`)
+  return response.data
+}
+
 export async function getStationTimeline(stationId: number): Promise<TimelineEvent[]> {
   const response = await request.get<TimelineEvent[]>(`/operation-logs/timeline/station/${stationId}`)
   return response.data
