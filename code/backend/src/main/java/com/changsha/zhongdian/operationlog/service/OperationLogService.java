@@ -21,7 +21,7 @@ public class OperationLogService {
         this.objectMapper = objectMapper;
     }
 
-    @Transactional(propagation = Propagation.REQUIRED)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void log(
             String operatorAccount,
             String operatorRole,
