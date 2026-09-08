@@ -1,6 +1,9 @@
 package com.changsha.zhongdian.user.service;
 
 import com.changsha.zhongdian.common.exception.BusinessException;
+import com.changsha.zhongdian.operationlog.annotation.LogOperation;
+import com.changsha.zhongdian.operationlog.entity.OperationTargetType;
+import com.changsha.zhongdian.operationlog.entity.OperationType;
 import com.changsha.zhongdian.user.entity.SystemUser;
 import com.changsha.zhongdian.user.entity.UserRole;
 import com.changsha.zhongdian.user.entity.UserStatus;
@@ -24,7 +27,13 @@ public class BusinessAdminCommandService {
         this.passwordHasher = passwordHasher;
     }
 
-    public void createBusinessAdmin(String phone, String name, String initialPassword) {
+    @LogOperation(
+        targetType = OperationTargetType.USER,
+        operationType = OperationType.CREATE,
+        targetIdSpEL = "#result.account",
+        targetNameSpEL = "#result.name"
+    )
+    public SystemUser createBusinessAdmin(String phone, String name, String initialPassword) {
         String normalizedPhone = requireNonBlank(phone, "手机号不能为空");
         requireValidPhone(normalizedPhone);
         String normalizedName = requireNonBlank(name, "姓名不能为空");
@@ -41,7 +50,7 @@ public class BusinessAdminCommandService {
         systemUser.setLastLoginAt(null);
 
         try {
-            systemUserRepository.save(systemUser);
+            return systemUserRepository.save(systemUser);
         } catch (DataIntegrityViolationException exception) {
             throw new BusinessException("USER_ALREADY_EXISTS", "账号已存在", HttpStatus.CONFLICT);
         } catch (DataAccessException exception) {
@@ -49,7 +58,14 @@ public class BusinessAdminCommandService {
         }
     }
 
-    public void updateBusinessAdminStatus(String account, UserStatus targetStatus) {
+    @LogOperation(
+        targetType = OperationTargetType.USER,
+        operationType = OperationType.ENABLE,
+        targetIdSpEL = "#result.account",
+        targetNameSpEL = "#result.name",
+        remarkSpEL = "#targetStatus.name() == 'ENABLED' ? '启用' : '停用'"
+    )
+    public SystemUser updateBusinessAdminStatus(String account, UserStatus targetStatus) {
         String normalizedAccount = requireNonBlank(account, "账号不能为空");
         SystemUser systemUser = systemUserRepository.findByAccount(normalizedAccount)
                 .filter(user -> user.getRoleCode() == UserRole.BUSINESS_ADMIN)
@@ -58,13 +74,20 @@ public class BusinessAdminCommandService {
         systemUser.setUserStatus(targetStatus);
 
         try {
-            systemUserRepository.save(systemUser);
+            return systemUserRepository.save(systemUser);
         } catch (DataAccessException exception) {
             throw new BusinessException("USER_STATUS_UPDATE_FAILED", "当前数据库不可用，暂时无法更新业务管理员状态", HttpStatus.SERVICE_UNAVAILABLE);
         }
     }
 
-    public void resetBusinessAdminPassword(String account, String newPassword) {
+    @LogOperation(
+        targetType = OperationTargetType.USER,
+        operationType = OperationType.RESET_PASSWORD,
+        targetIdSpEL = "#result.account",
+        targetNameSpEL = "#result.name",
+        remarkSpEL = "'重置密码'"
+    )
+    public SystemUser resetBusinessAdminPassword(String account, String newPassword) {
         String normalizedAccount = requireNonBlank(account, "账号不能为空");
         String normalizedPassword = requireNonBlank(newPassword, "新密码不能为空");
         requireValidResetPassword(normalizedPassword);
@@ -76,7 +99,7 @@ public class BusinessAdminCommandService {
         systemUser.setPasswordHash(passwordHasher.hash(normalizedPassword));
 
         try {
-            systemUserRepository.save(systemUser);
+            return systemUserRepository.save(systemUser);
         } catch (DataAccessException exception) {
             throw new BusinessException("USER_PASSWORD_RESET_FAILED", "当前数据库不可用，暂时无法重置业务管理员密码", HttpStatus.SERVICE_UNAVAILABLE);
         }

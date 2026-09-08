@@ -5,6 +5,10 @@ import com.changsha.zhongdian.dictionary.entity.DictionaryStatus;
 import com.changsha.zhongdian.dictionary.entity.DictionaryTypeCode;
 import com.changsha.zhongdian.dictionary.entity.SystemDictItem;
 import com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository;
+import com.changsha.zhongdian.operationlog.annotation.LogOperation;
+import com.changsha.zhongdian.operationlog.entity.OperationTargetType;
+import com.changsha.zhongdian.operationlog.entity.OperationType;
+import com.changsha.zhongdian.operationlog.util.BeforeStateHolder;
 import com.changsha.zhongdian.station.dto.StationCreateRequest;
 import com.changsha.zhongdian.station.dto.StationStatusUpdateRequest;
 import com.changsha.zhongdian.station.dto.StationUpdateRequest;
@@ -38,7 +42,14 @@ public class StationCommandService {
         this.stationStatusLogRepository = stationStatusLogRepository;
     }
 
-    public Long createStation(StationCreateRequest request) {
+    @LogOperation(
+            targetType = OperationTargetType.STATION,
+            operationType = OperationType.CREATE,
+            targetIdSpEL = "#result.stationCode",
+            targetNameSpEL = "#result.stationName",
+            stationIdSpEL = "#result.id"
+    )
+    public Station createStation(StationCreateRequest request) {
         String stationName = requireNonBlank(request.stationName(), "请输入充电站名称");
         Long platformItemId = requirePositiveId(request.platformItemId(), "请选择所在平台");
 
@@ -65,16 +76,26 @@ public class StationCommandService {
         station.setContactPhone(trimToNull(request.contactPhone()));
         station.setStationStatusItemId(contractStatus.getId());
 
-        return stationRepository.save(station).getId();
+        return stationRepository.save(station);
     }
 
-    public Long updateStation(Long stationId, StationUpdateRequest request) {
+    @LogOperation(
+            targetType = OperationTargetType.STATION,
+            operationType = OperationType.UPDATE,
+            targetIdSpEL = "#result.stationCode",
+            targetNameSpEL = "#result.stationName",
+            stationIdSpEL = "#result.id",
+            captureBeforeState = true
+    )
+    public Station updateStation(Long stationId, StationUpdateRequest request) {
         if (stationId == null || stationId <= 0L) {
             throw new BusinessException("VALIDATION_ERROR", "充电站不存在", HttpStatus.BAD_REQUEST);
         }
 
         Station station = stationRepository.findById(stationId)
                 .orElseThrow(() -> new BusinessException("STATION_NOT_FOUND", "充电站不存在", HttpStatus.NOT_FOUND));
+
+        BeforeStateHolder.set(cloneStation(station));
 
         String stationName = requireNonBlank(request.stationName(), "请输入充电站名称");
         Long platformItemId = requirePositiveId(request.platformItemId(), "请选择所在平台");
@@ -90,11 +111,32 @@ public class StationCommandService {
         station.setContactName(trimToNull(request.contactName()));
         station.setContactPhone(trimToNull(request.contactPhone()));
 
-        return stationRepository.save(station).getId();
+        return stationRepository.save(station);
+    }
+    
+    private Station cloneStation(Station source) {
+        Station clone = new Station();
+        clone.setStationCode(source.getStationCode());
+        clone.setStationName(source.getStationName());
+        clone.setPlatformItemId(source.getPlatformItemId());
+        clone.setPlatformStationCode(source.getPlatformStationCode());
+        clone.setAddress(source.getAddress());
+        clone.setContactName(source.getContactName());
+        clone.setContactPhone(source.getContactPhone());
+        clone.setStationStatusItemId(source.getStationStatusItemId());
+        return clone;
     }
 
     @Transactional
-    public Long updateStationStatus(Long stationId, StationStatusUpdateRequest request, String operatorAccount) {
+    @LogOperation(
+            targetType = OperationTargetType.STATION,
+            operationType = OperationType.STATUS_CHANGE,
+            targetIdSpEL = "#result.stationCode",
+            targetNameSpEL = "#result.stationName",
+            stationIdSpEL = "#result.id",
+            remarkSpEL = "#request.remark"
+    )
+    public Station updateStationStatus(Long stationId, StationStatusUpdateRequest request, String operatorAccount) {
         if (stationId == null || stationId <= 0L) {
             throw new BusinessException("VALIDATION_ERROR", "充电站不存在", HttpStatus.BAD_REQUEST);
         }
@@ -119,7 +161,7 @@ public class StationCommandService {
         statusLog.setOperatorAccount(trimToNull(operatorAccount));
         stationStatusLogRepository.save(statusLog);
 
-        return station.getId();
+        return station;
     }
 
     private SystemDictItem resolveEnabledPlatform(Long platformItemId) {

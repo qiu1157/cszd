@@ -16,6 +16,7 @@ import com.changsha.zhongdian.AuthenticatedWebTestSupport;
 import com.changsha.zhongdian.shareholding.dto.ShareholdingCreateRequest;
 import com.changsha.zhongdian.shareholding.dto.StationShareholdingListItemResponse;
 import com.changsha.zhongdian.shareholding.entity.HoldingStatus;
+import com.changsha.zhongdian.shareholding.entity.Shareholding;
 import com.changsha.zhongdian.shareholding.service.ShareholdingCommandService;
 import com.changsha.zhongdian.shareholding.service.ShareholdingQueryService;
 import org.junit.jupiter.api.Test;
@@ -101,7 +102,15 @@ class ShareholdingControllerTest extends AuthenticatedWebTestSupport {
                 new BigDecimal("30"),
                 "ACTIVE"
         );
-        when(shareholdingCommandService.createShareholding(2L, request)).thenReturn(9001L);
+        Shareholding mockShareholding = new Shareholding();
+        try {
+            java.lang.reflect.Field idField = Shareholding.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(mockShareholding, 9001L);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        when(shareholdingCommandService.createShareholding(2L, request)).thenReturn(mockShareholding);
         String token = loginAsBusinessAdmin();
 
         mockMvc.perform(post("/api/stations/2/shareholdings")
@@ -139,7 +148,15 @@ class ShareholdingControllerTest extends AuthenticatedWebTestSupport {
 
     @Test
     void exitShareholdingShouldReturnIdForAuthenticatedUser() throws Exception {
-        when(shareholdingCommandService.exitShareholding(2L, 9001L)).thenReturn(9001L);
+        Shareholding mockShareholding = new Shareholding();
+        try {
+            java.lang.reflect.Field idField = Shareholding.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(mockShareholding, 9001L);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        when(shareholdingCommandService.exitShareholding(2L, 9001L)).thenReturn(mockShareholding);
         String token = loginAsBusinessAdmin();
 
         mockMvc.perform(put("/api/stations/2/shareholdings/9001/exit")

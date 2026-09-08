@@ -68,7 +68,7 @@ public class ShareholdingController {
             @PathVariable Long stationId,
             @Valid @RequestBody ShareholdingCreateRequest request
     ) {
-        return ApiResponse.success("关联股东成功", shareholdingCommandService.createShareholding(stationId, request));
+        return ApiResponse.success("关联股东成功", shareholdingCommandService.createShareholding(stationId, request).getId());
     }
 
     // 退股是状态流转而非删除（spec 8.2）：用 PUT 子资源动作表达，路径仍锚定站点归属
@@ -77,7 +77,7 @@ public class ShareholdingController {
             @PathVariable Long stationId,
             @PathVariable Long shareholdingId
     ) {
-        return ApiResponse.success("退股成功", shareholdingCommandService.exitShareholding(stationId, shareholdingId));
+        return ApiResponse.success("退股成功", shareholdingCommandService.exitShareholding(stationId, shareholdingId).getId());
     }
 
     // 股权调整是批量更新站点下持股中关系的占比（spec 8.3），用 PUT 子资源集合动作表达

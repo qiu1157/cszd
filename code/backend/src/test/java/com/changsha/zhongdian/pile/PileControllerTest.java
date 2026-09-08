@@ -19,6 +19,7 @@ import com.changsha.zhongdian.pile.dto.PileCreateRequest;
 import com.changsha.zhongdian.pile.dto.PileListItemResponse;
 import com.changsha.zhongdian.pile.dto.PileStatusOptionResponse;
 import com.changsha.zhongdian.pile.dto.PileUpdateRequest;
+import com.changsha.zhongdian.pile.entity.Pile;
 import com.changsha.zhongdian.pile.service.PileCommandService;
 import com.changsha.zhongdian.pile.service.PileFormOptionQueryService;
 import com.changsha.zhongdian.pile.service.PileQueryService;
@@ -98,7 +99,15 @@ class PileControllerTest extends AuthenticatedWebTestSupport {
 
     @Test
     void createPileShouldReturnSuccessForAuthenticatedUser() throws Exception {
-        when(pileCommandService.createPile(eq(1001L), any(PileCreateRequest.class))).thenReturn(21L);
+        Pile mockPile = new Pile();
+        try {
+            java.lang.reflect.Field idField = Pile.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(mockPile, 21L);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        when(pileCommandService.createPile(eq(1001L), any(PileCreateRequest.class))).thenReturn(mockPile);
         String token = loginAsBusinessAdmin();
 
         mockMvc.perform(post("/api/stations/1001/piles")
@@ -147,8 +156,16 @@ class PileControllerTest extends AuthenticatedWebTestSupport {
 
     @Test
     void updatePileShouldReturnSuccessForAuthenticatedUser() throws Exception {
+        Pile mockPile = new Pile();
+        try {
+            java.lang.reflect.Field idField = Pile.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(mockPile, 21L);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         when(pileCommandService.updatePile(eq(1001L), eq(21L), any(PileUpdateRequest.class)))
-                .thenReturn(21L);
+                .thenReturn(mockPile);
         String token = loginAsBusinessAdmin();
 
         mockMvc.perform(put("/api/stations/1001/piles/21")
@@ -226,8 +243,16 @@ class PileControllerTest extends AuthenticatedWebTestSupport {
 
     @Test
     void updatePileStatusShouldReturnSuccessForAuthenticatedUser() throws Exception {
+        Pile mockPile = new Pile();
+        try {
+            java.lang.reflect.Field idField = Pile.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(mockPile, 21L);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         when(pileCommandService.updatePileStatus(eq(1001L), eq(21L), any(), anyString()))
-                .thenReturn(21L);
+                .thenReturn(mockPile);
         String token = loginAsBusinessAdmin();
 
         mockMvc.perform(put("/api/stations/1001/piles/21/status")

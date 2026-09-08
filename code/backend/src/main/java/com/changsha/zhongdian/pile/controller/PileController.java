@@ -62,7 +62,7 @@ public class PileController {
             @PathVariable("stationId") Long stationId,
             @Valid @RequestBody PileCreateRequest request
     ) {
-        return ApiResponse.success("新增充电桩成功", pileCommandService.createPile(stationId, request));
+        return ApiResponse.success("新增充电桩成功", pileCommandService.createPile(stationId, request).getId());
     }
 
     @PutMapping("/{stationId}/piles/{pileId}")
@@ -71,7 +71,7 @@ public class PileController {
             @PathVariable("pileId") Long pileId,
             @Valid @RequestBody PileUpdateRequest request
     ) {
-        return ApiResponse.success("更新充电桩成功", pileCommandService.updatePile(stationId, pileId, request));
+        return ApiResponse.success("更新充电桩成功", pileCommandService.updatePile(stationId, pileId, request).getId());
     }
 
     @GetMapping("/{stationId}/piles/status-options")
@@ -89,7 +89,7 @@ public class PileController {
         LoginUser currentUser = authService.getCurrentUser(httpServletRequest);
         return ApiResponse.success(
                 "充电桩状态切换成功",
-                pileCommandService.updatePileStatus(stationId, pileId, request, currentUser.account())
+                pileCommandService.updatePileStatus(stationId, pileId, request, currentUser.account()).getId()
         );
     }
 }

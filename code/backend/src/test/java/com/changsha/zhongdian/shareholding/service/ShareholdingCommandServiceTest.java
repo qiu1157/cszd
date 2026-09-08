@@ -43,13 +43,13 @@ class ShareholdingCommandServiceTest {
         when(fixture.shareholdingRepository
                 .existsByStationIdAndShareholderIdAndHoldingStatus(2L, 1L, HoldingStatus.ACTIVE)).thenReturn(false);
 
-        Long createdId = fixture.commandService.createShareholding(2L, new ShareholdingCreateRequest(
+        Shareholding result = fixture.commandService.createShareholding(2L, new ShareholdingCreateRequest(
                 1L,
                 new BigDecimal("30"),
                 "ACTIVE"
         ));
 
-        assertEquals(9001L, createdId);
+        assertEquals(9001L, result.getId());
         verify(fixture.shareholdingRepository).save(argThat(shareholding ->
                 shareholding.getStationId().equals(2L)
                         && shareholding.getShareholderId().equals(1L)
@@ -150,7 +150,7 @@ class ShareholdingCommandServiceTest {
         when(fixture.shareholdingRepository
                 .existsByStationIdAndShareholderIdAndHoldingStatus(2L, 1L, HoldingStatus.ACTIVE)).thenReturn(false);
 
-        Long createdId = fixture.commandService.createShareholding(2L, new ShareholdingCreateRequest(
+        Shareholding result = fixture.commandService.createShareholding(2L, new ShareholdingCreateRequest(
                 1L,
                 new BigDecimal("20"),
                 "ACTIVE"
@@ -158,7 +158,7 @@ class ShareholdingCommandServiceTest {
 
         // 变更口径：合计不等于 100% 不再强制拦截（如已有 90% 再加 20% 也放行），
         // 保存确认提示由前端弹窗承担，服务端仅保留单条 0% ~ 100% 强制校验
-        assertEquals(9001L, createdId);
+        assertEquals(9001L, result.getId());
         verify(fixture.shareholdingRepository).save(argThat(shareholding ->
                 HoldingStatus.ACTIVE.equals(shareholding.getHoldingStatus())
                         && new BigDecimal("20").compareTo(shareholding.getOwnershipPercentage()) == 0
@@ -193,13 +193,13 @@ class ShareholdingCommandServiceTest {
         when(fixture.shareholdingRepository
                 .existsByStationIdAndShareholderIdAndHoldingStatus(2L, 1L, HoldingStatus.ACTIVE)).thenReturn(true);
 
-        Long createdId = fixture.commandService.createShareholding(2L, new ShareholdingCreateRequest(
+        Shareholding result = fixture.commandService.createShareholding(2L, new ShareholdingCreateRequest(
                 1L,
                 new BigDecimal("10"),
                 "EXITED"
         ));
 
-        assertEquals(9001L, createdId);
+        assertEquals(9001L, result.getId());
         verify(fixture.shareholdingRepository).save(argThat(shareholding ->
                 HoldingStatus.EXITED.equals(shareholding.getHoldingStatus())
         ));
@@ -212,9 +212,9 @@ class ShareholdingCommandServiceTest {
         when(fixture.shareholdingRepository.findById(9001L))
                 .thenReturn(Optional.of(activeRelation(2L, 1L, new BigDecimal("30"))));
 
-        Long exitedId = fixture.commandService.exitShareholding(2L, 9001L);
+        Shareholding result = fixture.commandService.exitShareholding(2L, 9001L);
 
-        assertEquals(9001L, exitedId);
+        assertEquals(9001L, result.getId());
         verify(fixture.shareholdingRepository).save(argThat(shareholding ->
                 HoldingStatus.EXITED.equals(shareholding.getHoldingStatus())
                         // spec 7.5/8.2：退出立即生效，生效时间由服务端刷新为当前时间，不保留原生效时刻

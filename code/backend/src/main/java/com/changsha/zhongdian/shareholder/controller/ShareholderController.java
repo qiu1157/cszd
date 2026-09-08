@@ -68,7 +68,7 @@ public class ShareholderController {
 
     @PostMapping
     public ApiResponse<Long> createShareholder(@Valid @RequestBody ShareholderCreateRequest request) {
-        return ApiResponse.success("新增股东成功", shareholderCommandService.createShareholder(request));
+        return ApiResponse.success("新增股东成功", shareholderCommandService.createShareholder(request).getId());
     }
 
     @PutMapping("/{shareholderId}")
@@ -76,7 +76,7 @@ public class ShareholderController {
             @PathVariable Long shareholderId,
             @Valid @RequestBody ShareholderUpdateRequest request
     ) {
-        return ApiResponse.success("更新股东成功", shareholderCommandService.updateShareholder(shareholderId, request));
+        return ApiResponse.success("更新股东成功", shareholderCommandService.updateShareholder(shareholderId, request).getId());
     }
 
     // 为什么动作放在路径而不是请求体：enable/disable 即操作语义本身，与字典项状态切换接口保持同一形态

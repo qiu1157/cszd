@@ -7,6 +7,10 @@ import com.changsha.zhongdian.dictionary.entity.SystemDictItem;
 import com.changsha.zhongdian.dictionary.entity.SystemDictType;
 import com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository;
 import com.changsha.zhongdian.dictionary.repository.SystemDictTypeRepository;
+import com.changsha.zhongdian.operationlog.annotation.LogOperation;
+import com.changsha.zhongdian.operationlog.entity.OperationTargetType;
+import com.changsha.zhongdian.operationlog.entity.OperationType;
+import com.changsha.zhongdian.operationlog.util.BeforeStateHolder;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -26,7 +30,14 @@ public class SystemDictionaryCommandService {
         this.itemRepository = itemRepository;
     }
 
-    public void createItem(String typeCode, String itemCode, String itemName, String status, Integer sortOrder) {
+    @LogOperation(
+        targetType = OperationTargetType.SYSTEM_DICT,
+        operationType = OperationType.CREATE,
+        targetIdSpEL = "#result.itemCode",
+        targetNameSpEL = "#result.itemName",
+        remarkSpEL = "#result.type.typeName + ' - ' + #result.itemName"
+    )
+    public SystemDictItem createItem(String typeCode, String itemCode, String itemName, String status, Integer sortOrder) {
         SystemDictType type = findType(typeCode);
 
         SystemDictItem item = new SystemDictItem();
@@ -36,29 +47,46 @@ public class SystemDictionaryCommandService {
         item.setItemStatus(parseStatus(status));
         item.setSortOrder(normalizeSortOrder(sortOrder));
 
-        saveItem(item);
+        return saveItem(item);
     }
 
-    public void updateItem(Long itemId, String typeCode, String itemCode, String itemName, String status, Integer sortOrder) {
+    @LogOperation(
+        targetType = OperationTargetType.SYSTEM_DICT,
+        operationType = OperationType.UPDATE,
+        targetIdSpEL = "#result.itemCode",
+        targetNameSpEL = "#result.itemName",
+        remarkSpEL = "#result.type.typeName + ' - ' + #result.itemName",
+        captureBeforeState = true
+    )
+    public SystemDictItem updateItem(Long itemId, String typeCode, String itemCode, String itemName, String status, Integer sortOrder) {
         SystemDictType type = findType(typeCode);
         SystemDictItem item = itemRepository.findByIdAndType(itemId, type)
                 .orElseThrow(() -> new BusinessException("DICT_ITEM_NOT_FOUND", "字典项不存在", HttpStatus.NOT_FOUND));
+
+        BeforeStateHolder.set(cloneDictItem(item));
 
         item.setItemCode(requireNonBlank(itemCode, "编码不能为空"));
         item.setItemName(requireNonBlank(itemName, "名称不能为空"));
         item.setItemStatus(parseStatus(status));
         item.setSortOrder(normalizeSortOrder(sortOrder));
 
-        saveItem(item);
+        return saveItem(item);
     }
 
-    public void updateItemStatus(Long itemId, String typeCode, String status) {
+    @LogOperation(
+        targetType = OperationTargetType.SYSTEM_DICT,
+        operationType = OperationType.ENABLE,
+        targetIdSpEL = "#result.itemCode",
+        targetNameSpEL = "#result.itemName",
+        remarkSpEL = "#result.type.typeName + ' - ' + (#status == 'ENABLED' ? '启用' : '停用')"
+    )
+    public SystemDictItem updateItemStatus(Long itemId, String typeCode, String status) {
         SystemDictType type = findType(typeCode);
         SystemDictItem item = itemRepository.findByIdAndType(itemId, type)
                 .orElseThrow(() -> new BusinessException("DICT_ITEM_NOT_FOUND", "字典项不存在", HttpStatus.NOT_FOUND));
 
         item.setItemStatus(parseStatus(status));
-        saveItem(item);
+        return saveItem(item);
     }
 
     private SystemDictType findType(String typeCode) {
@@ -86,9 +114,9 @@ public class SystemDictionaryCommandService {
         return sortOrder == null ? 0 : sortOrder;
     }
 
-    private void saveItem(SystemDictItem item) {
+    private SystemDictItem saveItem(SystemDictItem item) {
         try {
-            itemRepository.save(item);
+            return itemRepository.save(item);
         } catch (DataIntegrityViolationException exception) {
             throw new BusinessException("DICT_ITEM_DUPLICATED", "同一字典类型下编码或名称已存在", HttpStatus.CONFLICT);
         } catch (DataAccessException exception) {
@@ -101,5 +129,14 @@ public class SystemDictionaryCommandService {
             throw new BusinessException("VALIDATION_ERROR", message, HttpStatus.BAD_REQUEST);
         }
         return value.trim();
+    }
+    
+    private SystemDictItem cloneDictItem(SystemDictItem source) {
+        SystemDictItem clone = new SystemDictItem();
+        clone.setItemCode(source.getItemCode());
+        clone.setItemName(source.getItemName());
+        clone.setItemStatus(source.getItemStatus());
+        clone.setSortOrder(source.getSortOrder());
+        return clone;
     }
 }

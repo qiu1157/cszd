@@ -58,9 +58,9 @@ class PileCommandServiceTest {
             return pile;
         });
 
-        Long pileId = pileCommandService.createPile(1001L, new PileCreateRequest("FAST", 2));
+        Pile result = pileCommandService.createPile(1001L, new PileCreateRequest("FAST", 2));
 
-        assertEquals(21L, pileId);
+        assertEquals(21L, result.getId());
         ArgumentCaptor<Pile> pileCaptor = ArgumentCaptor.forClass(Pile.class);
         verify(pileRepository).save(pileCaptor.capture());
         Pile savedPile = pileCaptor.getValue();
@@ -174,9 +174,9 @@ class PileCommandServiceTest {
         when(pileRepository.findById(21L)).thenReturn(Optional.of(existingPile));
         when(pileRepository.save(any(Pile.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Long pileId = pileCommandService.updatePile(1001L, 21L, new PileUpdateRequest("SLOW", 1));
+        Pile result = pileCommandService.updatePile(1001L, 21L, new PileUpdateRequest("SLOW", 1));
 
-        assertEquals(21L, pileId);
+        assertEquals(21L, result.getId());
         ArgumentCaptor<Pile> pileCaptor = ArgumentCaptor.forClass(Pile.class);
         verify(pileRepository).save(pileCaptor.capture());
         Pile savedPile = pileCaptor.getValue();
@@ -236,11 +236,11 @@ class PileCommandServiceTest {
                 33L, DictionaryTypeCode.PILE_STATUS, DictionaryStatus.ENABLED
         )).thenReturn(Optional.of(createDictItem(33L, DictionaryTypeCode.PILE_STATUS, "停用")));
 
-        Long pileId = pileCommandService.updatePileStatus(
+        Pile result = pileCommandService.updatePileStatus(
                 1001L, 21L, new PileStatusUpdateRequest(33L, "设备检修停用"), "13800000001"
         );
 
-        assertEquals(21L, pileId);
+        assertEquals(21L, result.getId());
         ArgumentCaptor<Pile> pileCaptor = ArgumentCaptor.forClass(Pile.class);
         verify(pileRepository).save(pileCaptor.capture());
         assertEquals(33L, pileCaptor.getValue().getPileStatusItemId());

@@ -16,6 +16,7 @@ import com.changsha.zhongdian.station.dto.StationDetailResponse;
 import com.changsha.zhongdian.station.dto.StationListItemResponse;
 import com.changsha.zhongdian.station.dto.StationPlatformOptionResponse;
 import com.changsha.zhongdian.station.dto.StationStatusOptionResponse;
+import com.changsha.zhongdian.station.entity.Station;
 import com.changsha.zhongdian.station.service.StationCodeGenerator;
 import com.changsha.zhongdian.station.service.StationCommandService;
 import com.changsha.zhongdian.station.service.StationFormOptionQueryService;
@@ -199,7 +200,15 @@ class StationControllerTest extends AuthenticatedWebTestSupport {
 
     @Test
     void createStationShouldReturnSuccessForAuthenticatedUser() throws Exception {
-        when(stationCommandService.createStation(org.mockito.ArgumentMatchers.any())).thenReturn(1001L);
+        Station mockStation = new Station();
+        try {
+            java.lang.reflect.Field idField = Station.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(mockStation, 1001L);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        when(stationCommandService.createStation(org.mockito.ArgumentMatchers.any())).thenReturn(mockStation);
         String token = loginAsBusinessAdmin();
 
         mockMvc.perform(post("/api/stations")
@@ -247,8 +256,16 @@ class StationControllerTest extends AuthenticatedWebTestSupport {
 
     @Test
     void updateStationShouldReturnSuccessForAuthenticatedUser() throws Exception {
+        Station mockStation = new Station();
+        try {
+            java.lang.reflect.Field idField = Station.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(mockStation, 1001L);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         when(stationCommandService.updateStation(org.mockito.ArgumentMatchers.eq(1001L), org.mockito.ArgumentMatchers.any()))
-                .thenReturn(1001L);
+                .thenReturn(mockStation);
         String token = loginAsBusinessAdmin();
 
         mockMvc.perform(put("/api/stations/1001")
@@ -271,11 +288,19 @@ class StationControllerTest extends AuthenticatedWebTestSupport {
 
     @Test
     void updateStationStatusShouldReturnSuccessForAuthenticatedUser() throws Exception {
+        Station mockStation = new Station();
+        try {
+            java.lang.reflect.Field idField = Station.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(mockStation, 1001L);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         when(stationCommandService.updateStationStatus(
                 org.mockito.ArgumentMatchers.eq(1001L),
                 org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.eq("13800000001")
-        )).thenReturn(1001L);
+        )).thenReturn(mockStation);
         String token = loginAsBusinessAdmin();
 
         mockMvc.perform(put("/api/stations/1001/status")

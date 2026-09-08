@@ -33,14 +33,14 @@ class ShareholderCommandServiceTest {
             return shareholder;
         });
 
-        Long createdId = commandService.createShareholder(new ShareholderCreateRequest(
+        Shareholder result = commandService.createShareholder(new ShareholderCreateRequest(
                 "  长沙城新能源合伙企业  ",
                 "  ",
-                " 13977882211 ",
-                "ENABLED"
+                "刘可",
+                "13977882211"
         ));
 
-        assertEquals(3001L, createdId);
+        assertEquals(3001L, result.getId());
         verify(shareholderRepository).save(argThat(shareholder ->
                 "长沙城新能源合伙企业".equals(shareholder.getShareholderName())
                         && shareholder.getContactName() == null
@@ -86,13 +86,13 @@ class ShareholderCommandServiceTest {
             return shareholder;
         });
 
-        Long updatedId = commandService.updateShareholder(3001L, new ShareholderUpdateRequest(
+        Shareholder result = commandService.updateShareholder(3001L, new ShareholderUpdateRequest(
                 "  长沙城新能源合伙企业（更新）  ",
                 "刘可",
                 "13977882211"
         ));
 
-        assertEquals(3001L, updatedId);
+        assertEquals(3001L, result.getId());
         verify(shareholderRepository).save(argThat(shareholder ->
                 "长沙城新能源合伙企业（更新）".equals(shareholder.getShareholderName())
                         && "刘可".equals(shareholder.getContactName())

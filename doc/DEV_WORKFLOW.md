@@ -18,10 +18,11 @@
 2. 每完成一个 task 必须提交一次 Git（建议 conventional commits）。
 3. 任何影响需求/页面/字段/流程的改动，必须先同步更新 `doc/spec.md`，并同步调整 `doc/tasks.md` / `doc/checklist.md`。
 4. UI 与交互以 `prototype/charging-station-system-prototype.html` 为第一期视觉与流程基准：
-   - 站点详情页支持“服务站下拉切换”
-   - 弹窗不可点击遮罩关闭，只能点“关闭/取消/保存”
+   - 站点详情页支持"服务站下拉切换"
+   - 弹窗不可点击遮罩关闭，只能点"关闭/取消/保存"
    - 有编辑中的弹窗时，禁止切换站点并提示
 5. 前端编码规范必须满足 `doc/前端开发规范和要求.md`（命名、目录、组件拆分、性能注意事项等）。
+6. **操作日志规范**：所有 CommandService 写操作方法必须使用 `@LogOperation` 注解记录日志（详见 `doc/spec.md` 第 9.5 节）。
 
 ---
 
@@ -193,6 +194,91 @@ cd D:\cszd\code\backend
 
 文件物理上仍保存在同步盘目录中，git 仓库与云同步均不受影响。
 若删除了 `D:\cszd` 联接，重新执行上面的 `New-Item` 命令即可恢复。
+
+---
+
+## 后端开发规范
+
+### 操作日志记录规范
+
+所有涉及数据变更的 CommandService 方法必须记录操作日志，采用 **AOP + 注解** 方式实现。
+
+#### 强制要求
+
+1. **方法签名**：所有写操作方法必须返回实体对象（不能返回 Long ID）
+   ```java
+   // ✅ 正确
+   public Station createStation(StationCreateRequest request) {
+       return stationRepository.save(station);
+   }
+   
+   // ❌ 错误
+   public Long createStation(StationCreateRequest request) {
+       Station station = stationRepository.save(station);
+       return station.getId();
+   }
+   ```
+
+2. **添加注解**：为所有写操作方法添加 `@LogOperation` 注解
+   ```java
+   @LogOperation(
+       targetType = OperationTargetType.STATION,
+       operationType = OperationType.CREATE,
+       targetIdSpEL = "#result.stationCode",
+       targetNameSpEL = "#result.stationName",
+       stationIdSpEL = "#result.id"
+   )
+   public Station createStation(StationCreateRequest request) {
+       // 业务逻辑
+   }
+   ```
+
+3. **SpEL 表达式**：正确使用 SpEL 提取日志信息
+   - `#result`：方法返回值
+   - `#参数名`：方法参数
+   - 示例：`#result.stationCode`、`#request.name`
+   - 拼接：`#result.shareholder.shareholderName + '-' + #result.station.stationName`
+
+4. **Controller 适配**：Controller 层调用 CommandService 后提取 ID
+   ```java
+   // ✅ 正确
+   Long stationId = stationCommandService.createStation(request).getId();
+   return ResponseEntity.ok(stationId);
+   
+   // ❌ 错误
+   Station station = stationCommandService.createStation(request);
+   return ResponseEntity.ok(station);
+   ```
+
+#### 适用场景
+
+- ✅ 所有 CommandService 写操作：新增、修改、删除、状态变更、退出等
+- ❌ 不适用只读操作：查询、列表、详情等
+
+#### 开发自检清单
+
+每次新增或修改 CommandService 写操作方法时，必须检查：
+
+- [ ] 方法返回实体对象而非 Long ID
+- [ ] 已添加 `@LogOperation` 注解
+- [ ] `targetType` 和 `operationType` 配置正确
+- [ ] SpEL 表达式正确（`targetIdSpEL`、`targetNameSpEL`）
+- [ ] 站点相关操作已配置 `stationIdSpEL`
+- [ ] 需要捕获前状态时设置 `captureBeforeState = true`
+- [ ] Controller 层调用后使用 `.getId()` 提取 ID
+- [ ] 执行操作后查询 `biz_operation_log` 表验证日志已记录
+
+#### 常见错误及修复
+
+| 错误 | 正确做法 |
+|------|---------|
+| 方法返回 `Long` | 改为返回实体对象 |
+| 忘记添加 `@LogOperation` | 补充注解 |
+| SpEL 写成 `#id` | 改为 `#result.id` |
+| Controller 返回实体 | 改为返回 `.getId()` |
+| targetType 选错 | 检查枚举定义 |
+
+详细规范参见 `doc/spec.md` 第 9.5 节。
 
 ---
 

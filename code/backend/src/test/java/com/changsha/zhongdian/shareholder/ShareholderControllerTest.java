@@ -18,6 +18,7 @@ import com.changsha.zhongdian.shareholding.service.ShareholdingQueryService;
 import com.changsha.zhongdian.shareholder.dto.ShareholderDetailResponse;
 import com.changsha.zhongdian.shareholder.dto.ShareholderLinkOptionResponse;
 import com.changsha.zhongdian.shareholder.dto.ShareholderListItemResponse;
+import com.changsha.zhongdian.shareholder.entity.Shareholder;
 import com.changsha.zhongdian.shareholder.service.ShareholderCommandService;
 import com.changsha.zhongdian.shareholder.service.ShareholderQueryService;
 import org.junit.jupiter.api.Test;
@@ -115,7 +116,15 @@ class ShareholderControllerTest extends AuthenticatedWebTestSupport {
 
     @Test
     void createShareholderShouldReturnNewIdForAuthenticatedUser() throws Exception {
-        when(shareholderCommandService.createShareholder(org.mockito.ArgumentMatchers.any())).thenReturn(3001L);
+        Shareholder mockShareholder = new Shareholder();
+        try {
+            java.lang.reflect.Field idField = Shareholder.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(mockShareholder, 3001L);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        when(shareholderCommandService.createShareholder(org.mockito.ArgumentMatchers.any())).thenReturn(mockShareholder);
         String token = loginAsBusinessAdmin();
 
         mockMvc.perform(post("/api/shareholders")
@@ -151,8 +160,16 @@ class ShareholderControllerTest extends AuthenticatedWebTestSupport {
 
     @Test
     void updateShareholderShouldReturnIdForAuthenticatedUser() throws Exception {
+        Shareholder mockShareholder = new Shareholder();
+        try {
+            java.lang.reflect.Field idField = Shareholder.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(mockShareholder, 2001L);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         when(shareholderCommandService.updateShareholder(org.mockito.ArgumentMatchers.eq(2001L), org.mockito.ArgumentMatchers.any()))
-                .thenReturn(2001L);
+                .thenReturn(mockShareholder);
         String token = loginAsBusinessAdmin();
 
         mockMvc.perform(put("/api/shareholders/2001")

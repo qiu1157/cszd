@@ -57,7 +57,7 @@ class StationCommandServiceTest {
             return station;
         });
 
-        Long createdId = commandService.createStation(new StationCreateRequest(
+        Station result = commandService.createStation(new StationCreateRequest(
                 "雨花城际快充港",
                 11L,
                 "XL-4301-889",
@@ -66,8 +66,8 @@ class StationCommandServiceTest {
                 "13800138000"
         ));
 
-        assertNotNull(createdId);
-        assertEquals(1001L, createdId);
+        assertNotNull(result);
+        assertEquals(1001L, result.getId());
         verify(stationRepository).save(argThat(station ->
                 "ST-202608-0001".equals(station.getStationCode())
                         && "雨花城际快充港".equals(station.getStationName())
@@ -147,7 +147,7 @@ class StationCommandServiceTest {
         when(stationRepository.existsByPlatformItemIdAndPlatformStationCodeAndIdNot(12L, "YK-7788", 1001L)).thenReturn(false);
         when(stationRepository.save(any(Station.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Long updatedId = commandService.updateStation(1001L, new StationUpdateRequest(
+        Station result = commandService.updateStation(1001L, new StationUpdateRequest(
                 "雨花城际快充港（更新）",
                 12L,
                 "YK-7788",
@@ -156,7 +156,7 @@ class StationCommandServiceTest {
                 "13800138111"
         ));
 
-        assertEquals(1001L, updatedId);
+        assertEquals(1001L, result.getId());
         verify(stationRepository).save(argThat(station ->
                 Long.valueOf(1001L).equals(station.getId())
                         && "ST-202608-0001".equals(station.getStationCode())
@@ -236,13 +236,13 @@ class StationCommandServiceTest {
                 .thenReturn(Optional.of(targetStatus));
         when(stationRepository.save(any(Station.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Long updatedId = commandService.updateStationStatus(
+        Station result = commandService.updateStationStatus(
                 1001L,
                 new StationStatusUpdateRequest(22L, " 设备检修完成，恢复运营 "),
                 "13800000001"
         );
 
-        assertEquals(1001L, updatedId);
+        assertEquals(1001L, result.getId());
         verify(stationRepository).save(argThat(station ->
                 Long.valueOf(1001L).equals(station.getId())
                         && Long.valueOf(22L).equals(station.getStationStatusItemId())
@@ -284,13 +284,13 @@ class StationCommandServiceTest {
                 .thenReturn(Optional.of(disabledStatus));
         when(stationRepository.save(any(Station.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Long updatedId = commandService.updateStationStatus(
+        Station result = commandService.updateStationStatus(
                 1001L,
                 new StationStatusUpdateRequest(25L, null),
                 "13800000001"
         );
 
-        assertEquals(1001L, updatedId);
+        assertEquals(1001L, result.getId());
         verify(stationRepository).save(argThat(station ->
                 Long.valueOf(1001L).equals(station.getId())
                         && Long.valueOf(25L).equals(station.getStationStatusItemId())

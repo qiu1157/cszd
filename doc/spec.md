@@ -804,6 +804,80 @@
 
 * 备注
 
+### 9.5 操作日志实现规范
+
+操作日志采用 **AOP + 注解** 的方式统一记录，确保业务代码无侵入。
+
+#### 9.5.1 核心组件
+
+* **注解**：`@LogOperation`，标记需要记录日志的方法
+* **切面**：`OperationLogAspect`，自动拦截带注解的方法并记录日志
+* **服务**：`OperationLogService`，统一的日志写入服务
+* **实体**：`OperationLog`，日志数据模型
+* **枚举**：`OperationType`（CREATE/UPDATE/DELETE/EXIT）、`OperationTargetType`（STATION/PILE/SHAREHOLDER/SHAREHOLDING）
+
+#### 9.5.2 使用规范
+
+**适用场景**：
+
+* 所有 CommandService 的写操作方法（新增、修改、删除、状态变更、退出等）
+* 不适用只读操作（查询、列表、详情等）
+
+**注解使用示例**：
+
+```java
+@LogOperation(
+    targetType = OperationTargetType.STATION,
+    operationType = OperationType.CREATE,
+    targetIdSpEL = "#result.stationCode",
+    targetNameSpEL = "#result.stationName",
+    stationIdSpEL = "#result.id"
+)
+public Station createStation(StationCreateRequest request) {
+    // 业务逻辑
+    return stationRepository.save(station);
+}
+```
+
+**SpEL 表达式规则**：
+
+* `#result`：方法返回值，用于从返回的实体对象中提取属性
+* `#参数名`：方法参数，用于从请求对象中提取属性
+* 支持属性访问：`#result.id`、`#request.name`
+* 支持字符串拼接：`#result.shareholder.shareholderName + '-' + #result.station.stationName`
+
+**返回值要求**：
+
+* 所有需要记录日志的 CommandService 方法必须返回实体对象（而非 ID）
+* 这样才能通过 SpEL 从返回值中提取 `targetId`、`targetName`、`stationId` 等信息
+* Controller 层调用 CommandService 后通过 `.getId()` 提取 ID 返回给前端
+
+#### 9.5.3 开发检查清单
+
+**新增写操作方法时必须**：
+
+1. 方法返回实体对象（不要返回 Long ID）
+2. 添加 `@LogOperation` 注解
+3. 正确配置 `targetType` 和 `operationType`
+4. 使用 SpEL 表达式正确提取 `targetIdSpEL`、`targetNameSpEL`
+5. 如果是站点相关操作，配置 `stationIdSpEL`
+6. 如果需要捕获操作前状态，设置 `captureBeforeState = true`
+7. Controller 层调用后使用 `.getId()` 提取 ID
+
+**常见错误**：
+
+* ❌ 方法返回 Long ID
+* ❌ 忘记添加 `@LogOperation` 注解
+* ❌ SpEL 表达式错误（如 `#result.id` 写成 `#id`）
+* ❌ Controller 直接返回实体对象而非 ID
+* ❌ targetType 或 operationType 选择错误
+
+**验证方法**：
+
+1. 执行写操作后查询 `biz_operation_log` 表
+2. 检查日志记录是否包含正确的操作人、对象类型、操作类型、目标ID/名称
+3. 检查前后状态是否正确捕获（如需要）
+
 ## 10. 用户旅程
 
 ### 10.1 业务管理员新增充电站

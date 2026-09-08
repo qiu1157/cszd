@@ -71,7 +71,7 @@ public class StationController {
 
     @PostMapping
     public ApiResponse<Long> createStation(@Valid @RequestBody StationCreateRequest request) {
-        return ApiResponse.success("新增充电站成功", stationCommandService.createStation(request));
+        return ApiResponse.success("新增充电站成功", stationCommandService.createStation(request).getId());
     }
 
     @PutMapping("/{stationId}")
@@ -79,7 +79,7 @@ public class StationController {
             @PathVariable("stationId") Long stationId,
             @Valid @RequestBody StationUpdateRequest request
     ) {
-        return ApiResponse.success("更新充电站成功", stationCommandService.updateStation(stationId, request));
+        return ApiResponse.success("更新充电站成功", stationCommandService.updateStation(stationId, request).getId());
     }
 
     @PutMapping("/{stationId}/status")
@@ -91,7 +91,7 @@ public class StationController {
         LoginUser currentUser = authService.getCurrentUser(httpServletRequest);
         return ApiResponse.success(
                 "状态切换成功",
-                stationCommandService.updateStationStatus(stationId, request, currentUser.account())
+                stationCommandService.updateStationStatus(stationId, request, currentUser.account()).getId()
         );
     }
 

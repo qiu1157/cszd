@@ -5,6 +5,9 @@ import com.changsha.zhongdian.dictionary.entity.DictionaryStatus;
 import com.changsha.zhongdian.dictionary.entity.DictionaryTypeCode;
 import com.changsha.zhongdian.dictionary.entity.SystemDictItem;
 import com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository;
+import com.changsha.zhongdian.operationlog.annotation.LogOperation;
+import com.changsha.zhongdian.operationlog.entity.OperationTargetType;
+import com.changsha.zhongdian.operationlog.entity.OperationType;
 import com.changsha.zhongdian.pile.dto.PileCreateRequest;
 import com.changsha.zhongdian.pile.dto.PileStatusUpdateRequest;
 import com.changsha.zhongdian.pile.dto.PileUpdateRequest;
@@ -43,12 +46,18 @@ public class PileCommandService {
         this.pileStatusLogRepository = pileStatusLogRepository;
     }
 
-    public Long createPile(Long stationId, PileCreateRequest request) {
+    @LogOperation(
+            targetType = OperationTargetType.PILE,
+            operationType = OperationType.CREATE,
+            targetIdSpEL = "#result.pileCode",
+            targetNameSpEL = "#result.pileCode",
+            stationIdSpEL = "#stationId"
+    )
+    public Pile createPile(Long stationId, PileCreateRequest request) {
         if (stationId == null || stationId <= 0L) {
             throw new BusinessException("VALIDATION_ERROR", "充电站不存在", HttpStatus.BAD_REQUEST);
         }
 
-        // 为什么：桩必须挂在真实站点下，站点不存在时与详情/列表接口口径一致返回 404
         if (!stationRepository.existsById(stationId)) {
             throw new BusinessException("STATION_NOT_FOUND", "充电站不存在", HttpStatus.NOT_FOUND);
         }
@@ -64,10 +73,17 @@ public class PileCommandService {
         pile.setGunCount(gunCount);
         pile.setPileStatusItemId(defaultStatusItemId);
 
-        return pileRepository.save(pile).getId();
+        return pileRepository.save(pile);
     }
 
-    public Long updatePile(Long stationId, Long pileId, PileUpdateRequest request) {
+    @LogOperation(
+            targetType = OperationTargetType.PILE,
+            operationType = OperationType.UPDATE,
+            targetIdSpEL = "#result.pileCode",
+            targetNameSpEL = "#result.pileCode",
+            stationIdSpEL = "#stationId"
+    )
+    public Pile updatePile(Long stationId, Long pileId, PileUpdateRequest request) {
         if (stationId == null || stationId <= 0L) {
             throw new BusinessException("VALIDATION_ERROR", "充电站不存在", HttpStatus.BAD_REQUEST);
         }
@@ -79,16 +95,22 @@ public class PileCommandService {
                 .filter(existingPile -> existingPile.getStationId().equals(stationId))
                 .orElseThrow(() -> new BusinessException("PILE_NOT_FOUND", "充电桩不存在", HttpStatus.NOT_FOUND));
 
-        // 为什么：编辑表单不提供状态控件，桩状态变更必须走状态切换接口并记录日志，
-        // 与站点“编辑与状态变更分离”的口径一致
         pile.setChargeType(chargeType);
         pile.setGunCount(gunCount);
 
-        return pileRepository.save(pile).getId();
+        return pileRepository.save(pile);
     }
 
     @Transactional
-    public Long updatePileStatus(Long stationId, Long pileId, PileStatusUpdateRequest request, String operatorAccount) {
+    @LogOperation(
+            targetType = OperationTargetType.PILE,
+            operationType = OperationType.STATUS_CHANGE,
+            targetIdSpEL = "#result.pileCode",
+            targetNameSpEL = "#result.pileCode",
+            stationIdSpEL = "#stationId",
+            remarkSpEL = "#request.remark"
+    )
+    public Pile updatePileStatus(Long stationId, Long pileId, PileStatusUpdateRequest request, String operatorAccount) {
         if (stationId == null || stationId <= 0L) {
             throw new BusinessException("VALIDATION_ERROR", "充电站不存在", HttpStatus.BAD_REQUEST);
         }
@@ -102,8 +124,6 @@ public class PileCommandService {
                 .findByIdAndTypeTypeCodeAndItemStatus(targetStatusItemId, DictionaryTypeCode.PILE_STATUS, DictionaryStatus.ENABLED)
                 .orElseThrow(() -> new BusinessException("PILE_STATUS_NOT_FOUND", "目标状态不存在或已停用", HttpStatus.BAD_REQUEST));
 
-        // 为什么：状态允许任意切换，但每次切换必须完整记录原状态/新状态/备注/操作人，
-        // 供后续时间线与审计使用，因此状态更新与日志写入放在同一事务
         Long fromStatusItemId = pile.getPileStatusItemId();
         pile.setPileStatusItemId(targetStatus.getId());
         pileRepository.save(pile);
@@ -116,7 +136,7 @@ public class PileCommandService {
         statusLog.setOperatorAccount(trimToNull(operatorAccount));
         pileStatusLogRepository.save(statusLog);
 
-        return pile.getId();
+        return pile;
     }
 
     private Long requirePositiveId(Long value, String message) {
@@ -139,7 +159,6 @@ public class PileCommandService {
             throw new BusinessException("VALIDATION_ERROR", "请选择充电类型", HttpStatus.BAD_REQUEST);
         }
         try {
-            // 充电类型为应用层枚举口径，统一在这里收敛解析，避免脏值入库
             return ChargeType.valueOf(chargeType.trim());
         } catch (IllegalArgumentException exception) {
             throw new BusinessException("VALIDATION_ERROR", "充电类型不正确", HttpStatus.BAD_REQUEST);
@@ -157,8 +176,6 @@ public class PileCommandService {
     }
 
     private Long resolveDefaultStatusItemId() {
-        // 为什么：新增桩默认运营中，与站点“新增默认签合同”同构，由后端统一解析启用字典项，
-        // 前端表单不提供状态选择，避免录入期出现非默认状态
         SystemDictItem defaultStatus = dictItemRepository
                 .findByTypeTypeCodeAndItemNameAndItemStatus(
                         DictionaryTypeCode.PILE_STATUS,
