@@ -2,39 +2,31 @@
   <section class="login-screen">
     <div class="login-card">
       <div class="hero-panel">
-        <div class="energy-badge">Energy Ops Console</div>
-        <h1 class="hero-title">充电站管理系统</h1>
+        <div class="energy-badge">
+          <span class="pulse-dot"></span>
+          Energy Ops Console
+        </div>
+        <h1 class="hero-title">长沙众电<br /><span class="hero-title-sub">充电站运营系统</span></h1>
         <p class="hero-desc">
-          统一运营后台（PC 优先，手机自适应）。支持站点管理、桩管理、股东与持股关系、股权调整、平台字典与日志审计。
+          长沙众电运营管理后台，支持充电站的桩、物、人、运营、票据统一管理与审计
         </p>
+
+        <div class="hero-poster">
+          <img src="/poster-growth.jpg" alt="充电站运营业绩增长海报" />
+        </div>
 
         <div class="hero-grid">
           <div class="hero-metric">
             <small>站点总数</small>
-            <strong>28</strong>
+            <strong>{{ statistics.stationCount }}</strong>
           </div>
           <div class="hero-metric">
             <small>充电桩总数</small>
-            <strong>412</strong>
+            <strong>{{ statistics.pileCount }}</strong>
           </div>
           <div class="hero-metric">
-            <small>股东主档</small>
-            <strong>36</strong>
-          </div>
-        </div>
-
-        <div class="hero-stage">
-          <div class="stage-line">
-            <span>01. 账号密码登录</span>
-            <strong>已覆盖</strong>
-          </div>
-          <div class="stage-line">
-            <span>02. 站点与股权双主线管理</span>
-            <strong>开发中</strong>
-          </div>
-          <div class="stage-line">
-            <span>03. 日志时间线与审计中心</span>
-            <strong>开发中</strong>
+            <small>客户数</small>
+            <strong>{{ statistics.shareholderCount }}</strong>
           </div>
         </div>
       </div>
@@ -42,7 +34,6 @@
       <div class="login-panel">
         <div class="panel-kicker">账号密码登录</div>
         <h2 class="panel-title">登录进入系统</h2>
-        <p class="panel-desc">输入账号与密码登录。开发账号只展示账号名，密码请从本地环境变量或部署配置中获取。</p>
 
         <el-form
           ref="formRef"
@@ -61,19 +52,7 @@
           </el-form-item>
 
           <el-button class="submit-btn" type="primary" :loading="submitting" @click="handleSubmit">进入系统</el-button>
-
-          <div class="quick-actions">
-            <el-button @click="fillAdminAccount">填充 admin 账号</el-button>
-            <el-button @click="fillBusinessAccount">填充业务管理员</el-button>
-          </div>
         </el-form>
-
-        <div class="mock-account">
-          <strong>开发账号</strong><br />
-          系统管理员账号：`admin`<br />
-          业务管理员账号：`13800000001`（可通过环境变量覆盖）<br />
-          密码不在仓库中明文展示，请通过本地环境变量配置。
-        </div>
       </div>
     </div>
   </section>
@@ -82,9 +61,12 @@
 <script setup lang="ts">
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { getStationStatistics } from '@/api/station'
+import { getPileStatistics } from '@/api/pile'
+import { getShareholderStatistics } from '@/api/shareholder'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
@@ -98,9 +80,30 @@ const formModel = reactive({
   password: '',
 })
 
+const statistics = reactive({
+  stationCount: 0,
+  pileCount: 0,
+  shareholderCount: 0,
+})
+
 const rules: FormRules<typeof formModel> = {
   account: [{ required: true, message: '请输入账号或手机号', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+}
+
+async function loadStatistics() {
+  try {
+    const [stationStats, pileStats, shareholderStats] = await Promise.all([
+      getStationStatistics(),
+      getPileStatistics(),
+      getShareholderStatistics(),
+    ])
+    statistics.stationCount = stationStats.totalCount
+    statistics.pileCount = pileStats.totalCount
+    statistics.shareholderCount = shareholderStats.totalCount
+  } catch (error) {
+    console.error('加载统计数据失败:', error)
+  }
 }
 
 async function handleSubmit() {
@@ -125,15 +128,9 @@ async function handleSubmit() {
   }
 }
 
-function fillAdminAccount() {
-  formModel.account = 'admin'
-  formModel.password = ''
-}
-
-function fillBusinessAccount() {
-  formModel.account = '13800000001'
-  formModel.password = ''
-}
+onMounted(() => {
+  loadStatistics()
+})
 </script>
 
 <style scoped lang="scss">
@@ -173,6 +170,8 @@ function fillBusinessAccount() {
 
 .energy-badge {
   display: inline-flex;
+  align-items: center;
+  gap: 8px;
   border: 1px solid rgba(57, 200, 255, 0.24);
   border-radius: 999px;
   padding: 8px 12px;
@@ -181,16 +180,55 @@ function fillBusinessAccount() {
   font-size: 13px;
 }
 
+.pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand-primary);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+}
+
 .hero-title {
   margin: 18px 0 10px;
   font-size: 38px;
   line-height: 1.2;
 }
 
-.hero-desc,
-.panel-desc {
+.hero-title-sub {
+  font-size: 28px;
+  color: var(--text-secondary);
+  font-weight: normal;
+}
+
+.hero-desc {
   color: var(--text-secondary);
   line-height: 1.7;
+}
+
+.hero-poster {
+  margin: 24px 0;
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(57, 200, 255, 0.06);
+  border: 1px solid rgba(57, 200, 255, 0.14);
+}
+
+.hero-poster img {
+  width: 100%;
+  height: auto;
+  display: block;
 }
 
 .hero-grid {
@@ -215,25 +253,6 @@ function fillBusinessAccount() {
 
 .hero-metric strong {
   font-size: 32px;
-}
-
-.hero-stage {
-  margin-top: 28px;
-  display: grid;
-  gap: 12px;
-}
-
-.stage-line {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  border-bottom: 1px solid rgba(57, 200, 255, 0.1);
-  padding-bottom: 12px;
-  color: var(--text-secondary);
-}
-
-.stage-line strong {
-  color: var(--brand-accent);
 }
 
 .login-panel {
@@ -264,23 +283,6 @@ function fillBusinessAccount() {
   margin-top: 8px;
 }
 
-.quick-actions {
-  margin-top: 16px;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.mock-account {
-  margin-top: 20px;
-  border: 1px dashed rgba(57, 200, 255, 0.16);
-  border-radius: 20px;
-  padding: 16px;
-  color: var(--text-secondary);
-  line-height: 1.7;
-  background: rgba(57, 200, 255, 0.04);
-}
-
 @media (max-width: 960px) {
   .login-screen {
     padding: 16px;
@@ -301,10 +303,6 @@ function fillBusinessAccount() {
   }
 
   .hero-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .quick-actions {
     grid-template-columns: 1fr;
   }
 }
