@@ -99,3 +99,19 @@ export async function getStationStatistics() {
   const response = await request.get<ApiResponse<StationStatistics>>('/api/stations/statistics')
   return response.data.data
 }
+
+export type RecentStation = {
+  id: number
+  stationCode: string
+  stationName: string
+  platformName: string | null
+  statusName: string | null
+  contactName: string | null
+  contactPhone: string | null
+  createdAt: string
+}
+
+export async function getRecentStations() {
+  const response = await request.get<ApiResponse<RecentStation[]>>('/api/stations/recent')
+  return response.data.data
+}

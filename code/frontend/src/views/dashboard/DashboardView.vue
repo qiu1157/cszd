@@ -78,20 +78,82 @@
       </div>
     </div>
 
-    <div class="timeline-card">
-      <div class="section-head">
-        <h3>最近关键操作</h3>
+    <div class="triple-grid">
+      <div class="table-wrap">
+        <div class="section-head">
+          <h3>最近新增站点</h3>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>站点</th>
+              <th>平台</th>
+              <th>状态</th>
+              <th>联系人</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="station in recentStations" :key="station.id" @click="navigateTo(`/stations/${station.id}`)">
+              <td>
+                <div class="station-cell">
+                  <strong>{{ station.stationName }}</strong>
+                  <small>{{ station.stationCode }}</small>
+                </div>
+              </td>
+              <td>{{ station.platformName || '—' }}</td>
+              <td>{{ station.statusName || '—' }}</td>
+              <td>{{ station.contactName || '—' }}</td>
+            </tr>
+            <tr v-if="recentStations.length === 0">
+              <td colspan="4" class="empty-hint">暂无新增站点</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      <div class="timeline-list">
-        <div v-for="event in recentLogs" :key="event.id" class="timeline-item">
-          <div class="timeline-time">{{ formatTime(event.operatedAt) }}</div>
-          <div class="timeline-content">
-            <strong>{{ getOperationTitle(event) }}</strong>
-            <p>{{ event.operatorAccount }} · {{ event.targetName }}</p>
+
+      <div class="timeline-card">
+        <div class="section-head">
+          <h3>最近关键操作</h3>
+        </div>
+        <div class="timeline-list">
+          <div v-for="event in recentLogs" :key="event.id" class="timeline-item">
+            <div class="timeline-time">{{ formatTime(event.operatedAt) }}</div>
+            <div class="timeline-content">
+              <strong>{{ getOperationDescription(event) }}</strong>
+            </div>
+          </div>
+          <div v-if="recentLogs.length === 0" class="empty-hint">
+            暂无操作记录
           </div>
         </div>
-        <div v-if="recentLogs.length === 0" class="empty-hint">
-          暂无操作记录
+      </div>
+
+      <div class="section-card">
+        <div class="section-head">
+          <h3>快捷入口</h3>
+        </div>
+        <div class="mini-list">
+          <div class="mini-item" @click="navigateTo('/stations?action=create')">
+            <div>
+              <strong>新增充电站</strong>
+              <p>新建站点基础信息并进入详情继续维护。</p>
+            </div>
+            <span class="tag tag-info">主流程</span>
+          </div>
+          <div class="mini-item" @click="navigateTo('/logs')">
+            <div>
+              <strong>查看日志中心</strong>
+              <p>按时间、操作人、对象类型快速过滤审计事件。</p>
+            </div>
+            <span class="tag tag-success">审计</span>
+          </div>
+          <div class="mini-item" @click="navigateTo('/dictionary')">
+            <div>
+              <strong>系统字典</strong>
+              <p>统一维护平台、充电站状态、充电桩状态等基础字典。</p>
+            </div>
+            <span class="tag tag-neutral">系统</span>
+          </div>
         </div>
       </div>
     </div>
@@ -101,7 +163,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getStationStatistics, type StationStatistics } from '@/api/station'
+import { getStationStatistics, getRecentStations, type StationStatistics, type RecentStation } from '@/api/station'
 import { getPileStatistics, type PileStatistics } from '@/api/pile'
 import { getShareholderStatistics, type ShareholderStatistics } from '@/api/shareholder'
 import { queryOperationLogs, type TimelineEvent } from '@/api/operation-log'
@@ -112,6 +174,7 @@ const stationStats = ref<StationStatistics | null>(null)
 const pileStats = ref<PileStatistics | null>(null)
 const shareholderStats = ref<ShareholderStatistics | null>(null)
 const recentLogs = ref<TimelineEvent[]>([])
+const recentStations = ref<RecentStation[]>([])
 
 const loadStatistics = async () => {
   try {
@@ -134,6 +197,14 @@ const loadRecentLogs = async () => {
     recentLogs.value = result.records
   } catch (error) {
     console.error('加载最近操作记录失败:', error)
+  }
+}
+
+const loadRecentStations = async () => {
+  try {
+    recentStations.value = await getRecentStations()
+  } catch (error) {
+    console.error('加载最近新增站点失败:', error)
   }
 }
 
@@ -177,27 +248,30 @@ const formatTime = (isoTime: string) => {
   return date.toLocaleDateString('zh-CN')
 }
 
-const getOperationTitle = (event: TimelineEvent) => {
-  const typeMap: Record<string, string> = {
-    CREATE_STATION: '新增充电站',
-    UPDATE_STATION: '更新充电站',
-    CHANGE_STATION_STATUS: '充电站状态变更',
-    CREATE_PILE: '新增充电桩',
-    UPDATE_PILE: '更新充电桩',
-    CHANGE_PILE_STATUS: '充电桩状态变更',
-    CREATE_SHAREHOLDER: '新增股东',
-    UPDATE_SHAREHOLDER: '更新股东',
-    CHANGE_SHAREHOLDER_STATUS: '股东状态变更',
-    LINK_SHAREHOLDER: '关联股东',
-    UNLINK_SHAREHOLDER: '解除股东关联',
-    ADJUST_EQUITY: '调整股权占比',
+const getOperationDescription = (event: TimelineEvent) => {
+  const typeMap: Record<string, (e: TimelineEvent) => string> = {
+    CREATE_STATION: (e) => `${e.operatorAccount} 新增了充电站「${e.targetName}」`,
+    UPDATE_STATION: (e) => `${e.operatorAccount} 更新了充电站「${e.targetName}」`,
+    CHANGE_STATION_STATUS: (e) => `${e.operatorAccount} 变更了充电站「${e.targetName}」的状态`,
+    CREATE_PILE: (e) => `${e.operatorAccount} 在「${e.targetName}」新增了充电桩`,
+    UPDATE_PILE: (e) => `${e.operatorAccount} 更新了「${e.targetName}」的充电桩`,
+    CHANGE_PILE_STATUS: (e) => `${e.operatorAccount} 变更了「${e.targetName}」充电桩的状态`,
+    CREATE_SHAREHOLDER: (e) => `${e.operatorAccount} 新增了股东「${e.targetName}」`,
+    UPDATE_SHAREHOLDER: (e) => `${e.operatorAccount} 更新了股东「${e.targetName}」`,
+    CHANGE_SHAREHOLDER_STATUS: (e) => `${e.operatorAccount} 变更了股东「${e.targetName}」的状态`,
+    LINK_SHAREHOLDER: (e) => `${e.operatorAccount} 在「${e.targetName}」关联了股东`,
+    UNLINK_SHAREHOLDER: (e) => `${e.operatorAccount} 在「${e.targetName}」解除了股东关联`,
+    ADJUST_EQUITY: (e) => `${e.operatorAccount} 调整了「${e.targetName}」的股权占比`,
   }
-  return typeMap[event.operationType] || event.operationType
+  
+  const formatter = typeMap[event.operationType]
+  return formatter ? formatter(event) : `${event.operatorAccount} 操作了 ${event.targetName}`
 }
 
 onMounted(() => {
   loadStatistics()
   loadRecentLogs()
+  loadRecentStations()
 })
 </script>
 
@@ -269,8 +343,16 @@ onMounted(() => {
   margin-bottom: 24px;
 }
 
+.triple-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+}
+
 .status-distribution-card,
-.section-card {
+.section-card,
+.timeline-card,
+.table-wrap {
   border: 1px solid var(--line-soft);
   border-radius: 24px;
   padding: 24px;
@@ -391,11 +473,59 @@ onMounted(() => {
   color: var(--text-secondary);
 }
 
-.timeline-card {
-  border: 1px solid var(--line-soft);
-  border-radius: 24px;
+.table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-wrap thead th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.table-wrap tbody tr {
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.table-wrap tbody tr:hover {
+  background: var(--bg-soft);
+}
+
+.table-wrap tbody td {
+  padding: 14px 16px;
+  font-size: 13px;
+  color: var(--text-primary);
+  border-bottom: 1px solid rgba(150, 206, 255, 0.08);
+}
+
+.table-wrap tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.station-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.station-cell strong {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.station-cell small {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.table-wrap .empty-hint {
+  text-align: center;
   padding: 24px;
-  background: var(--bg-panel);
 }
 
 .timeline-list {
@@ -432,20 +562,14 @@ onMounted(() => {
   display: block;
   font-size: 14px;
   color: var(--text-primary);
-  margin-bottom: 4px;
-}
-
-.timeline-content p {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin: 0;
+  line-height: 1.5;
 }
 
 .empty-hint {
   padding: 24px;
   text-align: center;
+  font-size: 13px;
   color: var(--text-muted);
-  font-size: 14px;
 }
 </style>
 
