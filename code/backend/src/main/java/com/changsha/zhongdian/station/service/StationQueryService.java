@@ -102,6 +102,7 @@ public class StationQueryService {
                 detail.getAddress(),
                 detail.getContactName(),
                 detail.getContactPhone(),
+                detail.getMeterAccountNumber(),
                 detail.getStationStatusItemId(),
                 detail.getStationStatusName()
         );
