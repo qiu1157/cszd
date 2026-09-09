@@ -84,3 +84,12 @@ export async function updateStationStatus(id: number, payload: StationStatusUpda
   const response = await request.put<ApiResponse<number>>(`/api/stations/${id}/status`, payload)
   return response.data.data
 }
+
+export type StationStatistics = {
+  totalCount: number
+}
+
+export async function getStationStatistics() {
+  const response = await request.get<ApiResponse<StationStatistics>>('/api/stations/statistics')
+  return response.data.data
+}

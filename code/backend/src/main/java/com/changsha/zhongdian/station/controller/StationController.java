@@ -10,6 +10,7 @@ import com.changsha.zhongdian.station.dto.StationDetailResponse;
 import com.changsha.zhongdian.station.dto.StationListItemResponse;
 import com.changsha.zhongdian.station.dto.StationNextCodeResponse;
 import com.changsha.zhongdian.station.dto.StationPlatformOptionResponse;
+import com.changsha.zhongdian.station.dto.StationStatisticsResponse;
 import com.changsha.zhongdian.station.dto.StationStatusOptionResponse;
 import com.changsha.zhongdian.station.dto.StationStatusUpdateRequest;
 import com.changsha.zhongdian.station.dto.StationUpdateRequest;
@@ -108,5 +109,11 @@ public class StationController {
     @GetMapping("/next-code")
     public ApiResponse<StationNextCodeResponse> nextCode() {
         return ApiResponse.success(new StationNextCodeResponse(stationCodeGenerator.generateNextCode()));
+    }
+
+    @GetMapping("/statistics")
+    public ApiResponse<StationStatisticsResponse> getStatistics() {
+        long totalCount = stationQueryService.countAllStations();
+        return ApiResponse.success(new StationStatisticsResponse(totalCount));
     }
 }

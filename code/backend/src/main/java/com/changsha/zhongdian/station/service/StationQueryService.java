@@ -149,4 +149,8 @@ public class StationQueryService {
         }
         return platformItemId;
     }
+
+    public long countAllStations() {
+        return stationRepository.count();
+    }
 }
