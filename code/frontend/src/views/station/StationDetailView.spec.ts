@@ -20,7 +20,7 @@ describe('StationDetailView source', () => {
     expect(source).toContain('编辑基础信息')
     expect(source).toContain('goToEdit')
     expect(source).toContain('getStationDetail')
-    expect(source).toContain('后续任务实现')
+    expect(source).toContain('getStationTimeline')
   })
 
   it('应接入充电桩分区组件，并在概览卡展示桩/枪规模统计', () => {

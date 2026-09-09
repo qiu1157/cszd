@@ -34,7 +34,8 @@ class StationQueryServiceTest {
                 )
         ));
 
-        StationQueryService stationQueryService = new StationQueryService(stationRepository);
+        com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository dictItemRepository = org.mockito.Mockito.mock(com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository.class);
+        StationQueryService stationQueryService = new StationQueryService(stationRepository, dictItemRepository);
 
         List<StationListItemResponse> response = stationQueryService.listStations();
 
@@ -49,9 +50,10 @@ class StationQueryServiceTest {
     @Test
     void listStationsShouldReturnEmptyListWhenRepositoryHasNoData() {
         StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
+        com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository dictItemRepository = org.mockito.Mockito.mock(com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository.class);
         when(stationRepository.findAllListItemsOrderByUpdatedAtDesc()).thenReturn(List.of());
 
-        StationQueryService stationQueryService = new StationQueryService(stationRepository);
+        StationQueryService stationQueryService = new StationQueryService(stationRepository, dictItemRepository);
 
         assertTrue(stationQueryService.listStations().isEmpty());
     }
@@ -59,6 +61,7 @@ class StationQueryServiceTest {
     @Test
     void listStationsShouldTrimKeywordAndUseNameSearchWhenKeywordProvided() {
         StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
+        com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository dictItemRepository = org.mockito.Mockito.mock(com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository.class);
         when(stationRepository.findAllListItemsByStationNameContainingOrderByUpdatedAtDesc("雨花")).thenReturn(List.of(
                 new TestStationListItemProjection(
                         1001L,
@@ -73,7 +76,7 @@ class StationQueryServiceTest {
                 )
         ));
 
-        StationQueryService stationQueryService = new StationQueryService(stationRepository);
+        StationQueryService stationQueryService = new StationQueryService(stationRepository, dictItemRepository);
 
         List<StationListItemResponse> response = stationQueryService.listStations("  雨花  ");
 
@@ -84,6 +87,7 @@ class StationQueryServiceTest {
     @Test
     void listStationsShouldUsePlatformFilterWhenPlatformItemIdProvided() {
         StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
+        com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository dictItemRepository = org.mockito.Mockito.mock(com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository.class);
         when(stationRepository.findAllListItemsByPlatformItemIdOrderByUpdatedAtDesc(11L)).thenReturn(List.of(
                 new TestStationListItemProjection(
                         1002L,
@@ -98,7 +102,7 @@ class StationQueryServiceTest {
                 )
         ));
 
-        StationQueryService stationQueryService = new StationQueryService(stationRepository);
+        StationQueryService stationQueryService = new StationQueryService(stationRepository, dictItemRepository);
 
         List<StationListItemResponse> response = stationQueryService.listStations(null, 11L);
 
@@ -123,7 +127,8 @@ class StationQueryServiceTest {
                 )
         ));
 
-        StationQueryService stationQueryService = new StationQueryService(stationRepository);
+        com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository dictItemRepository = org.mockito.Mockito.mock(com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository.class);
+        StationQueryService stationQueryService = new StationQueryService(stationRepository, dictItemRepository);
 
         List<StationListItemResponse> response = stationQueryService.listStations(null, null, 21L);
 
@@ -134,6 +139,7 @@ class StationQueryServiceTest {
     @Test
     void getStationDetailShouldMapRepositoryProjectionToResponse() {
         StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
+        com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository dictItemRepository = org.mockito.Mockito.mock(com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository.class);
         when(stationRepository.findDetailById(1001L)).thenReturn(java.util.Optional.of(
                 new TestStationDetailProjection(
                         1001L,
@@ -150,7 +156,7 @@ class StationQueryServiceTest {
                 )
         ));
 
-        StationQueryService stationQueryService = new StationQueryService(stationRepository);
+        StationQueryService stationQueryService = new StationQueryService(stationRepository, dictItemRepository);
 
         StationDetailResponse response = stationQueryService.getStationDetail(1001L);
 

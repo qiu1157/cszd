@@ -19,10 +19,12 @@ class PileQueryServiceTest {
     private final PileRepository pileRepository = org.mockito.Mockito.mock(PileRepository.class);
     private final StationRepository stationRepository = org.mockito.Mockito.mock(StationRepository.class);
     private final PileCodeGenerator pileCodeGenerator = org.mockito.Mockito.mock(PileCodeGenerator.class);
+    private final com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository dictItemRepository = org.mockito.Mockito.mock(com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository.class);
     private final PileQueryService pileQueryService = new PileQueryService(
             pileRepository,
             stationRepository,
-            pileCodeGenerator
+            pileCodeGenerator,
+            dictItemRepository
     );
 
     @Test

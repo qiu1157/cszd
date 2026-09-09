@@ -16,7 +16,7 @@ describe('ShareholderDetailView source', () => {
     expect(source).toContain('kpi-strip')
     expect(source).toContain('返回列表')
     expect(source).toContain('getShareholderDetail')
-    expect(source).toContain('后续任务实现')
+    expect(source).toContain('getShareholderTimeline')
   })
 
   it('应按路由参数加载详情，非法或缺失时回退列表页', () => {

@@ -496,8 +496,9 @@ class ShareholdingCommandServiceTest {
         private final EquityAdjustmentEventRepository equityAdjustmentEventRepository = mock(EquityAdjustmentEventRepository.class);
         private final org.mockito.ArgumentCaptor<EquityAdjustmentEvent> eventCaptor = forClass(EquityAdjustmentEvent.class);
         private final ObjectMapper objectMapper = new ObjectMapper();
+        private final com.changsha.zhongdian.operationlog.service.OperationLogService operationLogService = mock(com.changsha.zhongdian.operationlog.service.OperationLogService.class);
         private final ShareholdingCommandService commandService = new ShareholdingCommandService(
-                shareholdingRepository, shareholderRepository, stationRepository, equityAdjustmentEventRepository, objectMapper
+                shareholdingRepository, shareholderRepository, stationRepository, equityAdjustmentEventRepository, objectMapper, operationLogService
         );
 
         private Shareholder enabledShareholder() {

@@ -33,6 +33,12 @@ class OperationLogQueryServiceTest {
     @Mock
     private OperationLogRepository operationLogRepository;
 
+    @Mock
+    private com.changsha.zhongdian.shareholder.repository.ShareholderRepository shareholderRepository;
+
+    @Mock
+    private com.changsha.zhongdian.station.repository.StationRepository stationRepository;
+
     private OperationLogQueryService operationLogQueryService;
 
     private ObjectMapper objectMapper;
@@ -40,7 +46,12 @@ class OperationLogQueryServiceTest {
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper();
-        operationLogQueryService = new OperationLogQueryService(operationLogRepository, objectMapper);
+        operationLogQueryService = new OperationLogQueryService(
+            operationLogRepository, 
+            objectMapper, 
+            shareholderRepository, 
+            stationRepository
+        );
     }
 
     @Test

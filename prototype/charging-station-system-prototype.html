@@ -150,11 +150,16 @@
 
     .hero-title {
       margin: 24px 0 12px;
-      font-size: clamp(38px, 5vw, 64px);
-      line-height: 1.04;
-      letter-spacing: -0.04em;
+      font-size: clamp(34px, 4vw, 48px);
+      line-height: 1.1;
+      letter-spacing: -0.03em;
       font-family: var(--font-display);
-      max-width: 10ch;
+      max-width: 26ch;
+    }
+
+    .hero-title-sub {
+      display: inline-block;
+      padding-left: 1.4em;
     }
 
     .hero-desc {
@@ -165,11 +170,25 @@
       margin-bottom: 30px;
     }
 
+    .hero-poster {
+      margin-top: 22px;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
+    }
+
+    .hero-poster img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
     .hero-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 14px;
-      margin-top: 26px;
+      margin-top: 18px;
     }
 
     .hero-metric {
@@ -1151,7 +1170,11 @@
       }
 
       .hero-title {
-        font-size: 40px;
+        font-size: 32px;
+      }
+
+      .hero-title-sub {
+        padding-left: 0.4em;
       }
 
       .panel-title {
@@ -1168,10 +1191,14 @@
           <span class="pulse-dot"></span>
           Energy Ops Console
         </div>
-        <h1 class="hero-title">充电站管理系统</h1>
+        <h1 class="hero-title">长沙众电<br /><span class="hero-title-sub">充电站运营系统</span></h1>
         <p class="hero-desc">
-          统一运营后台（PC 优先，手机自适应）。支持站点管理、桩管理、股东与持股关系、股权调整、系统字典与日志审计。
+          长沙众电运营管理后台，支持充电站的桩、物、人、运营、票据统一管理与审计
         </p>
+
+        <div class="hero-poster">
+          <img src="poster-growth.jpg" alt="充电站运营业绩增长海报" />
+        </div>
 
         <div class="hero-grid">
           <div class="hero-metric">
@@ -1183,23 +1210,8 @@
             <strong>412</strong>
           </div>
           <div class="hero-metric">
-            <small>股东主档</small>
+            <small>客户数</small>
             <strong>36</strong>
-          </div>
-        </div>
-
-        <div class="hero-stage">
-          <div class="stage-line">
-            <span>01. 账号密码登录</span>
-            <strong>已覆盖</strong>
-          </div>
-          <div class="stage-line">
-            <span>02. 站点与股权双主线管理</span>
-            <strong>已覆盖</strong>
-          </div>
-          <div class="stage-line">
-            <span>03. 日志时间线与审计中心</span>
-            <strong>已覆盖</strong>
           </div>
         </div>
       </div>
@@ -1207,10 +1219,6 @@
       <div class="login-panel">
         <div class="panel-kicker">账号密码登录</div>
         <h2 class="panel-title">登录进入系统</h2>
-        <p class="panel-desc">
-          输入账号与密码登录。系统管理员默认账号为 admin。
-        </p>
-
         <div class="login-form">
           <div class="field">
             <label for="account">账号 / 手机号</label>
@@ -1224,14 +1232,6 @@
 
         <div class="login-actions">
           <button class="button button-primary" id="enterAppBtn">进入系统</button>
-          <button class="button button-secondary" id="fillAdminBtn">填充 admin 账号</button>
-          <button class="button button-ghost" id="fillBizBtn">填充业务管理员</button>
-        </div>
-
-        <div class="mock-account">
-          <strong>演示账号</strong><br />
-          系统管理员：`admin / 123456`<br />
-          业务管理员：`13800138000 / 123456`
         </div>
       </div>
     </div>
@@ -3133,16 +3133,6 @@
       if (!el) return;
       el.addEventListener("input", markDialogDirty);
       el.addEventListener("change", markDialogDirty);
-    });
-
-    document.getElementById("fillAdminBtn").addEventListener("click", () => {
-      document.getElementById("account").value = "admin";
-      document.getElementById("password").value = "123456";
-    });
-
-    document.getElementById("fillBizBtn").addEventListener("click", () => {
-      document.getElementById("account").value = "13800138000";
-      document.getElementById("password").value = "123456";
     });
 
     document.getElementById("enterAppBtn").addEventListener("click", () => {
