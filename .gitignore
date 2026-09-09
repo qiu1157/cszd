@@ -24,6 +24,9 @@ doc/服务启动命令.md
 !.env.example
 *.secrets
 .envrc
+# 生产部署敏感配置与验证脚本（含生产密码，绝不入库）
+debug/deploy/cszd.env
+debug/deploy/verify_prod.sh
 code/backend/src/main/resources/application-local*.yml
 code/backend/src/main/resources/application-dev*.yml
 code/backend/src/main/resources/application-prod*.yml

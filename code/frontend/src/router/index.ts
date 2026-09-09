@@ -134,8 +134,8 @@ router.beforeEach(async (to) => {
       return getDefaultRouteByRole(authStore.user.role)
     } else if (authStore.isAuthenticated && !authStore.user) {
       try {
-        await authStore.refreshCurrentUser()
-        return authStore.user ? getDefaultRouteByRole(authStore.user.role) : { path: '/login' }
+        const currentUser = await authStore.refreshCurrentUser()
+        return currentUser ? getDefaultRouteByRole(currentUser.role) : { path: '/login' }
       } catch {
         authStore.signOut()
         return { path: '/login' }

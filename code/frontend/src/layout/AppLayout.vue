@@ -18,7 +18,6 @@
       <el-header class="app-header" height="72px">
         <div class="header-left">
           <div class="page-title">{{ pageTitle }}</div>
-          <div class="page-desc">里程碑 A 已接入登录态、鉴权拦截与角色菜单控制。</div>
         </div>
 
         <div v-if="authStore.user" class="header-right">
@@ -152,11 +151,6 @@ function handleLogout() {
 .page-title {
   font-size: 24px;
   font-weight: 600;
-}
-
-.page-desc {
-  font-size: 13px;
-  color: var(--text-secondary);
 }
 
 .app-main {

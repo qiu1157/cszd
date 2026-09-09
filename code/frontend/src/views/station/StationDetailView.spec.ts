@@ -3,19 +3,14 @@ import { describe, expect, it } from 'vitest'
 import source from './StationDetailView.vue?raw'
 
 describe('StationDetailView source', () => {
-  it('应渲染详情页四分区骨架，并提供编辑入口', () => {
-    expect(source).toContain('充电站详情')
-    expect(source).toContain('station-summary')
-    expect(source).toContain('概览')
-    expect(source).toContain('分区导航')
-    expect(source).toContain('section-anchor')
-    expect(source).toContain('handleAnchorClick')
-    expect(source).toContain('基础信息分区')
-    expect(source).toContain('基础信息')
+  it('应渲染详情页分区骨架与原型的 hero 概览区，并提供编辑入口', () => {
+    expect(source).toContain('站点详情')
+    expect(source).toContain('detail-hero')
+    expect(source).toContain('hero-info')
+    expect(source).toContain('info-grid')
     expect(source).toContain('充电桩管理')
     expect(source).toContain('股东信息')
     expect(source).toContain('历史变化时间线')
-    expect(source).toContain('kpi-strip')
     expect(source).toContain('修改状态')
     expect(source).toContain('编辑基础信息')
     expect(source).toContain('goToEdit')
@@ -23,12 +18,12 @@ describe('StationDetailView source', () => {
     expect(source).toContain('getStationTimeline')
   })
 
-  it('应接入充电桩分区组件，并在概览卡展示桩/枪规模统计', () => {
+  it('应接入充电桩分区组件，并在概览区展示桩/枪规模统计', () => {
     expect(source).toContain('StationPileSection')
-    expect(source).toContain(':station-id="resolvedStationId"')
+    expect(source).toContain(':station-id="detail.id"')
     expect(source).toContain('@loaded="applyPileSummary"')
     expect(source).toContain('pileSummaryText')
-    expect(source).toContain('根 / ')
+    expect(source).toContain('台 / ')
     expect(source).toContain('把枪')
   })
 
@@ -55,11 +50,11 @@ describe('StationDetailView source', () => {
     expect(source).toContain('状态切换成功')
   })
 
-  it('概览卡持股摘要应展示合计未满 100% 的警示提示', () => {
+  it('概览卡持股摘要应通过样式标记合计未满 100% 的警示', () => {
     expect(source).toContain('shareholderSumIncomplete')
     expect(source).toContain('activeShareholderCount > 0')
     expect(source).toContain('activePercentageSum !== 100')
-    expect(source).toContain('持股中合计不等于 100%')
-    expect(source).toContain('请确认股权结构是否符合预期')
+    expect(source).toContain('summary-warning')
+    expect(source).toContain('shareholderSummaryText')
   })
 })

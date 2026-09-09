@@ -154,6 +154,7 @@ public interface StationRepository extends JpaRepository<Station, Long> {
                 s.address AS address,
                 s.contact_name AS contactName,
                 s.contact_phone AS contactPhone,
+                s.meter_account_number AS meterAccountNumber,
                 s.station_status_item_id AS stationStatusItemId,
                 status.item_name AS stationStatusName
             FROM biz_station s

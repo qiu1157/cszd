@@ -46,6 +46,7 @@ export type StationDetail = {
   address: string | null
   contactName: string | null
   contactPhone: string | null
+  meterAccountNumber: string | null
   stationStatusItemId: number | null
   stationStatusName: string | null
 }
