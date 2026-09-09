@@ -3,8 +3,13 @@ package com.changsha.zhongdian.station.service;
 import java.util.List;
 
 import com.changsha.zhongdian.common.exception.BusinessException;
+import com.changsha.zhongdian.dictionary.entity.DictionaryStatus;
+import com.changsha.zhongdian.dictionary.entity.DictionaryTypeCode;
+import com.changsha.zhongdian.dictionary.entity.SystemDictItem;
+import com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository;
 import com.changsha.zhongdian.station.dto.StationDetailResponse;
 import com.changsha.zhongdian.station.dto.StationListItemResponse;
+import com.changsha.zhongdian.station.dto.StationStatisticsResponse;
 import com.changsha.zhongdian.station.repository.StationRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -13,9 +18,11 @@ import org.springframework.stereotype.Service;
 public class StationQueryService {
 
     private final StationRepository stationRepository;
+    private final SystemDictItemRepository dictItemRepository;
 
-    public StationQueryService(StationRepository stationRepository) {
+    public StationQueryService(StationRepository stationRepository, SystemDictItemRepository dictItemRepository) {
         this.stationRepository = stationRepository;
+        this.dictItemRepository = dictItemRepository;
     }
 
     public List<StationListItemResponse> listStations() {
@@ -152,5 +159,29 @@ public class StationQueryService {
 
     public long countAllStations() {
         return stationRepository.count();
+    }
+
+    public StationStatisticsResponse getStationStatistics() {
+        long totalCount = stationRepository.count();
+        
+        List<SystemDictItem> stationStatusItems = dictItemRepository
+                .findAllByTypeTypeCodeAndItemStatusOrderBySortOrderAscItemNameAsc(
+                        DictionaryTypeCode.STATION_STATUS,
+                        DictionaryStatus.ENABLED
+                );
+        
+        List<StationStatisticsResponse.StationStatusCount> statusCounts = stationStatusItems.stream()
+                .map(item -> {
+                    long count = stationRepository.countByStationStatusItemId(item.getId());
+                    return new StationStatisticsResponse.StationStatusCount(
+                            item.getId(),
+                            item.getItemCode(),
+                            item.getItemName(),
+                            count
+                    );
+                })
+                .toList();
+        
+        return new StationStatisticsResponse(totalCount, statusCounts);
     }
 }

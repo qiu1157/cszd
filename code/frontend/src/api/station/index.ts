@@ -87,6 +87,12 @@ export async function updateStationStatus(id: number, payload: StationStatusUpda
 
 export type StationStatistics = {
   totalCount: number
+  statusCounts: Array<{
+    statusItemId: number
+    statusItemCode: string
+    statusItemName: string
+    count: number
+  }>
 }
 
 export async function getStationStatistics() {

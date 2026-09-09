@@ -113,7 +113,6 @@ public class StationController {
 
     @GetMapping("/statistics")
     public ApiResponse<StationStatisticsResponse> getStatistics() {
-        long totalCount = stationQueryService.countAllStations();
-        return ApiResponse.success(new StationStatisticsResponse(totalCount));
+        return ApiResponse.success(stationQueryService.getStationStatistics());
     }
 }

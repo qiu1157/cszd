@@ -19,6 +19,8 @@ public interface StationRepository extends JpaRepository<Station, Long> {
             Long id
     );
 
+    long countByStationStatusItemId(Long stationStatusItemId);
+
     @Query(value = """
             SELECT
                 s.id AS id,
