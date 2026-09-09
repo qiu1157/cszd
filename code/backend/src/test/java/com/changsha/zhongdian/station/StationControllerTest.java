@@ -241,6 +241,7 @@ class StationControllerTest extends AuthenticatedWebTestSupport {
                 "长沙市雨花区城际大道南段",
                 "张海峰",
                 "13800138000",
+                "0101234567890",
                 21L,
                 "签合同"
         ));
@@ -251,6 +252,7 @@ class StationControllerTest extends AuthenticatedWebTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.stationCode").value("ST-202608-0001"))
+                .andExpect(jsonPath("$.data.meterAccountNumber").value("0101234567890"))
                 .andExpect(jsonPath("$.data.stationStatusName").value("签合同"));
     }
 

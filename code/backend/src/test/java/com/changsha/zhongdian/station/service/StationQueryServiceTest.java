@@ -151,6 +151,7 @@ class StationQueryServiceTest {
                         "长沙市雨花区城际大道南段",
                         "张海峰",
                         "13800138000",
+                        "0101234567890",
                         21L,
                         "签合同"
                 )
@@ -163,6 +164,12 @@ class StationQueryServiceTest {
         assertNotNull(response);
         assertEquals(1001L, response.id());
         assertEquals("ST-202608-0001", response.stationCode());
+        assertEquals("雨花城际快充港", response.stationName());
+        assertEquals("长沙市雨花区城际大道南段", response.address());
+        assertEquals("张海峰", response.contactName());
+        assertEquals("13800138000", response.contactPhone());
+        assertEquals("0101234567890", response.meterAccountNumber());
+        assertEquals(21L, response.stationStatusItemId());
         assertEquals("签合同", response.stationStatusName());
     }
 
@@ -257,6 +264,7 @@ class StationQueryServiceTest {
         private final String address;
         private final String contactName;
         private final String contactPhone;
+        private final String meterAccountNumber;
         private final Long stationStatusItemId;
         private final String stationStatusName;
 
@@ -270,6 +278,7 @@ class StationQueryServiceTest {
                 String address,
                 String contactName,
                 String contactPhone,
+                String meterAccountNumber,
                 Long stationStatusItemId,
                 String stationStatusName
         ) {
@@ -282,6 +291,7 @@ class StationQueryServiceTest {
             this.address = address;
             this.contactName = contactName;
             this.contactPhone = contactPhone;
+            this.meterAccountNumber = meterAccountNumber;
             this.stationStatusItemId = stationStatusItemId;
             this.stationStatusName = stationStatusName;
         }
@@ -329,6 +339,11 @@ class StationQueryServiceTest {
         @Override
         public String getContactPhone() {
             return contactPhone;
+        }
+
+        @Override
+        public String getMeterAccountNumber() {
+            return meterAccountNumber;
         }
 
         @Override
