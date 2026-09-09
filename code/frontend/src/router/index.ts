@@ -34,7 +34,6 @@ const routes: Array<RouteRecordRaw & { meta: AppRouteMeta }> = [
   {
     path: '/',
     component: AppLayout,
-    redirect: '/dashboard',
     meta: { title: '工作台', requiresAuth: true },
     children: [
       {
@@ -128,6 +127,23 @@ router.beforeEach(async (to) => {
   authStore.hydrateFromStorage()
 
   const targetMeta = to.meta as AppRouteMeta
+
+  // 根路径根据登录状态智能重定向
+  if (to.path === '/') {
+    if (authStore.isAuthenticated && authStore.user) {
+      return getDefaultRouteByRole(authStore.user.role)
+    } else if (authStore.isAuthenticated && !authStore.user) {
+      try {
+        await authStore.refreshCurrentUser()
+        return authStore.user ? getDefaultRouteByRole(authStore.user.role) : { path: '/login' }
+      } catch {
+        authStore.signOut()
+        return { path: '/login' }
+      }
+    } else {
+      return { path: '/login' }
+    }
+  }
 
   if (targetMeta.publicOnly && authStore.isAuthenticated) {
     return authStore.user ? getDefaultRouteByRole(authStore.user.role) : true
