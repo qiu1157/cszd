@@ -123,6 +123,10 @@
               <small>联系电话</small>
               <strong>{{ detail.contactPhone || '--' }}</strong>
             </div>
+            <div class="info-card">
+              <small>电表户号</small>
+              <strong>{{ detail.meterAccountNumber || '--' }}</strong>
+            </div>
             <div class="info-card info-card--wide">
               <small>地址</small>
               <strong>{{ detail.address || '--' }}</strong>
@@ -248,6 +252,7 @@ const detail = reactive<StationDetail>({
   address: '',
   contactName: '',
   contactPhone: '',
+  meterAccountNumber: '',
   stationStatusItemId: null,
   stationStatusName: '',
 })
@@ -322,6 +327,7 @@ function applyDetail(data: StationDetail) {
   detail.address = data.address
   detail.contactName = data.contactName
   detail.contactPhone = data.contactPhone
+  detail.meterAccountNumber = data.meterAccountNumber
   detail.stationStatusItemId = data.stationStatusItemId
   detail.stationStatusName = data.stationStatusName
 }

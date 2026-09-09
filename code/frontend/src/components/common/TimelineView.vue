@@ -87,6 +87,7 @@ const stationFieldLabels: Record<string, string> = {
   address: '地址',
   contactName: '联系人',
   contactPhone: '联系电话',
+  meterAccountNumber: '电表户号',
   platformStationCode: '平台站点编号',
   platformItemId: '所在平台',
   stationStatusItemId: '当前状态',
