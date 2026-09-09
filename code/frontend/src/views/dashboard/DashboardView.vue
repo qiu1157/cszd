@@ -50,30 +50,10 @@
 
       <div class="section-card">
         <div class="section-head">
-          <h3>快捷入口</h3>
+          <h3>待办事项</h3>
         </div>
-        <div class="mini-list">
-          <div class="mini-item" @click="navigateTo('/stations?action=create')">
-            <div>
-              <strong>新增充电站</strong>
-              <p>新建站点基础信息并进入详情继续维护。</p>
-            </div>
-            <span class="tag tag-info">主流程</span>
-          </div>
-          <div class="mini-item" @click="navigateTo('/logs')">
-            <div>
-              <strong>查看日志中心</strong>
-              <p>按时间、操作人、对象类型快速过滤审计事件。</p>
-            </div>
-            <span class="tag tag-success">审计</span>
-          </div>
-          <div class="mini-item" @click="navigateTo('/dictionary')">
-            <div>
-              <strong>系统字典</strong>
-              <p>统一维护平台、充电站状态、充电桩状态等基础字典。</p>
-            </div>
-            <span class="tag tag-neutral">系统</span>
-          </div>
+        <div class="empty-hint">
+          待开发
         </div>
       </div>
     </div>
