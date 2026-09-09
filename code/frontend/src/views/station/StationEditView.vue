@@ -52,6 +52,11 @@
               <el-input v-model="form.contactPhone" placeholder="例如：13800138000" />
             </el-form-item>
           </el-col>
+          <el-col :xs="24" :md="12">
+            <el-form-item label="电表户号">
+              <el-input v-model="form.meterAccountNumber" placeholder="例如：0101234567890" />
+            </el-form-item>
+          </el-col>
           <el-col :xs="24">
             <el-form-item label="地址">
               <el-input v-model="form.address" placeholder="例如：长沙市雨花区城际大道南段" />
@@ -108,6 +113,7 @@ async function loadStationDetail(stationId: number) {
   form.address = detail.address ?? ''
   form.contactName = detail.contactName ?? ''
   form.contactPhone = detail.contactPhone ?? ''
+  form.meterAccountNumber = detail.meterAccountNumber ?? ''
 }
 
 function goBack() {

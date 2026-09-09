@@ -10,6 +10,7 @@ public record StationDetailResponse(
         String address,
         String contactName,
         String contactPhone,
+        String meterAccountNumber,
         Long stationStatusItemId,
         String stationStatusName
 ) {

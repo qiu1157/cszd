@@ -5,6 +5,7 @@ export type StationCreateForm = {
   address: string
   contactName: string
   contactPhone: string
+  meterAccountNumber: string
 }
 
 export function createInitialStationCreateForm(): StationCreateForm {
@@ -15,6 +16,7 @@ export function createInitialStationCreateForm(): StationCreateForm {
     address: '',
     contactName: '',
     contactPhone: '',
+    meterAccountNumber: '',
   }
 }
 
@@ -26,5 +28,6 @@ export function toCreateStationPayload(form: StationCreateForm) {
     address: form.address.trim(),
     contactName: form.contactName.trim(),
     contactPhone: form.contactPhone.trim(),
+    meterAccountNumber: form.meterAccountNumber.trim(),
   }
 }

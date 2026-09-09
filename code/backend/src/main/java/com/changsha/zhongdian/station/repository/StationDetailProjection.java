@@ -20,6 +20,8 @@ public interface StationDetailProjection {
 
     String getContactPhone();
 
+    String getMeterAccountNumber();
+
     Long getStationStatusItemId();
 
     String getStationStatusName();

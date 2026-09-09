@@ -15,6 +15,7 @@ describe('station create form helpers', () => {
       address: '长沙市雨花区城际大道南段',
       contactName: '',
       contactPhone: '',
+      meterAccountNumber: '',
     })
   })
 })

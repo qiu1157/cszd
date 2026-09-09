@@ -74,6 +74,7 @@ public class StationCommandService {
         station.setAddress(trimToNull(request.address()));
         station.setContactName(trimToNull(request.contactName()));
         station.setContactPhone(trimToNull(request.contactPhone()));
+        station.setMeterAccountNumber(trimToNull(request.meterAccountNumber()));
         station.setStationStatusItemId(contractStatus.getId());
 
         return stationRepository.save(station);
@@ -110,6 +111,7 @@ public class StationCommandService {
         station.setAddress(trimToNull(request.address()));
         station.setContactName(trimToNull(request.contactName()));
         station.setContactPhone(trimToNull(request.contactPhone()));
+        station.setMeterAccountNumber(trimToNull(request.meterAccountNumber()));
 
         return stationRepository.save(station);
     }
@@ -123,6 +125,7 @@ public class StationCommandService {
         clone.setAddress(source.getAddress());
         clone.setContactName(source.getContactName());
         clone.setContactPhone(source.getContactPhone());
+        clone.setMeterAccountNumber(source.getMeterAccountNumber());
         clone.setStationStatusItemId(source.getStationStatusItemId());
         return clone;
     }

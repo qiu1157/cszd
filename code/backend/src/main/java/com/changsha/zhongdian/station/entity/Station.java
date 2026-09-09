@@ -40,6 +40,9 @@ public class Station {
     @Column(name = "contact_phone", length = 20)
     private String contactPhone;
 
+    @Column(name = "meter_account_number", length = 64)
+    private String meterAccountNumber;
+
     @Column(name = "station_status_item_id", nullable = false)
     private Long stationStatusItemId;
 
@@ -109,6 +112,14 @@ public class Station {
 
     public void setContactPhone(String contactPhone) {
         this.contactPhone = contactPhone;
+    }
+
+    public String getMeterAccountNumber() {
+        return meterAccountNumber;
+    }
+
+    public void setMeterAccountNumber(String meterAccountNumber) {
+        this.meterAccountNumber = meterAccountNumber;
     }
 
     public Long getStationStatusItemId() {

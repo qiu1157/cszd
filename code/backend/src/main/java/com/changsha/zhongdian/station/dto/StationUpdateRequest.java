@@ -11,6 +11,7 @@ public record StationUpdateRequest(
         String platformStationCode,
         String address,
         String contactName,
-        String contactPhone
+        String contactPhone,
+        String meterAccountNumber
 ) {
 }

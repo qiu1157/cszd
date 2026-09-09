@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS biz_station (
   address VARCHAR(255) DEFAULT NULL COMMENT '地址',
   contact_name VARCHAR(64) DEFAULT NULL COMMENT '联系人',
   contact_phone VARCHAR(20) DEFAULT NULL COMMENT '联系电话',
+  meter_account_number VARCHAR(64) DEFAULT NULL COMMENT '电表户号；用于匹配电费发票，记录每月电费情况',
   station_status_item_id BIGINT NOT NULL COMMENT '生命周期状态字典项ID；单一状态，默认指向签合同',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
