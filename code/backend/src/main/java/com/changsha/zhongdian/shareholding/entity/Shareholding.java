@@ -11,6 +11,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -46,6 +47,10 @@ public class Shareholding {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    // 用于操作日志展示，不持久化到数据库
+    @Transient
+    private String shareholderName;
 
     public Long getId() {
         return id;
@@ -97,5 +102,13 @@ public class Shareholding {
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    public String getShareholderName() {
+        return shareholderName;
+    }
+
+    public void setShareholderName(String shareholderName) {
+        this.shareholderName = shareholderName;
     }
 }

@@ -162,4 +162,6 @@ public interface StationRepository extends JpaRepository<Station, Long> {
             WHERE s.id = :stationId
             """, nativeQuery = true)
     Optional<StationDetailProjection> findDetailById(Long stationId);
+
+    List<Station> findTop5ByOrderByCreatedAtDesc();
 }

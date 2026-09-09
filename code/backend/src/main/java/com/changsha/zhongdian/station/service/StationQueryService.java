@@ -7,9 +7,11 @@ import com.changsha.zhongdian.dictionary.entity.DictionaryStatus;
 import com.changsha.zhongdian.dictionary.entity.DictionaryTypeCode;
 import com.changsha.zhongdian.dictionary.entity.SystemDictItem;
 import com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository;
+import com.changsha.zhongdian.station.dto.RecentStationResponse;
 import com.changsha.zhongdian.station.dto.StationDetailResponse;
 import com.changsha.zhongdian.station.dto.StationListItemResponse;
 import com.changsha.zhongdian.station.dto.StationStatisticsResponse;
+import com.changsha.zhongdian.station.entity.Station;
 import com.changsha.zhongdian.station.repository.StationRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -183,5 +185,31 @@ public class StationQueryService {
                 .toList();
         
         return new StationStatisticsResponse(totalCount, statusCounts);
+    }
+
+    public List<RecentStationResponse> getRecentStations() {
+        List<Station> recentStations = stationRepository.findTop5ByOrderByCreatedAtDesc();
+        
+        return recentStations.stream()
+                .map(station -> {
+                    String platformName = dictItemRepository.findById(station.getPlatformItemId())
+                            .map(SystemDictItem::getItemName)
+                            .orElse(null);
+                    String statusName = dictItemRepository.findById(station.getStationStatusItemId())
+                            .map(SystemDictItem::getItemName)
+                            .orElse(null);
+                    
+                    return new RecentStationResponse(
+                            station.getId(),
+                            station.getStationCode(),
+                            station.getStationName(),
+                            platformName,
+                            statusName,
+                            station.getContactName(),
+                            station.getContactPhone(),
+                            station.getCreatedAt()
+                    );
+                })
+                .toList();
     }
 }

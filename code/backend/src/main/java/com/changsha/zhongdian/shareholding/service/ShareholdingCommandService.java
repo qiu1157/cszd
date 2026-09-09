@@ -12,6 +12,8 @@ import com.changsha.zhongdian.common.exception.BusinessException;
 import com.changsha.zhongdian.operationlog.annotation.LogOperation;
 import com.changsha.zhongdian.operationlog.entity.OperationTargetType;
 import com.changsha.zhongdian.operationlog.entity.OperationType;
+import com.changsha.zhongdian.operationlog.service.OperationLogService;
+import com.changsha.zhongdian.operationlog.util.BeforeStateHolder;
 import com.changsha.zhongdian.shareholding.dto.ShareholdingCreateRequest;
 import com.changsha.zhongdian.shareholding.dto.ShareholdingEquityAdjustmentRequest;
 import com.changsha.zhongdian.shareholding.dto.ShareholdingEquityAdjustmentRequest.EquityAdjustmentItem;
@@ -39,19 +41,22 @@ public class ShareholdingCommandService {
     private final StationRepository stationRepository;
     private final EquityAdjustmentEventRepository equityAdjustmentEventRepository;
     private final ObjectMapper objectMapper;
+    private final OperationLogService operationLogService;
 
     public ShareholdingCommandService(
             ShareholdingRepository shareholdingRepository,
             ShareholderRepository shareholderRepository,
             StationRepository stationRepository,
             EquityAdjustmentEventRepository equityAdjustmentEventRepository,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            OperationLogService operationLogService
     ) {
         this.shareholdingRepository = shareholdingRepository;
         this.shareholderRepository = shareholderRepository;
         this.stationRepository = stationRepository;
         this.equityAdjustmentEventRepository = equityAdjustmentEventRepository;
         this.objectMapper = objectMapper;
+        this.operationLogService = operationLogService;
     }
 
     @Transactional
@@ -92,6 +97,7 @@ public class ShareholdingCommandService {
         Shareholding shareholding = new Shareholding();
         shareholding.setStationId(validStationId);
         shareholding.setShareholderId(shareholderId);
+        shareholding.setShareholderName(shareholder.getShareholderName());
         shareholding.setOwnershipPercentage(ownershipPercentage);
         shareholding.setHoldingStatus(holdingStatus);
         shareholding.setEffectiveAt(LocalDateTime.now());
@@ -105,7 +111,8 @@ public class ShareholdingCommandService {
             operationType = OperationType.EXIT,
             targetIdSpEL = "#result.id",
             targetNameSpEL = "'股东ID:' + #result.shareholderId",
-            stationIdSpEL = "#stationId"
+            stationIdSpEL = "#stationId",
+            captureBeforeState = true
     )
     public Shareholding exitShareholding(Long stationId, Long shareholdingId) {
         Long validStationId = requirePositiveId(stationId, "充电站不存在");
@@ -123,22 +130,21 @@ public class ShareholdingCommandService {
                     "SHAREHOLDING_ALREADY_EXITED", "该股东已退出，请勿重复操作", HttpStatus.BAD_REQUEST);
         }
 
+        shareholderRepository.findById(shareholding.getShareholderId())
+                .ifPresent(shareholder -> shareholding.setShareholderName(shareholder.getShareholderName()));
+        BeforeStateHolder.set(cloneShareholding(shareholding));
+
         shareholding.setHoldingStatus(HoldingStatus.EXITED);
         shareholding.setEffectiveAt(LocalDateTime.now());
 
         redistributeRemainingOwnership(validStationId, shareholding.getId());
 
-        return shareholdingRepository.save(shareholding);
+        Shareholding result = shareholdingRepository.save(shareholding);
+        result.setShareholderName(shareholding.getShareholderName());
+        return result;
     }
 
     @Transactional
-    @LogOperation(
-            targetType = OperationTargetType.SHAREHOLDING,
-            operationType = OperationType.EQUITY_ADJUST,
-            targetIdSpEL = "#stationId",
-            targetNameSpEL = "'充电站ID:' + #stationId",
-            stationIdSpEL = "#stationId"
-    )
     public Long adjustEquity(Long stationId, ShareholdingEquityAdjustmentRequest request, String operatorAccount) {
         Long validStationId = requirePositiveId(stationId, "充电站不存在");
         if (!stationRepository.existsById(validStationId)) {
@@ -176,6 +182,20 @@ public class ShareholdingCommandService {
         event.setTotalPercentage(totalPercentage);
         event.setOperatorAccount(trimToNull(operatorAccount));
         equityAdjustmentEventRepository.save(event);
+
+        // 手动记录操作日志，写入持股快照用于时间线展示
+        operationLogService.log(
+                trimToNull(operatorAccount),
+                null,
+                OperationTargetType.SHAREHOLDING,
+                validStationId.toString(),
+                "充电站ID:" + validStationId,
+                OperationType.EQUITY_ADJUST,
+                parseSnapshot(beforeSnapshot),
+                parseSnapshot(afterSnapshot),
+                null,
+                validStationId
+        );
 
         return validStationId;
     }
@@ -278,6 +298,29 @@ public class ShareholdingCommandService {
         }
         String normalized = value.trim();
         return normalized.isEmpty() ? null : normalized;
+    }
+
+    private List<Map<String, Object>> parseSnapshot(String snapshotJson) {
+        if (snapshotJson == null || snapshotJson.isBlank()) {
+            return List.of();
+        }
+        try {
+            return objectMapper.readValue(snapshotJson, new com.fasterxml.jackson.core.type.TypeReference<List<Map<String, Object>>>() {
+            });
+        } catch (Exception exception) {
+            return List.of();
+        }
+    }
+
+    private Shareholding cloneShareholding(Shareholding source) {
+        Shareholding clone = new Shareholding();
+        clone.setStationId(source.getStationId());
+        clone.setShareholderId(source.getShareholderId());
+        clone.setShareholderName(source.getShareholderName());
+        clone.setOwnershipPercentage(source.getOwnershipPercentage());
+        clone.setHoldingStatus(source.getHoldingStatus());
+        clone.setEffectiveAt(source.getEffectiveAt());
+        return clone;
     }
 
     private record EquitySnapshotItem(

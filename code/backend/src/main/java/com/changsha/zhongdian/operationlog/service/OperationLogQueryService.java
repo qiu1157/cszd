@@ -6,6 +6,10 @@ import com.changsha.zhongdian.operationlog.dto.TimelineEventDTO;
 import com.changsha.zhongdian.operationlog.entity.OperationLog;
 import com.changsha.zhongdian.operationlog.entity.OperationTargetType;
 import com.changsha.zhongdian.operationlog.repository.OperationLogRepository;
+import com.changsha.zhongdian.shareholder.entity.Shareholder;
+import com.changsha.zhongdian.shareholder.repository.ShareholderRepository;
+import com.changsha.zhongdian.station.entity.Station;
+import com.changsha.zhongdian.station.repository.StationRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.domain.Page;
@@ -17,18 +21,28 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class OperationLogQueryService {
-    
+
     private final OperationLogRepository operationLogRepository;
     private final ObjectMapper objectMapper;
-    
-    public OperationLogQueryService(OperationLogRepository operationLogRepository, ObjectMapper objectMapper) {
+    private final ShareholderRepository shareholderRepository;
+    private final StationRepository stationRepository;
+
+    public OperationLogQueryService(
+            OperationLogRepository operationLogRepository,
+            ObjectMapper objectMapper,
+            ShareholderRepository shareholderRepository,
+            StationRepository stationRepository
+    ) {
         this.operationLogRepository = operationLogRepository;
         this.objectMapper = objectMapper;
+        this.shareholderRepository = shareholderRepository;
+        this.stationRepository = stationRepository;
     }
     
     public OperationLogPageDTO queryLogs(OperationLogQueryParam param) {
@@ -118,11 +132,59 @@ public class OperationLogQueryService {
         dto.setTargetName(log.getTargetName());
         dto.setOperationType(log.getOperationType().name());
         dto.setRemark(log.getRemark());
-        dto.setBeforeState(serializeState(log.getBeforeContent()));
-        dto.setAfterState(serializeState(log.getAfterContent()));
+        dto.setBeforeState(enrichState(log.getBeforeContent()));
+        dto.setAfterState(enrichState(log.getAfterContent()));
         return dto;
     }
-    
+
+    private String enrichState(String stateJson) {
+        if (stateJson == null || stateJson.isEmpty()) {
+            return null;
+        }
+        try {
+            Map<String, Object> state = objectMapper.readValue(stateJson, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {
+            });
+            
+            // Enrich shareholderName
+            if (state.containsKey("shareholderId") && !state.containsKey("shareholderName")) {
+                Long shareholderId = parseLong(state.get("shareholderId"));
+                if (shareholderId != null) {
+                    shareholderRepository.findById(shareholderId)
+                            .map(Shareholder::getShareholderName)
+                            .ifPresent(name -> state.put("shareholderName", name));
+                }
+            }
+            
+            // Enrich stationName
+            if (state.containsKey("stationId") && !state.containsKey("stationName")) {
+                Long stationId = parseLong(state.get("stationId"));
+                if (stationId != null) {
+                    stationRepository.findById(stationId)
+                            .map(Station::getStationName)
+                            .ifPresent(name -> state.put("stationName", name));
+                }
+            }
+            
+            return objectMapper.writeValueAsString(state);
+        } catch (Exception exception) {
+            return stateJson;
+        }
+    }
+
+    private Long parseLong(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        try {
+            return Long.parseLong(value.toString());
+        } catch (NumberFormatException exception) {
+            return null;
+        }
+    }
+
     private String serializeState(String state) {
         if (state == null || state.isEmpty()) {
             return null;

@@ -5,6 +5,7 @@ import java.util.List;
 import com.changsha.zhongdian.auth.model.LoginUser;
 import com.changsha.zhongdian.auth.service.AuthService;
 import com.changsha.zhongdian.common.api.ApiResponse;
+import com.changsha.zhongdian.station.dto.RecentStationResponse;
 import com.changsha.zhongdian.station.dto.StationCreateRequest;
 import com.changsha.zhongdian.station.dto.StationDetailResponse;
 import com.changsha.zhongdian.station.dto.StationListItemResponse;
@@ -114,5 +115,10 @@ public class StationController {
     @GetMapping("/statistics")
     public ApiResponse<StationStatisticsResponse> getStatistics() {
         return ApiResponse.success(stationQueryService.getStationStatistics());
+    }
+
+    @GetMapping("/recent")
+    public ApiResponse<List<RecentStationResponse>> getRecentStations() {
+        return ApiResponse.success(stationQueryService.getRecentStations());
     }
 }

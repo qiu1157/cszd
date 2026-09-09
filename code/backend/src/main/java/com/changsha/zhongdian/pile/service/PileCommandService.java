@@ -8,6 +8,7 @@ import com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository;
 import com.changsha.zhongdian.operationlog.annotation.LogOperation;
 import com.changsha.zhongdian.operationlog.entity.OperationTargetType;
 import com.changsha.zhongdian.operationlog.entity.OperationType;
+import com.changsha.zhongdian.operationlog.util.BeforeStateHolder;
 import com.changsha.zhongdian.pile.dto.PileCreateRequest;
 import com.changsha.zhongdian.pile.dto.PileStatusUpdateRequest;
 import com.changsha.zhongdian.pile.dto.PileUpdateRequest;
@@ -81,7 +82,8 @@ public class PileCommandService {
             operationType = OperationType.UPDATE,
             targetIdSpEL = "#result.pileCode",
             targetNameSpEL = "#result.pileCode",
-            stationIdSpEL = "#stationId"
+            stationIdSpEL = "#stationId",
+            captureBeforeState = true
     )
     public Pile updatePile(Long stationId, Long pileId, PileUpdateRequest request) {
         if (stationId == null || stationId <= 0L) {
@@ -94,6 +96,8 @@ public class PileCommandService {
         Pile pile = pileRepository.findById(pileId == null ? -1L : pileId)
                 .filter(existingPile -> existingPile.getStationId().equals(stationId))
                 .orElseThrow(() -> new BusinessException("PILE_NOT_FOUND", "充电桩不存在", HttpStatus.NOT_FOUND));
+
+        BeforeStateHolder.set(clonePile(pile));
 
         pile.setChargeType(chargeType);
         pile.setGunCount(gunCount);
@@ -152,6 +156,16 @@ public class PileCommandService {
         }
         String normalizedValue = value.trim();
         return normalizedValue.isEmpty() ? null : normalizedValue;
+    }
+
+    private Pile clonePile(Pile source) {
+        Pile clone = new Pile();
+        clone.setPileCode(source.getPileCode());
+        clone.setStationId(source.getStationId());
+        clone.setChargeType(source.getChargeType());
+        clone.setGunCount(source.getGunCount());
+        clone.setPileStatusItemId(source.getPileStatusItemId());
+        return clone;
     }
 
     private ChargeType resolveChargeType(String chargeType) {
