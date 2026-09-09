@@ -95,8 +95,18 @@ export type ShareholderLinkOption = {
   contactPhone: string | null
 }
 
-// 停用股东不可被新建持股关联（E-8）：候选列表只返回启用主档，供关联股东场景选择
+export type ShareholderStatistics = {
+  totalCount: number
+  enabledCount: number
+  disabledCount: number
+}
+
 export async function getShareholderLinkOptions() {
   const response = await request.get<ApiResponse<ShareholderLinkOption[]>>('/api/shareholders/link-options')
+  return response.data.data
+}
+
+export async function getShareholderStatistics() {
+  const response = await request.get<ApiResponse<ShareholderStatistics>>('/api/shareholders/statistics')
   return response.data.data
 }

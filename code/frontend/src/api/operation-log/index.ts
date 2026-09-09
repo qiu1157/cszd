@@ -1,5 +1,12 @@
 import request from '@/utils/request'
 
+type ApiResponse<T> = {
+  success: boolean
+  code: string
+  message: string
+  data: T
+}
+
 export interface TimelineEvent {
   id: number
   operatedAt: string
@@ -35,18 +42,18 @@ export interface OperationLogQueryParams {
 export async function queryOperationLogs(
   params: OperationLogQueryParams
 ): Promise<OperationLogPageData> {
-  const response = await request.get<OperationLogPageData>('/operation-logs', { params })
-  return response.data
+  const response = await request.get<ApiResponse<OperationLogPageData>>('/api/operation-logs', { params })
+  return response.data.data
 }
 
 export async function getOperationLogDetail(id: number): Promise<TimelineEvent> {
-  const response = await request.get<TimelineEvent>(`/operation-logs/${id}`)
-  return response.data
+  const response = await request.get<ApiResponse<TimelineEvent>>(`/api/operation-logs/${id}`)
+  return response.data.data
 }
 
 export async function getStationTimeline(stationId: number): Promise<TimelineEvent[]> {
-  const response = await request.get<TimelineEvent[]>(`/operation-logs/timeline/station/${stationId}`)
-  return response.data
+  const response = await request.get<ApiResponse<TimelineEvent[]>>(`/api/operation-logs/timeline/station/${stationId}`)
+  return response.data.data
 }
 
 export async function getShareholderTimeline(
@@ -54,9 +61,9 @@ export async function getShareholderTimeline(
   stationId?: number
 ): Promise<TimelineEvent[]> {
   const params = stationId ? { stationId } : undefined
-  const response = await request.get<TimelineEvent[]>(
-    `/operation-logs/timeline/shareholder/${shareholderId}`,
+  const response = await request.get<ApiResponse<TimelineEvent[]>>(
+    `/api/operation-logs/timeline/shareholder/${shareholderId}`,
     { params }
   )
-  return response.data
+  return response.data.data
 }

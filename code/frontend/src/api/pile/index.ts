@@ -40,6 +40,18 @@ export type PileStatusUpdatePayload = {
   remark?: string
 }
 
+export type PileStatistics = {
+  totalCount: number
+  fastCount: number
+  slowCount: number
+  statusCounts: Array<{
+    statusItemId: number
+    statusItemCode: string
+    statusItemName: string
+    count: number
+  }>
+}
+
 export async function getStationPiles(stationId: number) {
   const response = await request.get<ApiResponse<PileListItem[]>>(`/api/stations/${stationId}/piles`)
   return response.data.data
@@ -81,6 +93,11 @@ export async function updateStationPileStatus(
     `/api/stations/${stationId}/piles/${pileId}/status`,
     payload,
   )
+  return response.data.data
+}
+
+export async function getPileStatistics() {
+  const response = await request.get<ApiResponse<PileStatistics>>('/api/stations/piles/statistics')
   return response.data.data
 }
 
