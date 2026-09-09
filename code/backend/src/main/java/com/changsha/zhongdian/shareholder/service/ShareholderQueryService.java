@@ -11,6 +11,7 @@ import com.changsha.zhongdian.shareholding.repository.ShareholdingRepository;
 import com.changsha.zhongdian.shareholder.dto.ShareholderDetailResponse;
 import com.changsha.zhongdian.shareholder.dto.ShareholderLinkOptionResponse;
 import com.changsha.zhongdian.shareholder.dto.ShareholderListItemResponse;
+import com.changsha.zhongdian.shareholder.dto.ShareholderStatisticsResponse;
 import com.changsha.zhongdian.shareholder.entity.Shareholder;
 import com.changsha.zhongdian.shareholder.entity.ShareholderStatus;
 import com.changsha.zhongdian.shareholder.repository.ShareholderRepository;
@@ -73,6 +74,13 @@ public class ShareholderQueryService {
                 shareholder.getCreatedAt(),
                 shareholder.getUpdatedAt()
         );
+    }
+
+    public ShareholderStatisticsResponse getShareholderStatistics() {
+        long totalCount = shareholderRepository.count();
+        long enabledCount = shareholderRepository.countByShareholderStatus(ShareholderStatus.ENABLED);
+        long disabledCount = shareholderRepository.countByShareholderStatus(ShareholderStatus.DISABLED);
+        return new ShareholderStatisticsResponse(totalCount, enabledCount, disabledCount);
     }
 
     private List<Shareholder> resolveShareholders(String shareholderNameKeyword, ShareholderStatus shareholderStatus) {

@@ -3,7 +3,12 @@ package com.changsha.zhongdian.pile.service;
 import java.util.List;
 
 import com.changsha.zhongdian.common.exception.BusinessException;
+import com.changsha.zhongdian.dictionary.entity.DictionaryStatus;
+import com.changsha.zhongdian.dictionary.entity.DictionaryTypeCode;
+import com.changsha.zhongdian.dictionary.entity.SystemDictItem;
+import com.changsha.zhongdian.dictionary.repository.SystemDictItemRepository;
 import com.changsha.zhongdian.pile.dto.PileListItemResponse;
+import com.changsha.zhongdian.pile.dto.PileStatisticsResponse;
 import com.changsha.zhongdian.pile.entity.ChargeType;
 import com.changsha.zhongdian.pile.repository.PileListItemProjection;
 import com.changsha.zhongdian.pile.repository.PileRepository;
@@ -17,15 +22,18 @@ public class PileQueryService {
     private final PileRepository pileRepository;
     private final StationRepository stationRepository;
     private final PileCodeGenerator pileCodeGenerator;
+    private final SystemDictItemRepository dictItemRepository;
 
     public PileQueryService(
             PileRepository pileRepository,
             StationRepository stationRepository,
-            PileCodeGenerator pileCodeGenerator
+            PileCodeGenerator pileCodeGenerator,
+            SystemDictItemRepository dictItemRepository
     ) {
         this.pileRepository = pileRepository;
         this.stationRepository = stationRepository;
         this.pileCodeGenerator = pileCodeGenerator;
+        this.dictItemRepository = dictItemRepository;
     }
 
     public List<PileListItemResponse> listPilesByStationId(Long stationId) {
@@ -38,8 +46,33 @@ public class PileQueryService {
 
     public String nextPileCode(Long stationId) {
         requireExistingStation(stationId);
-        // 预览编号仅用于表单展示，实际编号以保存时生成为准
         return pileCodeGenerator.generateNextCode();
+    }
+
+    public PileStatisticsResponse getPileStatistics() {
+        long totalCount = pileRepository.count();
+        long fastCount = pileRepository.countByChargeType(ChargeType.FAST);
+        long slowCount = pileRepository.countByChargeType(ChargeType.SLOW);
+
+        List<SystemDictItem> pileStatusItems = dictItemRepository
+                .findAllByTypeTypeCodeAndItemStatusOrderBySortOrderAscItemNameAsc(
+                        DictionaryTypeCode.PILE_STATUS,
+                        DictionaryStatus.ENABLED
+                );
+
+        List<PileStatisticsResponse.PileStatusCount> statusCounts = pileStatusItems.stream()
+                .map(item -> {
+                    long count = pileRepository.countByPileStatusItemId(item.getId());
+                    return new PileStatisticsResponse.PileStatusCount(
+                            item.getId(),
+                            item.getItemCode(),
+                            item.getItemName(),
+                            count
+                    );
+                })
+                .toList();
+
+        return new PileStatisticsResponse(totalCount, fastCount, slowCount, statusCounts);
     }
 
     private void requireExistingStation(Long stationId) {

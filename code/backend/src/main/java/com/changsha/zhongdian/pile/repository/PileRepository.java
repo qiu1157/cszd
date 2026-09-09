@@ -11,6 +11,10 @@ public interface PileRepository extends JpaRepository<Pile, Long> {
 
     Optional<Pile> findTopByPileCodeStartingWithOrderByPileCodeDesc(String pileCodePrefix);
 
+    long countByChargeType(com.changsha.zhongdian.pile.entity.ChargeType chargeType);
+
+    long countByPileStatusItemId(Long pileStatusItemId);
+
     @Query(value = """
             SELECT
                 p.id AS id,

@@ -10,6 +10,7 @@ import com.changsha.zhongdian.shareholder.dto.ShareholderCreateRequest;
 import com.changsha.zhongdian.shareholder.dto.ShareholderDetailResponse;
 import com.changsha.zhongdian.shareholder.dto.ShareholderLinkOptionResponse;
 import com.changsha.zhongdian.shareholder.dto.ShareholderListItemResponse;
+import com.changsha.zhongdian.shareholder.dto.ShareholderStatisticsResponse;
 import com.changsha.zhongdian.shareholder.dto.ShareholderUpdateRequest;
 import com.changsha.zhongdian.shareholder.service.ShareholderCommandService;
 import com.changsha.zhongdian.shareholder.service.ShareholderQueryService;
@@ -53,6 +54,11 @@ public class ShareholderController {
     @GetMapping("/link-options")
     public ApiResponse<List<ShareholderLinkOptionResponse>> listLinkableShareholderOptions() {
         return ApiResponse.success(shareholderQueryService.listLinkableShareholderOptions());
+    }
+
+    @GetMapping("/statistics")
+    public ApiResponse<ShareholderStatisticsResponse> getShareholderStatistics() {
+        return ApiResponse.success(shareholderQueryService.getShareholderStatistics());
     }
 
     @GetMapping("/{shareholderId}")

@@ -8,6 +8,7 @@ import com.changsha.zhongdian.common.api.ApiResponse;
 import com.changsha.zhongdian.pile.dto.PileCreateRequest;
 import com.changsha.zhongdian.pile.dto.PileListItemResponse;
 import com.changsha.zhongdian.pile.dto.PileNextCodeResponse;
+import com.changsha.zhongdian.pile.dto.PileStatisticsResponse;
 import com.changsha.zhongdian.pile.dto.PileStatusOptionResponse;
 import com.changsha.zhongdian.pile.dto.PileStatusUpdateRequest;
 import com.changsha.zhongdian.pile.dto.PileUpdateRequest;
@@ -91,5 +92,10 @@ public class PileController {
                 "充电桩状态切换成功",
                 pileCommandService.updatePileStatus(stationId, pileId, request, currentUser.account()).getId()
         );
+    }
+
+    @GetMapping("/piles/statistics")
+    public ApiResponse<PileStatisticsResponse> getPileStatistics() {
+        return ApiResponse.success(pileQueryService.getPileStatistics());
     }
 }
