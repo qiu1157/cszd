@@ -1,10 +1,10 @@
 -- 统一操作日志表
 -- 适用场景：记录所有关键业务操作与系统管理操作，为里程碑 G 的时间线与全局日志页提供统一数据源。
 -- 执行前请先确认：
--- 1. 已连接目标开发库（当前开发库为 cszd_dev_db）
+-- 1. 已连接目标开发库（当前开发库为 cszd_db）
 -- 2. 数据库字符集为 utf8mb4
 
-USE cszd_dev_db;
+USE cszd_db;
 
 CREATE TABLE IF NOT EXISTS biz_operation_log (
   id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',

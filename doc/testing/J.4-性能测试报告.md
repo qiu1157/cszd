@@ -31,7 +31,7 @@
 
 ### 1.1 当前实现分析
 
-**后端实现** ([StationController.java](file:///d:/百度云同步盘/工作同步盘/Projects/长沙众电/code/backend/src/main/java/com/changsha/zhongdian/station/controller/StationController.java#L57-L67)):
+**后端实现** ([StationController.java](code/backend/src/main/java/com/changsha/zhongdian/station/controller/StationController.java#L57-L67)):
 ```java
 @GetMapping
 public ApiResponse<List<StationListItemResponse>> listStations(
@@ -48,7 +48,7 @@ public ApiResponse<List<StationListItemResponse>> listStations(
 - ❌ **未实现分页**，一次性返回所有数据
 - ✅ 使用 JPA 查询，有基本的数据库优化
 
-**前端实现** ([StationListView.vue](file:///d:/百度云同步盘/工作同步盘/Projects/长沙众电/code/frontend/src/views/station/StationListView.vue#L105-L118)):
+**前端实现** ([StationListView.vue](code/frontend/src/views/station/StationListView.vue#L105-L118)):
 ```typescript
 async function loadStations() {
   loading.value = true
@@ -202,7 +202,7 @@ function handleSearchInput() {
 ### 2.3 当前优化措施
 
 ✅ **CSS 优化**:
-- 使用 `transform` 而非 `top/left` 进行动画（[global.scss](file:///d:/百度云同步盘/工作同步盘/Projects/长沙众电/code/frontend/src/styles/global.scss#L78-L83)）
+- 使用 `transform` 而非 `top/left` 进行动画（[global.scss](code/frontend/src/styles/global.scss#L78-L83)）
 - GPU 加速的过渡效果
 
 ✅ **Vue 优化**:
@@ -219,7 +219,7 @@ function handleSearchInput() {
 
 ### 3.1 搜索功能分析
 
-**前端实现** ([StationListView.vue](file:///d:/百度云同步盘/工作同步盘/Projects/长沙众电/code/frontend/src/views/station/StationListView.vue#L148-L150)):
+**前端实现** ([StationListView.vue](code/frontend/src/views/station/StationListView.vue#L148-L150)):
 ```typescript
 function handleSearch() {
   void loadStations()

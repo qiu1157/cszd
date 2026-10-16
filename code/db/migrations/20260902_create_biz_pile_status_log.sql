@@ -2,10 +2,10 @@
 -- 适用场景：充电桩状态切换时记录原状态、新状态、可选备注与操作人账号，
 -- 为后续历史变化时间线与日志审计提供数据来源（对照 biz_station_status_log 模式）。
 -- 执行前请先确认：
--- 1. 已连接目标开发库（当前开发库为 cszd_dev_db）
+-- 1. 已连接目标开发库（当前开发库为 cszd_db）
 -- 2. biz_pile 与 sys_dict_item 已存在
 
-USE cszd_dev_db;
+USE cszd_db;
 
 CREATE TABLE IF NOT EXISTS biz_pile_status_log (
   id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',

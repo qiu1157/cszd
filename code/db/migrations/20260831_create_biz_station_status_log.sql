@@ -5,7 +5,7 @@
 -- 1. 已连接目标开发库
 -- 2. biz_station 与 sys_dict_item 已存在
 
-USE cszd_dev_db;
+USE cszd_db;
 
 CREATE TABLE IF NOT EXISTS biz_station_status_log (
   id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',

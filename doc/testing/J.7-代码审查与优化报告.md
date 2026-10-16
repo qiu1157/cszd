@@ -7,7 +7,7 @@
 **测试环境**: 
 - 前端: Vue 3.5.0 + TypeScript + ESLint + Prettier
 - 后端: Spring Boot 3.3.2 + Java + Gradle
-- 代码规范: [前端开发规范和要求.md](file:///d:/百度云同步盘/工作同步盘/Projects/长沙众电/doc/前端开发规范和要求.md)
+- 代码规范: [前端开发规范和要求.md](doc/design/前端开发规范.md)
 
 ## 测试目标
 
@@ -67,7 +67,7 @@ grep -r "TODO\|FIXME\|XXX\|HACK" src/
 运行 `npm run lint` 检查未使用的导入。
 
 **发现问题**:
-- ✅ 已修复: [LogsView.vue:159](file:///d:/百度云同步盘/工作同步盘/Projects/长沙众电/code/frontend/src/views/logs/LogsView.vue#L159) - 移除未使用的 `computed` 导入
+- ✅ 已修复: [LogsView.vue:159](code/frontend/src/views/logs/LogsView.vue#L159) - 移除未使用的 `computed` 导入
 
 **修复后结果**:
 ```bash
@@ -205,7 +205,7 @@ npm run test
 
 **代码示例** - 使用 computed 缓存:
 
-[StationListView.vue:103](file:///d:/百度云同步盘/工作同步盘/Projects/长沙众电/code/frontend/src/views/station/StationListView.vue#L103)
+[StationListView.vue:103](code/frontend/src/views/station/StationListView.vue#L103)
 ```typescript
 const tableRows = computed(() => stations.value.map(mapStationToTableRow))
 ```
@@ -282,7 +282,7 @@ public ApiResponse<Page<StationListItemResponse>> listStations(
 
 当前 Vite 配置简单，可进一步优化：
 
-**建议优化** [vite.config.ts](file:///d:/百度云同步盘/工作同步盘/Projects/长沙众电/code/frontend/vite.config.ts):
+**建议优化** [vite.config.ts](code/frontend/vite.config.ts):
 
 ```typescript
 export default defineConfig({
@@ -405,13 +405,13 @@ station/
 
 仅在必要的地方有说明性注释：
 
-1. [global.scss](file:///d:/百度云同步盘/工作同步盘/Projects/长沙众电/code/frontend/src/styles/global.scss#L2): 
+1. [global.scss](code/frontend/src/styles/global.scss#L2): 
 ```scss
 // 为什么：与原型保持同一套深色工业能源中控台基调
 ```
 ✅ **合理**: 解释设计决策
 
-2. [global.scss](file:///d:/百度云同步盘/工作同步盘/Projects/长沙众电/code/frontend/src/styles/global.scss#L69):
+2. [global.scss](code/frontend/src/styles/global.scss#L69):
 ```scss
 // 为什么：按钮为三级体系（主/次/行内文字）...
 ```
@@ -623,7 +623,7 @@ npm audit
 
 本次审查中发现并修复的问题：
 
-1. ✅ **已修复**: [LogsView.vue:159](file:///d:/百度云同步盘/工作同步盘/Projects/长沙众电/code/frontend/src/views/logs/LogsView.vue#L159) - 移除未使用的 `computed` 导入
+1. ✅ **已修复**: [LogsView.vue:159](code/frontend/src/views/logs/LogsView.vue#L159) - 移除未使用的 `computed` 导入
 
 ### 上线建议
 

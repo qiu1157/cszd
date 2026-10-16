@@ -2,10 +2,10 @@
 -- 适用场景：股权调整独立页面保存成功后，记录调整前后持股快照、占比合计与操作人账号，
 -- 为里程碑 G 的历史变化时间线与审计提供数据来源（对照 biz_station_status_log 模式，spec 8.3）。
 -- 执行前请先确认：
--- 1. 已连接目标开发库（当前开发库为 cszd_dev_db）
+-- 1. 已连接目标开发库（当前开发库为 cszd_db）
 -- 2. biz_station 与 biz_shareholding 已存在
 
-USE cszd_dev_db;
+USE cszd_db;
 
 CREATE TABLE IF NOT EXISTS biz_equity_adjustment_event (
   id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',

@@ -24,6 +24,10 @@ doc/服务启动命令.md
 !.env.example
 *.secrets
 .envrc
+# 业务/隐私数据文件不入库（如站点/股东台账等导出数据）
+doc/*.xlsx
+doc/*.xls
+doc/*.csv
 # 生产部署敏感配置与验证脚本（含生产密码，绝不入库）
 debug/deploy/cszd.env
 debug/deploy/verify_prod.sh

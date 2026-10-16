@@ -1,101 +1,56 @@
 # 充电站管理系统（第一期）
 
-第一期目标：完成充电站、充电桩、股东与持股关系的后台管理闭环，并具备日志审计与时间线可视化能力。
+面向内部管理人员、公网部署的充电站管理后台，统一维护充电站、充电桩、股东与持股关系，支持股权调整、时间线可视化与全局操作审计。PC 与手机自适应访问。
+
+## 技术栈
+
+- 前端：Vue 3 + TypeScript + Element Plus + Pinia + Vue Router + Vite
+- 后端：Spring Boot 3.3 + Java 17 + Spring Data JPA
+- 数据库：MySQL 8
 
 ## 目录说明
 
-- `doc/`：需求、任务与验收文档（开发必须严格按 `doc/tasks.md` 顺序推进）
-- `prototype/`：第一期 UI/流程基准  
-  - 强基准文件：`prototype/charging-station-system-prototype.html`
-- `code/`
-  - `frontend/`：前端（Vue 3 + Element Plus）
-  - `backend/`：后端（Spring Boot + MySQL）
-  - `db/`：数据库初始化说明与脚本
+| 目录 | 说明 |
+|------|------|
+| `doc/` | 项目文档（需求 / 设计 / 开发 Task / 部署 / 测试 / 归档），入口见 [`doc/README.md`](doc/README.md) |
+| `prototype/` | 第一期 UI/流程基准，强基准文件 `prototype/charging-station-system-prototype.html` |
+| `code/frontend/` | 前端工程（Vue 3 + Element Plus） |
+| `code/backend/` | 后端工程（Spring Boot + MySQL） |
+| `code/db/` | 数据库初始化脚本与说明 |
 
-## 强约束（务必遵守）
+## 文档导航
 
-- UI/交互：以 `prototype/charging-station-system-prototype.html` 为第一期基准
-- 前端规范：`doc/前端开发规范和要求.md` 为强约束
-- 开发流程：严格按 `doc/spec.md` → `doc/tasks.md` → `doc/checklist.md`
-- 每完成一个 task 必须执行一次 Git commit（Conventional Commits）
+- 需求：`doc/requirements/需求说明书.md`
+- 设计：`doc/design/系统规格说明.md`（权威规格）、`doc/design/前端开发规范.md`
+- 开发：`doc/development/任务拆解.md`、`doc/development/验收清单.md`、`doc/development/开发流程与规范.md`
+- 部署：`doc/deployment/部署指南.md`
+- 测试报告：`doc/testing/`
+- 历史归档：`doc/archive/`
 
-## 前端启动
+## 强约束
 
-```bash
-cd code/frontend
-npm install
-npm run dev
-```
+- UI/交互以 `prototype/charging-station-system-prototype.html` 为第一期基准。
+- 开发流程严格按 `doc/design/系统规格说明.md` → `doc/development/任务拆解.md` → `doc/development/验收清单.md`。
+- 前端规范 `doc/design/前端开发规范.md` 为强约束。
+- 每完成一个 task 执行一次 conventional commit。
+- 仓库公开托管，禁止提交真实密码、密钥、Token、公网地址与业务/个人隐私数据。
 
-常用命令：
+## 快速开始
 
-```bash
-npm run lint
-npm run format
-```
-
-## 后端启动
-
-前置说明：
-
-- 后端最低 Java 基线：`JDK 17+`（Spring Boot 3.3 支持 Java 17+）
-- 如果你本机没有可用的 `javac`（例如只装了 JRE，或未配置 `JAVA_HOME`），`code/backend/gradlew.bat` 会自动从 Adoptium 下载 **Temurin JDK 17（ZIP 免安装）** 并缓存到 `code/backend/.gradle/jdks/temurin-17/`（需要联网）。
+完整的环境要求、配置注入、数据库初始化与前后端启动步骤见 [`doc/deployment/部署指南.md`](doc/deployment/部署指南.md)。
 
 ```bash
-cd code/backend
-./gradlew bootRun
+# 前端
+cd code/frontend && npm install && npm run dev
+
+# 后端（需先注入数据库连接环境变量）
+cd code/backend && ./gradlew bootRun
+
+# 健康检查
+curl http://localhost:8080/api/health
 ```
 
-健康检查：
+## 安全说明
 
-- `GET http://localhost:8080/api/health`
-
-Windows（PowerShell）也可以：
-
-```powershell
-cd code/backend
-$env:CSZD_DB_PASSWORD="<your-db-password>"
-.\gradlew.bat bootRun
-```
-
-如果你在 cmd 里运行，请用：
-
-```bat
-cd code\backend
-set CSZD_DB_PASSWORD=<your-db-password>
-gradlew.bat bootRun
-```
-
-## 数据库初始化
-
-参考 `code/db/README.md`，脚本位于 `code/db/schema.sql`。
-
-后端连接（可按需修改 `code/backend/src/main/resources/application.yml`；默认读取环境变量，不把真实连接信息写入仓库）：
-
-- DB：`cszd_db`
-- Host：建议通过环境变量 `CSZD_DB_HOST` 配置
-- 账号：`cszd`
-- 密码：通过环境变量注入（PowerShell 示例）：
-
-```powershell
-$env:CSZD_DB_PASSWORD="<your-db-password>"
-```
-
-可选：如需覆盖 host/port/db/user，也可设置：
-
-```powershell
-$env:CSZD_DB_HOST="<your-db-host>"
-$env:CSZD_DB_PORT="3306"
-$env:CSZD_DB_NAME="cszd_db"
-$env:CSZD_DB_USER="cszd"
-```
-
-## 本地安全配置
-
-- 请复制根目录 `.env.example`，在本地环境中设置真实值，不要把真实 IP、密码、Token、连接串提交到仓库。
-- 默认系统管理员初始化密码支持本地环境变量覆盖：
-  - 未设置时，默认回退为 `123456`
-  - 如需自定义，请设置 `CSZD_DEFAULT_ADMIN_PASSWORD`
-- 当前保留的开发期业务管理员账号支持通过本地环境变量覆盖：
-  - `CSZD_DEV_BIZ_ACCOUNT`
-  - `CSZD_DEV_BIZ_PASSWORD`
+- 数据库连接、默认管理员初始密码、开发期业务账号均通过环境变量注入，真实值不入库（见 `.env.example`）。
+- 生产环境必须覆盖默认管理员初始密码与数据库连接信息。

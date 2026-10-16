@@ -6,7 +6,7 @@
 **测试人员**: 系统测试  
 **测试环境**: 
 - 前端框架: Vue 3.5.0 + Element Plus 2.14.5
-- 设计规范: [前端开发规范和要求.md](file:///d:/百度云同步盘/工作同步盘/Projects/长沙众电/doc/前端开发规范和要求.md)
+- 设计规范: [前端开发规范和要求.md](doc/design/前端开发规范.md)
 - 原型参考: charging-station-system-prototype.html
 
 ## 测试目标
@@ -22,7 +22,7 @@
 
 ### 1.1 主题色定义检查
 
-**全局色彩变量** ([global.scss](file:///d:/百度云同步盘/工作同步盘/Projects/长沙众电/code/frontend/src/styles/global.scss#L1-L17)):
+**全局色彩变量** ([global.scss](code/frontend/src/styles/global.scss#L1-L17)):
 
 ```scss
 :root {
@@ -70,7 +70,7 @@
 | 停用 | 灰色 | `info` (Element Plus) | ✅ 一致 | 充电站/充电桩状态 |
 | 启用 | 绿色 | `success` | ✅ 一致 | 充电桩启用状态 |
 
-**代码示例** ([StationListView.vue](file:///d:/百度云同步盘/工作同步盘/Projects/长沙众电/code/frontend/src/views/station/StationListView.vue#L56-L59)):
+**代码示例** ([StationListView.vue](code/frontend/src/views/station/StationListView.vue#L56-L59)):
 ```vue
 <el-tag :type="row.statusType" effect="dark" round>
   {{ row.statusLabel }}
@@ -123,7 +123,7 @@
 
 ### 2.1 字体族定义
 
-**全局字体** ([global.scss](file:///d:/百度云同步盘/工作同步盘/Projects/长沙众电/code/frontend/src/styles/global.scss#L25-L29)):
+**全局字体** ([global.scss](code/frontend/src/styles/global.scss#L25-L29)):
 
 ```scss
 font-family:
@@ -229,7 +229,7 @@ font-family:
 
 **说明**: Element Plus 默认使用 18-20px，与规范要求的 20-24px 接近但略小。
 
-**菜单项间距** ([global.scss](file:///d:/百度云同步盘/工作同步盘/Projects/长沙众电/code/frontend/src/styles/global.scss#L53-L55)):
+**菜单项间距** ([global.scss](code/frontend/src/styles/global.scss#L53-L55)):
 
 ```scss
 .el-menu-item {
@@ -238,7 +238,7 @@ font-family:
 }
 ```
 
-**按钮内边距** ([global.scss](file:///d:/百度云同步盘/工作同步盘/Projects/长沙众电/code/frontend/src/styles/global.scss#L72-L74)):
+**按钮内边距** ([global.scss](code/frontend/src/styles/global.scss#L72-L74)):
 
 ```scss
 .el-button.action-button {
@@ -337,7 +337,7 @@ Element Plus 提供了完整的图标库，项目应统一使用。
 | 次按钮 | 取消、返回、编辑 | 透明底+品牌青描边 | ✅ `action-button--secondary` | ✅ 一致 |
 | 文字按钮 | 表格操作列 | 品牌色文字无框 | ✅ `el-button link` | ✅ 一致 |
 
-**按钮状态检查** ([global.scss](file:///d:/百度云同步盘/工作同步盘/Projects/长沙众电/code/frontend/src/styles/global.scss#L72-L139)):
+**按钮状态检查** ([global.scss](code/frontend/src/styles/global.scss#L72-L139)):
 
 | 状态 | 视觉效果 | 代码实现 | 一致性 |
 |-----|---------|---------|-------|
@@ -365,7 +365,7 @@ Element Plus 提供了完整的图标库，项目应统一使用。
 | 表单提交 | ✅ 按钮loading | Element Plus 内置 | ✅ 统一 |
 | 页面切换 | ✅ 路由loading | Vue Router 过渡 | ✅ 统一 |
 
-**代码示例** ([StationListView.vue](file:///d:/百度云同步盘/工作同步盘/Projects/长沙众电/code/frontend/src/views/station/StationListView.vue#L49)):
+**代码示例** ([StationListView.vue](code/frontend/src/views/station/StationListView.vue#L49)):
 
 ```vue
 <el-table v-loading="loading" :data="tableRows">
@@ -383,7 +383,7 @@ Element Plus 提供了完整的图标库，项目应统一使用。
 | 表单验证错误 | Element Plus 表单验证 | ✅ 统一 | ✅ |
 | 网络错误 | ElMessage.error | ✅ 统一 | ✅ |
 
-**代码示例** ([StationListView.vue](file:///d:/百度云同步盘/工作同步盘/Projects/长沙众电/code/frontend/src/views/station/StationListView.vue#L114)):
+**代码示例** ([StationListView.vue](code/frontend/src/views/station/StationListView.vue#L114)):
 
 ```typescript
 catch (error) {
