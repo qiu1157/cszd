@@ -48,4 +48,6 @@ code/backend/build/
 
 ## ===== 构建产物/其他 =====
 *.jar
+# 例外：Gradle Wrapper 引导 jar 必须入库，否则后端无法从干净克隆直接构建
+!code/backend/gradle/wrapper/gradle-wrapper.jar
 *.war
