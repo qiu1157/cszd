@@ -14,5 +14,6 @@ public enum OperationType {
     DISABLE,
     RESET_PASSWORD,
     EQUITY_ADJUST,
-    EXIT
+    EXIT,
+    IMPORT
 }

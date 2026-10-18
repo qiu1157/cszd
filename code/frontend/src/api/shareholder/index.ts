@@ -110,3 +110,37 @@ export async function getShareholderStatistics() {
   const response = await request.get<ApiResponse<ShareholderStatistics>>('/api/shareholders/statistics')
   return response.data.data
 }
+
+export type ShareholderImportError = {
+  rowNumber: number
+  message: string
+}
+
+export type ShareholderImportResult = {
+  totalCount: number
+  successCount: number
+  errors: ShareholderImportError[]
+}
+
+export async function importShareholders(file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+  const response = await request.post<ApiResponse<ShareholderImportResult>>('/api/shareholders/import', formData)
+  return response.data.data
+}
+
+// 模板下载：后端返回 .xlsx 二进制流，前端用临时链接触发浏览器下载
+export async function downloadShareholderImportTemplate() {
+  const response = await request.get<Blob>('/api/shareholders/import-template', {
+    responseType: 'blob',
+  })
+  const blob = response.data
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = '股东导入模板.xlsx'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(url)
+}

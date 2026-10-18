@@ -43,6 +43,10 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 
+    // 为什么：股东批量导入需要生成与解析 Excel 模板（.xlsx），Apache POI 是 JVM 生态标准方案；
+    // 显式锁定 5.2.5（Spring Boot BOM 不托管 POI 版本，避免解析到不兼容版本）。
+    implementation 'org.apache.poi:poi-ooxml:5.2.5'
+
     runtimeOnly 'com.mysql:mysql-connector-j'
 
     compileOnly 'org.projectlombok:lombok'

@@ -26,8 +26,8 @@ public class ShareholderSchemaSqlTest {
                         "应定义联系电话字段且允许为空"),
                 () -> assertTrue(schemaSql.contains("shareholder_status VARCHAR(16) NOT NULL DEFAULT 'ENABLED'"),
                         "应定义股东状态字段并默认启用"),
-                () -> assertTrue(schemaSql.contains("KEY idx_biz_shareholder_shareholder_name (shareholder_name)"),
-                        "应为股东名称建立检索索引"),
+                () -> assertTrue(schemaSql.contains("UNIQUE KEY uk_biz_shareholder_shareholder_name (shareholder_name)"),
+                        "应为股东名称建立唯一索引（业务主键）"),
                 () -> assertTrue(schemaSql.contains("KEY idx_biz_shareholder_shareholder_status (shareholder_status)"),
                         "应为股东状态建立筛选索引")
         );

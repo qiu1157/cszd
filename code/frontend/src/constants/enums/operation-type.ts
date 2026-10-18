@@ -7,6 +7,7 @@ export const OPERATION_TYPES = {
   RESET_PASSWORD: 'RESET_PASSWORD',
   EQUITY_ADJUST: 'EQUITY_ADJUST',
   EXIT: 'EXIT',
+  IMPORT: 'IMPORT',
 } as const
 
 export type OperationType = (typeof OPERATION_TYPES)[keyof typeof OPERATION_TYPES]
@@ -29,6 +30,8 @@ export function getOperationTypeLabel(type: string) {
       return '股权调整'
     case OPERATION_TYPES.EXIT:
       return '退出'
+    case OPERATION_TYPES.IMPORT:
+      return '导入'
     default:
       return type
   }

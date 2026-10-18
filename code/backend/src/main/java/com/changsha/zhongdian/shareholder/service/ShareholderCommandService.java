@@ -33,6 +33,11 @@ public class ShareholderCommandService {
         String shareholderName = requireNonBlank(request.shareholderName(), "请输入股东名称");
         ShareholderStatus shareholderStatus = resolveShareholderStatus(request.shareholderStatus());
 
+        // 股东名称为业务主键：手工新增与批量导入同口径，重名一律拦截，不允许产生重名主档
+        if (shareholderRepository.existsByShareholderName(shareholderName)) {
+            throw new BusinessException("SHAREHOLDER_NAME_EXISTS", "股东名称已存在", HttpStatus.CONFLICT);
+        }
+
         Shareholder shareholder = new Shareholder();
         shareholder.setShareholderName(shareholderName);
         shareholder.setContactName(trimToNull(request.contactName()));

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -36,8 +37,8 @@ class ShareholderCommandServiceTest {
         Shareholder result = commandService.createShareholder(new ShareholderCreateRequest(
                 "  长沙城新能源合伙企业  ",
                 "  ",
-                "刘可",
-                "13977882211"
+                "13977882211",
+                "ENABLED"
         ));
 
         assertEquals(3001L, result.getId());
@@ -47,6 +48,28 @@ class ShareholderCommandServiceTest {
                         && "13977882211".equals(shareholder.getContactPhone())
                         && ShareholderStatus.ENABLED.equals(shareholder.getShareholderStatus())
         ));
+    }
+
+    @Test
+    void createShareholderShouldRejectDuplicateName() {
+        ShareholderRepository shareholderRepository = org.mockito.Mockito.mock(ShareholderRepository.class);
+        ShareholderCommandService commandService = new ShareholderCommandService(shareholderRepository);
+
+        when(shareholderRepository.existsByShareholderName("长沙城新能源合伙企业")).thenReturn(true);
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> commandService.createShareholder(new ShareholderCreateRequest(
+                        "长沙城新能源合伙企业",
+                        null,
+                        null,
+                        "ENABLED"
+                ))
+        );
+
+        assertEquals("SHAREHOLDER_NAME_EXISTS", exception.getCode());
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+        verify(shareholderRepository, never()).save(any(Shareholder.class));
     }
 
     @Test

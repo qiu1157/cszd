@@ -162,21 +162,21 @@ CREATE TABLE IF NOT EXISTS biz_pile_status_log (
 -- 为什么：股东为业务域实体，按 biz_ 前缀规范落到 biz_shareholder。
 -- 股东是独立主档实体，与充电站解耦：充电站是否归属某股东由后续里程碑的持股关系表表达，
 -- 主档本身不持有 station_id，避免一对多关系写死在主档侧，从而支持同一股东跨站复用。
--- shareholder_name 股东名称为必填文本，需求未要求唯一性，先以普通索引支撑列表页按名称搜索；
--- 联系人与联系电话为可选录入项，第一期不参与唯一性校验。
+-- shareholder_name 股东名称为业务主键，全局唯一（用于批量导入去重与存在性校验），以唯一索引支撑；
+-- 联系人与联系电话为可选录入项，不参与唯一性校验。
 -- shareholder_status 仅有启用/停用两态（退股不属于主档状态，由后续股权调整记录表达），
 -- 参照 sys_user 的实现方式，用应用层枚举校验，不引入字典项。
 -- 第一期不做物理删除，股东通过停用状态管理（与用户管理删除策略一致）。
 CREATE TABLE IF NOT EXISTS biz_shareholder (
   id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  shareholder_name VARCHAR(128) NOT NULL COMMENT '股东名称；必填，不做唯一约束，支持按名称检索',
+  shareholder_name VARCHAR(128) NOT NULL COMMENT '股东名称；业务主键，全局唯一',
   contact_name VARCHAR(64) DEFAULT NULL COMMENT '联系人；可选',
   contact_phone VARCHAR(20) DEFAULT NULL COMMENT '联系电话；可选',
   shareholder_status VARCHAR(16) NOT NULL DEFAULT 'ENABLED' COMMENT '股东状态：ENABLED 启用 / DISABLED 停用',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (id),
-  KEY idx_biz_shareholder_shareholder_name (shareholder_name),
+  UNIQUE KEY uk_biz_shareholder_shareholder_name (shareholder_name),
   KEY idx_biz_shareholder_shareholder_status (shareholder_status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='股东主档表';
 
@@ -232,7 +232,7 @@ CREATE TABLE IF NOT EXISTS biz_operation_log (
   target_type VARCHAR(32) NOT NULL COMMENT '对象类型：STATION 充电站 / PILE 充电桩 / SHAREHOLDER 股东 / SHAREHOLDING 持股关系 / SYSTEM_DICT 系统字典 / USER 用户',
   target_id VARCHAR(64) DEFAULT NULL COMMENT '对象标识；业务对象编号或主键ID字符串',
   target_name VARCHAR(128) DEFAULT NULL COMMENT '对象名称；如充电站名称、股东名称，用于快速展示',
-  operation_type VARCHAR(32) NOT NULL COMMENT '操作类型：CREATE 新增 / UPDATE 修改 / STATUS_CHANGE 状态变更 / ENABLE 启用 / DISABLE 停用 / RESET_PASSWORD 重置密码 / EQUITY_ADJUST 股权调整 / EXIT 退出',
+  operation_type VARCHAR(32) NOT NULL COMMENT '操作类型：CREATE 新增 / UPDATE 修改 / STATUS_CHANGE 状态变更 / ENABLE 启用 / DISABLE 停用 / RESET_PASSWORD 重置密码 / EQUITY_ADJUST 股权调整 / EXIT 退出 / IMPORT 导入',
   before_content TEXT DEFAULT NULL COMMENT '修改前内容；JSON或文本摘要',
   after_content TEXT DEFAULT NULL COMMENT '修改后内容；JSON或文本摘要',
   remark VARCHAR(500) DEFAULT NULL COMMENT '备注；如状态变更原因',

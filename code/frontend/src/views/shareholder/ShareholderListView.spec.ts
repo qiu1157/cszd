@@ -74,6 +74,28 @@ describe('ShareholderListView source', () => {
     expect(source).toContain('validateField')
   })
 
+  it('应提供股东导入模板下载与批量导入入口，且导入仅系统管理员可见', () => {
+    expect(source).toContain('下载模板')
+    expect(source).toContain('handleDownloadTemplate')
+    expect(source).toContain('downloadShareholderImportTemplate')
+    expect(source).toContain('导入股东')
+    expect(source).toContain('v-if="canImport"')
+    expect(source).toContain('openImportDialog')
+    expect(source).toContain('canImport')
+    expect(source).toContain('USER_ROLES.SYSTEM_ADMIN')
+    expect(source).toContain('useAuthStore')
+    expect(source).toContain('shareholder-import-dialog')
+    expect(source).toContain('importDialogVisible')
+    expect(source).toContain('el-upload')
+    expect(source).toContain('accept=".xlsx"')
+    expect(source).toContain('importShareholders')
+    expect(source).toContain('submitImport')
+    expect(source).toContain('handleImportFileChange')
+    expect(source).toContain('importErrors')
+    expect(source).toContain('import-result__title')
+    expect(source).toContain('导入仅新增')
+  })
+
   it('不应渲染原型中未要求或后续任务实现的入口', () => {
     expect(source).not.toContain('导出列表')
     expect(source).not.toContain('排序')

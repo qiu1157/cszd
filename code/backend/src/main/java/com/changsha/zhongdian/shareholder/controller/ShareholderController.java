@@ -2,20 +2,28 @@ package com.changsha.zhongdian.shareholder.controller;
 
 import java.util.List;
 
+import com.changsha.zhongdian.auth.model.LoginUser;
+import com.changsha.zhongdian.auth.service.AuthService;
 import com.changsha.zhongdian.common.api.ApiResponse;
 import com.changsha.zhongdian.common.exception.BusinessException;
 import com.changsha.zhongdian.shareholding.dto.ShareholderStationListItemResponse;
 import com.changsha.zhongdian.shareholding.service.ShareholdingQueryService;
 import com.changsha.zhongdian.shareholder.dto.ShareholderCreateRequest;
 import com.changsha.zhongdian.shareholder.dto.ShareholderDetailResponse;
+import com.changsha.zhongdian.shareholder.dto.ShareholderImportResult;
 import com.changsha.zhongdian.shareholder.dto.ShareholderLinkOptionResponse;
 import com.changsha.zhongdian.shareholder.dto.ShareholderListItemResponse;
 import com.changsha.zhongdian.shareholder.dto.ShareholderStatisticsResponse;
 import com.changsha.zhongdian.shareholder.dto.ShareholderUpdateRequest;
 import com.changsha.zhongdian.shareholder.service.ShareholderCommandService;
+import com.changsha.zhongdian.shareholder.service.ShareholderImportService;
 import com.changsha.zhongdian.shareholder.service.ShareholderQueryService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,6 +32,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/shareholders")
@@ -31,14 +40,20 @@ public class ShareholderController {
 
     private final ShareholderQueryService shareholderQueryService;
     private final ShareholderCommandService shareholderCommandService;
+    private final ShareholderImportService shareholderImportService;
     private final ShareholdingQueryService shareholdingQueryService;
+    private final AuthService authService;
 
     public ShareholderController(ShareholderQueryService shareholderQueryService,
                                  ShareholderCommandService shareholderCommandService,
-                                 ShareholdingQueryService shareholdingQueryService) {
+                                 ShareholderImportService shareholderImportService,
+                                 ShareholdingQueryService shareholdingQueryService,
+                                 AuthService authService) {
         this.shareholderQueryService = shareholderQueryService;
         this.shareholderCommandService = shareholderCommandService;
+        this.shareholderImportService = shareholderImportService;
         this.shareholdingQueryService = shareholdingQueryService;
+        this.authService = authService;
     }
 
     @GetMapping
@@ -59,6 +74,39 @@ public class ShareholderController {
     @GetMapping("/statistics")
     public ApiResponse<ShareholderStatisticsResponse> getShareholderStatistics() {
         return ApiResponse.success(shareholderQueryService.getShareholderStatistics());
+    }
+
+    // 模板下载对系统管理员与业务管理员均可见：仅要求登录，不做角色限制
+    @GetMapping("/import-template")
+    public ResponseEntity<byte[]> downloadImportTemplate() {
+        byte[] content = shareholderImportService.generateTemplate();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=shareholder-import-template.xlsx")
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(content);
+    }
+
+    // 导入仅系统管理员可用：前端隐藏按钮只是体验层控制，后端强制校验角色
+    @PostMapping("/import")
+    public ApiResponse<ShareholderImportResult> importShareholders(
+            @RequestParam("file") MultipartFile file,
+            HttpServletRequest httpServletRequest
+    ) {
+        LoginUser currentUser = requireSystemAdmin(httpServletRequest);
+        ShareholderImportResult result = shareholderImportService.importShareholders(
+                file,
+                currentUser.account(),
+                currentUser.role()
+        );
+        return ApiResponse.success("导入完成", result);
+    }
+
+    private LoginUser requireSystemAdmin(HttpServletRequest httpServletRequest) {
+        LoginUser currentUser = authService.getCurrentUser(httpServletRequest);
+        if (!"SYSTEM_ADMIN".equals(currentUser.role())) {
+            throw new BusinessException("FORBIDDEN", "仅系统管理员可执行导入操作", HttpStatus.FORBIDDEN);
+        }
+        return currentUser;
     }
 
     @GetMapping("/{shareholderId}")

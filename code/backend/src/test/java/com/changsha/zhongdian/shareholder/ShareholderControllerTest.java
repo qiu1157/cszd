@@ -1,10 +1,13 @@
 package com.changsha.zhongdian.shareholder;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -16,14 +19,17 @@ import com.changsha.zhongdian.AuthenticatedWebTestSupport;
 import com.changsha.zhongdian.shareholding.dto.ShareholderStationListItemResponse;
 import com.changsha.zhongdian.shareholding.service.ShareholdingQueryService;
 import com.changsha.zhongdian.shareholder.dto.ShareholderDetailResponse;
+import com.changsha.zhongdian.shareholder.dto.ShareholderImportResult;
 import com.changsha.zhongdian.shareholder.dto.ShareholderLinkOptionResponse;
 import com.changsha.zhongdian.shareholder.dto.ShareholderListItemResponse;
 import com.changsha.zhongdian.shareholder.entity.Shareholder;
 import com.changsha.zhongdian.shareholder.service.ShareholderCommandService;
+import com.changsha.zhongdian.shareholder.service.ShareholderImportService;
 import com.changsha.zhongdian.shareholder.service.ShareholderQueryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 
 // 为什么：继承无数据库测试基类统一提供登录与 Repository mock，本类额外 mock 股东查询/命令服务以聚焦 Web 层行为
 class ShareholderControllerTest extends AuthenticatedWebTestSupport {
@@ -33,6 +39,9 @@ class ShareholderControllerTest extends AuthenticatedWebTestSupport {
 
     @MockBean
     private ShareholderCommandService shareholderCommandService;
+
+    @MockBean
+    private ShareholderImportService shareholderImportService;
 
     @MockBean
     private ShareholdingQueryService shareholdingQueryService;
@@ -299,6 +308,89 @@ class ShareholderControllerTest extends AuthenticatedWebTestSupport {
     @Test
     void getShareholderStationsShouldRejectAnonymousRequest() throws Exception {
         mockMvc.perform(get("/api/shareholders/3001/stations"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    void downloadImportTemplateShouldReturnAttachmentForAuthenticatedUser() throws Exception {
+        when(shareholderImportService.generateTemplate()).thenReturn(new byte[]{80, 75});
+        String token = loginAsBusinessAdmin();
+
+        mockMvc.perform(get("/api/shareholders/import-template")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", containsString("attachment")));
+
+        verify(shareholderImportService).generateTemplate();
+    }
+
+    @Test
+    void downloadImportTemplateShouldRejectAnonymousRequest() throws Exception {
+        mockMvc.perform(get("/api/shareholders/import-template"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    void importShareholdersShouldReturnResultForSystemAdmin() throws Exception {
+        when(shareholderImportService.importShareholders(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.eq("admin"),
+                org.mockito.ArgumentMatchers.eq("SYSTEM_ADMIN")
+        )).thenReturn(new ShareholderImportResult(2, 2, List.of()));
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "shareholders.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                new byte[]{80, 75}
+        );
+        String token = loginAsSystemAdmin();
+
+        mockMvc.perform(multipart("/api/shareholders/import")
+                        .file(file)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.successCount").value(2))
+                .andExpect(jsonPath("$.data.totalCount").value(2));
+    }
+
+    @Test
+    void importShareholdersShouldRejectBusinessAdmin() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "shareholders.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                new byte[]{80, 75}
+        );
+        String token = loginAsBusinessAdmin();
+
+        mockMvc.perform(multipart("/api/shareholders/import")
+                        .file(file)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+
+        verify(shareholderImportService, org.mockito.Mockito.never())
+                .importShareholders(
+                        org.mockito.ArgumentMatchers.any(),
+                        org.mockito.ArgumentMatchers.any(),
+                        org.mockito.ArgumentMatchers.any()
+                );
+    }
+
+    @Test
+    void importShareholdersShouldRejectAnonymousRequest() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "shareholders.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                new byte[]{80, 75}
+        );
+
+        mockMvc.perform(multipart("/api/shareholders/import").file(file))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }

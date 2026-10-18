@@ -4,6 +4,11 @@ server:
 spring:
   application:
     name: charging-station-system
+  servlet:
+    multipart:
+      # 为什么：股东批量导入上传 Excel，Spring 默认单文件 1MB 上限不够，放宽到 5MB 并限制整体请求大小。
+      max-file-size: 5MB
+      max-request-size: 5MB
   datasource:
     # 注意：不要把真实密码写入仓库。通过环境变量注入（见根目录 README.md）。
     # 为什么：默认值只能使用通用占位环境，不能把内网地址固化到仓库并同步到 GitHub。
