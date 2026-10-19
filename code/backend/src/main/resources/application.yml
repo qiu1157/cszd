@@ -1,5 +1,8 @@
 server:
   port: 8080
+  # 为什么：生产环境通过 Nginx 以 9080 反代到本机 8080，若不解析 X-Forwarded-* 头，
+  # Spring 会把同域请求误判为跨域请求并返回 "Invalid CORS request"。
+  forward-headers-strategy: framework
 
 spring:
   application:

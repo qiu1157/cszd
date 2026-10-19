@@ -1,6 +1,7 @@
 package com.changsha.zhongdian.auth;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -69,5 +70,17 @@ class AuthControllerTest extends AuthenticatedWebTestSupport {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    void loginPreflightShouldPassBehindReverseProxyWhenOriginMatchesForwardedHost() throws Exception {
+        mockMvc.perform(options("/api/auth/login")
+                        .header("Origin", "http://192.168.3.52:9080")
+                        .header("Access-Control-Request-Method", "POST")
+                        .header("Access-Control-Request-Headers", "content-type")
+                        .header("X-Forwarded-Proto", "http")
+                        .header("X-Forwarded-Host", "192.168.3.52:9080")
+                        .header("X-Forwarded-Port", "9080"))
+                .andExpect(status().isOk());
     }
 }
