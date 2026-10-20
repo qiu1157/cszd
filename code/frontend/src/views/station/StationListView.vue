@@ -5,7 +5,13 @@
         <div class="section-head section-head--stacked">
           <div class="section-head__top">
             <h3>充电站管理</h3>
-            <el-button class="action-button" type="primary" @click="goToCreate">新增充电站</el-button>
+            <div class="section-head__actions">
+              <el-button class="action-button" @click="handleDownloadTemplate">下载模板</el-button>
+              <el-button v-if="canImport" class="action-button" type="primary" @click="openImportDialog">
+                导入关系
+              </el-button>
+              <el-button class="action-button" type="primary" @click="goToCreate">新增充电站</el-button>
+            </div>
           </div>
           <div class="toolbar-row">
             <el-input
@@ -69,15 +75,71 @@
         </el-table-column>
       </el-table>
     </el-card>
+
+    <el-dialog
+      v-model="importDialogVisible"
+      class="shareholding-import-dialog"
+      width="560px"
+      :show-close="false"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+      destroy-on-close
+      align-center
+    >
+      <template #header>
+        <div class="dialog-head">
+          <h3>导入股东关系</h3>
+          <el-button text @click="closeImportDialog">关闭</el-button>
+        </div>
+      </template>
+
+      <div class="dialog-body">
+        <el-upload
+          drag
+          :auto-upload="false"
+          :limit="1"
+          accept=".xlsx"
+          :on-change="handleImportFileChange"
+          :on-remove="handleImportFileRemove"
+        >
+          <div class="upload-trigger">将 Excel 文件拖到此处，或<em>点击选择文件</em></div>
+          <template #tip>
+            <div class="upload-hint">仅支持 .xlsx；请先下载并使用系统模板（已预填充电站名称），导入仅新增关系。</div>
+          </template>
+        </el-upload>
+
+        <div v-if="importErrors.length" class="import-result">
+          <p class="import-result__title">导入失败：以下数据未通过校验，本次未导入任何数据。</p>
+          <el-table :data="importErrors" max-height="240" empty-text="--">
+            <el-table-column prop="rowNumber" label="行号" width="80" />
+            <el-table-column prop="message" label="原因" min-width="320" />
+          </el-table>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="dialog-actions">
+          <el-button @click="closeImportDialog">取消</el-button>
+          <el-button type="primary" :loading="importing" :disabled="!importFile" @click="submitImport">
+            导入
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </section>
 </template>
 
 <script setup lang="ts">
 import axios from 'axios'
-import { ElMessage } from 'element-plus'
+import { ElMessage, type UploadFile } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import {
+  downloadShareholdingImportTemplate,
+  importShareholdings,
+  type ShareholdingImportError,
+} from '@/api/shareholding'
 import { getStations, type StationListItem } from '@/api/station'
 import {
   getStationPlatformOptions,
@@ -85,7 +147,9 @@ import {
   type StationPlatformOption,
   type StationStatusOption,
 } from '@/api/station/form-options'
+import { USER_ROLES } from '@/constants/enums/user-role'
 import { buildStationDetailPath, buildStationEditPath, STATION_CREATE_PATH } from '@/router/navigation'
+import { useAuthStore } from '@/stores/auth'
 
 import { mapStationToTableRow } from './adapters'
 
@@ -99,6 +163,10 @@ const searchForm = ref({
   platformItemId: null as number | null,
   stationStatusItemId: null as number | null,
 })
+
+const authStore = useAuthStore()
+// 模板下载对两类角色可见；导入仅系统管理员可见（前端显隐，后端仍强制校验）
+const canImport = computed(() => authStore.user?.role === USER_ROLES.SYSTEM_ADMIN)
 
 const tableRows = computed(() => stations.value.map(mapStationToTableRow))
 
@@ -147,6 +215,68 @@ function goToDetail(id: number) {
 
 function handleSearch() {
   void loadStations()
+}
+
+const importDialogVisible = ref(false)
+const importFile = ref<File | null>(null)
+const importing = ref(false)
+const importErrors = ref<ShareholdingImportError[]>([])
+
+function openImportDialog() {
+  importFile.value = null
+  importErrors.value = []
+  importDialogVisible.value = true
+}
+
+function closeImportDialog() {
+  if (importing.value) {
+    return
+  }
+  importDialogVisible.value = false
+  importFile.value = null
+  importErrors.value = []
+}
+
+function handleImportFileChange(uploadFile: UploadFile) {
+  importFile.value = uploadFile.raw ?? null
+  importErrors.value = []
+}
+
+function handleImportFileRemove() {
+  importFile.value = null
+  importErrors.value = []
+}
+
+async function handleDownloadTemplate() {
+  try {
+    await downloadShareholdingImportTemplate()
+  } catch (error) {
+    ElMessage.error(resolveApiErrorMessage(error, '模板下载失败，请稍后重试'))
+  }
+}
+
+async function submitImport() {
+  const file = importFile.value
+  if (!file) {
+    return
+  }
+
+  importing.value = true
+  importErrors.value = []
+  try {
+    const result = await importShareholdings(file)
+    if (result.errors.length > 0) {
+      importErrors.value = result.errors
+      return
+    }
+    ElMessage.success(`导入成功，新增 ${result.successCount} 条股东关系`)
+    importDialogVisible.value = false
+    importFile.value = null
+  } catch (error) {
+    ElMessage.error(resolveApiErrorMessage(error, '导入失败，请稍后重试'))
+  } finally {
+    importing.value = false
+  }
 }
 
 function resolveApiErrorMessage(error: unknown, fallbackMessage: string) {
@@ -199,6 +329,13 @@ onMounted(() => {
   gap: 16px;
 }
 
+.section-head__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .section-head h3 {
   margin: 0;
   font-size: 20px;
@@ -230,8 +367,57 @@ onMounted(() => {
   align-items: center;
 }
 
+.dialog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dialog-head h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.dialog-body {
+  display: grid;
+  gap: 16px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.upload-trigger {
+  color: var(--text-secondary);
+}
+
+.upload-trigger em {
+  color: var(--accent, #39c8ff);
+  font-style: normal;
+}
+
+.upload-hint {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.import-result {
+  margin-top: 16px;
+}
+
+.import-result__title {
+  margin: 0 0 8px;
+  color: #ff8f8f;
+  font-size: 13px;
+}
+
 @media (max-width: 768px) {
   .section-head__top,
+  .section-head__actions,
   .toolbar-row {
     flex-direction: column;
     align-items: stretch;

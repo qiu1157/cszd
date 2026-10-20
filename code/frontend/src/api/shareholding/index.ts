@@ -87,3 +87,40 @@ export function summarizeShareholdings(shareholdings: StationShareholding[]) {
     activePercentageSum,
   }
 }
+
+export type ShareholdingImportError = {
+  rowNumber: number
+  message: string
+}
+
+export type ShareholdingImportResult = {
+  totalCount: number
+  successCount: number
+  errors: ShareholdingImportError[]
+}
+
+export async function importShareholdings(file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+  const response = await request.post<ApiResponse<ShareholdingImportResult>>(
+    '/api/stations/shareholding-import',
+    formData,
+  )
+  return response.data.data
+}
+
+// 模板下载：后端返回 .xlsx 二进制流，前端用临时链接触发浏览器下载
+export async function downloadShareholdingImportTemplate() {
+  const response = await request.get<Blob>('/api/stations/shareholding-import-template', {
+    responseType: 'blob',
+  })
+  const blob = response.data
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = '股东关系导入模板.xlsx'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(url)
+}

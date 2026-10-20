@@ -38,6 +38,8 @@ public class StationSchemaSqlTest {
                         "应保证充电站编号全局唯一"),
                 () -> assertTrue(schemaSql.contains("UNIQUE KEY uk_biz_station_platform_station_code (platform_item_id, platform_station_code)"),
                         "应保证同一平台内平台站点编号唯一"),
+                () -> assertTrue(schemaSql.contains("UNIQUE KEY uk_biz_station_station_name (station_name)"),
+                        "应保证充电站名称全局唯一（业务主键）"),
                 () -> assertTrue(schemaSql.contains("CONSTRAINT fk_biz_station_platform_item_id FOREIGN KEY (platform_item_id) REFERENCES sys_dict_item (id)"),
                         "应定义所在平台到系统字典项的外键"),
                 () -> assertTrue(schemaSql.contains("CONSTRAINT fk_biz_station_station_status_item_id FOREIGN KEY (station_status_item_id) REFERENCES sys_dict_item (id)"),
