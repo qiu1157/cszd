@@ -1,5 +1,6 @@
 package com.changsha.zhongdian.station.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -10,6 +11,14 @@ import org.springframework.data.jpa.repository.Query;
 public interface StationRepository extends JpaRepository<Station, Long> {
 
     Optional<Station> findTopByStationCodeStartingWithOrderByStationCodeDesc(String stationCodePrefix);
+
+    // 股东关系导入按名称定位站点：名称已建唯一索引，精确查询即可确定唯一站点
+    Optional<Station> findByStationName(String stationName);
+
+    List<Station> findByStationNameIn(Collection<String> stationNames);
+
+    // 模板预填全部充电站名称：按名称升序，保证模板行序稳定可读
+    List<Station> findAllByOrderByStationNameAsc();
 
     boolean existsByPlatformItemIdAndPlatformStationCode(Long platformItemId, String platformStationCode);
 

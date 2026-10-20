@@ -1,5 +1,6 @@
 package com.changsha.zhongdian.shareholding.repository;
 
+import java.util.Collection;
 import java.util.List;
 
 import com.changsha.zhongdian.shareholding.entity.HoldingStatus;
@@ -88,6 +89,10 @@ public interface ShareholdingRepository extends JpaRepository<Shareholding, Long
 
     boolean existsByStationIdAndShareholderIdAndHoldingStatus(
             Long stationId, Long shareholderId, HoldingStatus holdingStatus);
+
+    // 批量导入存在性校验：一次 IN 查询拉取一批站点下的持股中关系，避免逐行查库
+    List<Shareholding> findByStationIdInAndHoldingStatus(
+            Collection<Long> stationIds, HoldingStatus holdingStatus);
 
     // 退股同步调整占比：需要取出同站点下除当前关系外的其他持股中关系
     List<Shareholding> findByStationIdAndHoldingStatus(Long stationId, HoldingStatus holdingStatus);

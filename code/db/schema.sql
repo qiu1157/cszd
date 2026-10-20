@@ -69,13 +69,14 @@ CREATE TABLE IF NOT EXISTS sys_dict_item (
 -- 这样能与 sys_user、sys_dict_type、sys_dict_item 保持清晰分层。
 -- 当前阶段先定义支撑基础信息录入、平台筛选、状态筛选和后续详情扩展的最小真实表结构。
 -- 其中 station_code 为充电站编号；充电站编号由系统自动生成，且全局唯一。
+-- station_name 充电站名称为业务主键，全局唯一（用于股东关系导入按名称定位站点），以唯一索引支撑。
 -- platform_station_code 为人工录入的平台站点编号，可为空，但平台站点编号在同一平台内唯一。
 -- station_status_item_id 表示当前单一生命周期状态，第一期范围为：签合同 / 建设中 / 运营中 / 运营异常 / 停用，
 -- 后续新增充电站时默认应落到“签合同”对应的启用字典项。
 CREATE TABLE IF NOT EXISTS biz_station (
   id BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   station_code VARCHAR(32) NOT NULL COMMENT '充电站编号；充电站编号由系统自动生成，且全局唯一',
-  station_name VARCHAR(128) NOT NULL COMMENT '充电站名称',
+  station_name VARCHAR(128) NOT NULL COMMENT '充电站名称；业务主键，全局唯一',
   platform_item_id BIGINT NOT NULL COMMENT '所在平台字典项ID；关联 PLATFORM 类型字典项',
   platform_station_code VARCHAR(64) DEFAULT NULL COMMENT '平台站点编号；人工录入，可为空，平台站点编号在同一平台内唯一',
   address VARCHAR(255) DEFAULT NULL COMMENT '地址',
@@ -88,7 +89,7 @@ CREATE TABLE IF NOT EXISTS biz_station (
   PRIMARY KEY (id),
   UNIQUE KEY uk_biz_station_station_code (station_code),
   UNIQUE KEY uk_biz_station_platform_station_code (platform_item_id, platform_station_code),
-  KEY idx_biz_station_station_name (station_name),
+  UNIQUE KEY uk_biz_station_station_name (station_name),
   KEY idx_biz_station_platform_item_id (platform_item_id),
   KEY idx_biz_station_station_status_item_id (station_status_item_id),
   CONSTRAINT fk_biz_station_platform_item_id FOREIGN KEY (platform_item_id) REFERENCES sys_dict_item (id),
