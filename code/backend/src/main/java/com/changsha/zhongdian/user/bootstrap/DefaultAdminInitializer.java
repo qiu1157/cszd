@@ -42,8 +42,6 @@ public class DefaultAdminInitializer implements ApplicationRunner {
     }
 
     void initializeDefaultAdmin() {
-        String initialPassword = resolveInitialPassword();
-
         SystemUserRepository systemUserRepository = systemUserRepositoryProvider.getIfAvailable();
         if (systemUserRepository == null) {
             log.warn("当前未启用系统用户仓库，已跳过默认系统管理员初始化");
@@ -52,9 +50,13 @@ public class DefaultAdminInitializer implements ApplicationRunner {
 
         try {
             if (systemUserRepository.existsByAccount(DEFAULT_ADMIN_ACCOUNT)) {
-                synchronizeExistingDefaultAdmin(systemUserRepository, initialPassword);
+                // 默认密码仅在“首次创建”时生效；账号已存在则不重置密码、不改状态，
+                // 否则管理员改过的密码会在每次重启时被重置回默认值。
+                log.info("默认系统管理员账号已存在，跳过初始化");
                 return;
             }
+
+            String initialPassword = resolveInitialPassword();
 
             SystemUser defaultAdmin = new SystemUser();
             defaultAdmin.setAccount(DEFAULT_ADMIN_ACCOUNT);
@@ -80,17 +82,5 @@ public class DefaultAdminInitializer implements ApplicationRunner {
 
         log.warn("未检测到 CSZD_DEFAULT_ADMIN_PASSWORD，已回退使用默认系统管理员密码");
         return DEFAULT_ADMIN_PASSWORD;
-    }
-
-    private void synchronizeExistingDefaultAdmin(SystemUserRepository systemUserRepository, String initialPassword) {
-        systemUserRepository.findByAccount(DEFAULT_ADMIN_ACCOUNT)
-                .filter(existingAdmin -> existingAdmin.getRoleCode() == UserRole.SYSTEM_ADMIN)
-                .ifPresentOrElse(existingAdmin -> {
-                    existingAdmin.setPasswordHash(passwordHasher.hash(initialPassword));
-                    existingAdmin.setUserStatus(UserStatus.ENABLED);
-                    existingAdmin.setDefaultAdmin(true);
-                    systemUserRepository.save(existingAdmin);
-                    log.info("默认系统管理员账号已存在，已同步初始化密码");
-                }, () -> log.info("默认系统管理员账号已存在，跳过初始化"));
     }
 }
