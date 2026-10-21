@@ -6,7 +6,7 @@
           <div class="section-head__top">
             <h3>充电站管理</h3>
             <div class="section-head__actions">
-              <el-button class="action-button" @click="handleDownloadTemplate">下载模板</el-button>
+              <el-button class="action-button" @click="handleDownloadTemplate">下载股东投资模板</el-button>
               <el-button v-if="canImport" class="action-button" type="primary" @click="openImportDialog">
                 导入关系
               </el-button>

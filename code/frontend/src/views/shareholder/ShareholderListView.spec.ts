@@ -75,7 +75,7 @@ describe('ShareholderListView source', () => {
   })
 
   it('应提供股东导入模板下载与批量导入入口，且导入仅系统管理员可见', () => {
-    expect(source).toContain('下载模板')
+    expect(source).toContain('下载股东模板')
     expect(source).toContain('handleDownloadTemplate')
     expect(source).toContain('downloadShareholderImportTemplate')
     expect(source).toContain('导入股东')

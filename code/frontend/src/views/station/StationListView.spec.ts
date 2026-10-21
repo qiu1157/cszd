@@ -30,7 +30,7 @@ describe('StationListView source', () => {
   })
 
   it('应提供股东关系导入模板下载与批量导入入口，且导入仅系统管理员可见', () => {
-    expect(source).toContain('下载模板')
+    expect(source).toContain('下载股东投资模板')
     expect(source).toContain('handleDownloadTemplate')
     expect(source).toContain('downloadShareholdingImportTemplate')
     expect(source).toContain('导入关系')
